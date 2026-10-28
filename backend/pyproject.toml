@@ -1,0 +1,29 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "TripPatch backend: minimal-perturbation trip recovery engine"
+authors = [
+    { name = "kyurimyang", email = "kyurim1006@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162.0",
+    "pydantic>=2.14.1",
+]
+
+[dependency-groups]
+dev = [
+    "black>=26.10.1",
+    "pytest>=9.1.1",
+    "ruff>=0.17.3",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-m 'not live'"
+markers = ["live: tests that call real external APIs"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
