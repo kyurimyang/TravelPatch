@@ -3,12 +3,14 @@ from typing import Annotated, Literal
 from pydantic import Field, model_validator
 
 from app.schemas.enums import Category, EventType
-from app.schemas.models import MINUTES_PER_DAY, _Frozen
+from app.schemas.models import HOTEL_ID, MINUTES_PER_DAY, _Frozen
 
 
 class _EventBase(_Frozen):
     # "Now" as minutes since midnight. The engine never reads the clock itself.
     occurred_at: int = Field(ge=0, le=MINUTES_PER_DAY)
+    # Where the user is now: a node of the travel table ("hotel" or an activity id).
+    location_id: str = HOTEL_ID
 
 
 class DelayEvent(_EventBase):
@@ -28,6 +30,12 @@ class WeatherEvent(_EventBase):
     start_time: int = Field(ge=0, le=MINUTES_PER_DAY)
     end_time: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
 
+    @model_validator(mode="after")
+    def _check_window(self) -> "WeatherEvent":
+        if self.end_time is not None and self.end_time <= self.start_time:
+            raise ValueError("end_time must be after start_time")
+        return self
+
 
 class ClosureEvent(_EventBase):
     type: Literal[EventType.CLOSURE] = EventType.CLOSURE
@@ -36,7 +44,8 @@ class ClosureEvent(_EventBase):
 
 class FatigueEvent(_EventBase):
     type: Literal[EventType.FATIGUE] = EventType.FATIGUE
-    max_walk_minutes: int = Field(gt=0)
+    # Walking activities may keep at most this share of their planned length.
+    walking_ratio: float = Field(default=0.5, gt=0, le=1)
 
 
 class ExtendEvent(_EventBase):

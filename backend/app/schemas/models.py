@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.enums import Category, Tier, TimeRigidity
@@ -19,6 +21,7 @@ class TravelTime(_Frozen):
     a: str
     b: str
     minutes: int = Field(ge=0)
+    source: Literal["api", "estimate"] = "estimate"
 
 
 class Activity(_Frozen):
@@ -31,7 +34,8 @@ class Activity(_Frozen):
     planned_end: int = Field(ge=0, le=MINUTES_PER_DAY)
     min_duration: int = Field(gt=0)
     intent_tags: tuple[str, ...] = ()
-    outdoor: bool = False
+    outdoor: bool | None = False  # None = unknown (never guess, CLAUDE.md rule 8)
+    walking: bool | None = None  # lots of walking inside the activity; None = unknown
     open_at: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
     close_at: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
     reservation_time: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)

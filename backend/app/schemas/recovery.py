@@ -1,7 +1,7 @@
 from pydantic import Field, model_validator
 
 from app.schemas.enums import Op, ReasonType
-from app.schemas.events import DisruptionEvent
+from app.schemas.events import DelayEvent, DisruptionEvent
 from app.schemas.models import (
     HOTEL_ID,
     MINUTES_PER_DAY,
@@ -30,6 +30,7 @@ class RecoveryChange(_Frozen):
     before: Slot | None = None
     after: Slot | None = None
     reason_type: ReasonType | None = None
+    needs_check: bool = False  # unknown to us: tell the user to check on site
 
     @model_validator(mode="after")
     def _check_slots_match_op(self) -> "RecoveryChange":
@@ -54,6 +55,7 @@ class RcBreakdown(_Frozen):
     d_time: float = 0.0
     d_move: float = 0.0
     d_intent: float = 0.0
+    d_changed: float = 0.0
 
 
 class RecoveryResult(_Frozen):
@@ -72,6 +74,12 @@ class RecoveryInput(_Frozen):
     preferences: tuple[Preference, ...]
     travel: tuple[TravelTime, ...]
     event: DisruptionEvent
+
+    @property
+    def now(self) -> int:
+        # A delayed user can move again at start_time; otherwise "now" is occurred_at.
+        ev = self.event
+        return ev.start_time if isinstance(ev, DelayEvent) else ev.occurred_at
 
     @model_validator(mode="after")
     def _check_references(self) -> "RecoveryInput":
@@ -93,6 +101,8 @@ class RecoveryInput(_Frozen):
         nodes = {HOTEL_ID, *ids}
         if self.event.type == "MUST_VISIT" and target is not None:
             nodes.add(target)
+        if self.event.location_id not in nodes:
+            raise ValueError(f"unknown current location: {self.event.location_id}")
         seen: set[frozenset[str]] = set()
         for t in self.travel:
             pair = frozenset((t.a, t.b))
