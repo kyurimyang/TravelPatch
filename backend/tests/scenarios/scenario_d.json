@@ -1,0 +1,212 @@
+{
+  "day": {
+    "id": "tokyo-day",
+    "start_time": 540,
+    "end_deadline": 1320,
+    "end_lat": 35.6896,
+    "end_lng": 139.7006
+  },
+  "activities": [
+    {
+      "id": "ramen",
+      "title": "라멘 점심",
+      "category": "meal",
+      "lat": 35.6595,
+      "lng": 139.7005,
+      "planned_start": 770,
+      "planned_end": 830,
+      "min_duration": 40,
+      "intent_tags": [
+        "local_food"
+      ],
+      "walking": false
+    },
+    {
+      "id": "shibuya_shop",
+      "title": "시부야 쇼핑",
+      "category": "shopping",
+      "lat": 35.659,
+      "lng": 139.701,
+      "planned_start": 850,
+      "planned_end": 940,
+      "min_duration": 30,
+      "intent_tags": [
+        "shopping"
+      ],
+      "walking": true
+    },
+    {
+      "id": "cafe",
+      "title": "카페",
+      "category": "cafe",
+      "lat": 35.66,
+      "lng": 139.702,
+      "planned_start": 950,
+      "planned_end": 995,
+      "min_duration": 30,
+      "intent_tags": [
+        "cafe"
+      ],
+      "walking": false
+    },
+    {
+      "id": "sky",
+      "title": "시부야 스카이",
+      "category": "sightseeing",
+      "lat": 35.6585,
+      "lng": 139.7021,
+      "planned_start": 1020,
+      "planned_end": 1080,
+      "min_duration": 60,
+      "intent_tags": [
+        "view"
+      ],
+      "reservation_time": 1020,
+      "outdoor": null,
+      "walking": false
+    },
+    {
+      "id": "izakaya",
+      "title": "이자카야 저녁",
+      "category": "meal",
+      "lat": 35.661,
+      "lng": 139.7,
+      "planned_start": 1170,
+      "planned_end": 1260,
+      "min_duration": 90,
+      "intent_tags": [
+        "local_food"
+      ],
+      "reservation_time": 1170,
+      "walking": false
+    }
+  ],
+  "preferences": [
+    {
+      "activity_id": "ramen",
+      "tier": "must",
+      "substitutability": 0.2,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "shibuya_shop",
+      "tier": "optional",
+      "substitutability": 0.2,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "cafe",
+      "tier": "optional",
+      "substitutability": 0.7,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "sky",
+      "tier": "must",
+      "substitutability": 0.2,
+      "time_rigidity": "reserved"
+    },
+    {
+      "activity_id": "izakaya",
+      "tier": "must",
+      "substitutability": 0.6,
+      "time_rigidity": "reserved"
+    }
+  ],
+  "travel": [
+    {
+      "a": "hotel",
+      "b": "ramen",
+      "minutes": 35
+    },
+    {
+      "a": "hotel",
+      "b": "shibuya_shop",
+      "minutes": 30
+    },
+    {
+      "a": "hotel",
+      "b": "cafe",
+      "minutes": 30
+    },
+    {
+      "a": "hotel",
+      "b": "sky",
+      "minutes": 30
+    },
+    {
+      "a": "hotel",
+      "b": "izakaya",
+      "minutes": 30
+    },
+    {
+      "a": "ramen",
+      "b": "shibuya_shop",
+      "minutes": 20
+    },
+    {
+      "a": "ramen",
+      "b": "cafe",
+      "minutes": 20
+    },
+    {
+      "a": "ramen",
+      "b": "sky",
+      "minutes": 20
+    },
+    {
+      "a": "ramen",
+      "b": "izakaya",
+      "minutes": 20
+    },
+    {
+      "a": "shibuya_shop",
+      "b": "cafe",
+      "minutes": 5
+    },
+    {
+      "a": "shibuya_shop",
+      "b": "sky",
+      "minutes": 10
+    },
+    {
+      "a": "shibuya_shop",
+      "b": "izakaya",
+      "minutes": 10
+    },
+    {
+      "a": "cafe",
+      "b": "sky",
+      "minutes": 10
+    },
+    {
+      "a": "cafe",
+      "b": "izakaya",
+      "minutes": 10
+    },
+    {
+      "a": "sky",
+      "b": "izakaya",
+      "minutes": 5
+    }
+  ],
+  "event": {
+    "type": "FATIGUE",
+    "occurred_at": 820,
+    "location_id": "ramen"
+  },
+  "expected": {
+    "violations": 0,
+    "must_kept": [
+      "ramen",
+      "sky",
+      "izakaya"
+    ],
+    "shrunk": [
+      "shibuya_shop"
+    ],
+    "max_minutes": {
+      "shibuya_shop": 45
+    }
+  }
+}

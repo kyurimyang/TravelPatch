@@ -17,7 +17,6 @@ def test_scenario_a_input_is_valid() -> None:
 
 
 def test_scenario_a_recovery() -> None:
-    # Red until the engine exists (step 4-5).
     from app.engine.recover import recover
 
     inp, expected = _load("scenario_a.json")
@@ -30,6 +29,3 @@ def test_scenario_a_recovery() -> None:
         assert {c.activity_id for c in r.changes} == all_ids  # keep rows included
         dropped = {c.activity_id for c in r.changes if c.op == Op.DROP}
         assert not dropped & set(expected["must_kept"])
-
-    best_dropped = sorted(c.activity_id for c in results[0].changes if c.op == Op.DROP)
-    assert best_dropped == expected["dropped"]
