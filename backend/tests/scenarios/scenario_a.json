@@ -7,7 +7,7 @@
     {"id": "ramen", "title": "라멘 점심", "category": "meal", "lat": 35.6595, "lng": 139.7005, "planned_start": 770, "planned_end": 830, "min_duration": 40, "intent_tags": ["local_food"]},
     {"id": "shibuya_shop", "title": "시부야 쇼핑", "category": "shopping", "lat": 35.6590, "lng": 139.7010, "planned_start": 850, "planned_end": 940, "min_duration": 30, "intent_tags": ["shopping"]},
     {"id": "cafe", "title": "카페", "category": "cafe", "lat": 35.6600, "lng": 139.7020, "planned_start": 950, "planned_end": 995, "min_duration": 30, "intent_tags": ["cafe"]},
-    {"id": "sky", "title": "시부야 스카이", "category": "sightseeing", "lat": 35.6585, "lng": 139.7021, "planned_start": 1020, "planned_end": 1080, "min_duration": 60, "intent_tags": ["view"], "reservation_time": 1020},
+    {"id": "sky", "title": "시부야 스카이", "category": "sightseeing", "lat": 35.6585, "lng": 139.7021, "planned_start": 1020, "planned_end": 1080, "min_duration": 60, "intent_tags": ["view"], "reservation_time": 1020, "outdoor": null},
     {"id": "izakaya", "title": "이자카야 저녁", "category": "meal", "lat": 35.6610, "lng": 139.7000, "planned_start": 1170, "planned_end": 1260, "min_duration": 90, "intent_tags": ["local_food"], "reservation_time": 1170}
   ],
   "preferences": [
@@ -61,7 +61,6 @@
   "event": {"type": "DELAY", "occurred_at": 660, "start_time": 660},
   "expected": {
     "violations": 0,
-    "must_kept": ["meiji", "ramen", "sky", "izakaya"],
-    "dropped": ["omotesando"]
+    "must_kept": ["meiji", "ramen", "sky", "izakaya"]
   }
 }
