@@ -53,6 +53,31 @@ class Activity(_Frozen):
         return self
 
 
+class Substitute(_Frozen):
+    """A candidate place that can replace one activity (found upstream: LLM + Places check).
+
+    The engine never looks places up; it only chooses among the candidates it is given.
+    It keeps the replaced activity's tier and category, so it carries no tier of its own.
+    """
+
+    id: str  # a node of the travel table, like an activity id
+    replaces: str  # id of the activity it can stand in for
+    title: str
+    lat: float
+    lng: float
+    duration: int = Field(gt=0)
+    min_duration: int = Field(gt=0)
+    open_at: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
+    close_at: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
+    penalty: float = Field(default=0.0, ge=0.0)  # new-place penalty added to D_sub
+
+    @model_validator(mode="after")
+    def _check_durations(self) -> "Substitute":
+        if self.min_duration > self.duration:
+            raise ValueError("min_duration must not exceed duration")
+        return self
+
+
 class Preference(_Frozen):
     activity_id: str
     tier: Tier

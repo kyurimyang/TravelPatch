@@ -7,7 +7,7 @@ its own, so a mistake here cannot hide itself.
 
 from math import ceil
 
-from app.schemas.events import ExtendEvent, FatigueEvent, WeatherEvent
+from app.schemas.events import ClosureEvent, ExtendEvent, FatigueEvent, WeatherEvent
 from app.schemas.models import MINUTES_PER_DAY, _Frozen
 from app.schemas.recovery import RecoveryInput
 
@@ -19,6 +19,8 @@ class Constraints(_Frozen):
     extensions: tuple[tuple[str, int], ...] = ()
     # (activity id, longest allowed duration in minutes), from tiredness.
     duration_caps: tuple[tuple[str, int], ...] = ()
+    # Activities that cannot stay at their original place (closed).
+    closed: tuple[str, ...] = ()
 
     def extension(self, activity_id: str) -> int:
         return dict(self.extensions).get(activity_id, 0)
@@ -32,6 +34,8 @@ def build_constraints(inp: RecoveryInput) -> Constraints:
     if isinstance(ev, WeatherEvent):
         end = ev.end_time if ev.end_time is not None else MINUTES_PER_DAY
         return Constraints(rain=(ev.start_time, end))
+    if isinstance(ev, ClosureEvent):
+        return Constraints(closed=(ev.activity_id,))
     if isinstance(ev, ExtendEvent):
         return Constraints(extensions=((ev.activity_id, ev.extra_minutes),))
     if isinstance(ev, FatigueEvent):

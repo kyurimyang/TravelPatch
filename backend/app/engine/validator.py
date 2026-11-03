@@ -12,13 +12,14 @@ from pydantic import BaseModel
 
 from app.schemas.enums import Op, Tier
 from app.schemas.events import (
+    ClosureEvent,
     DelayEvent,
     ExtendEvent,
     FatigueEvent,
     MustVisitEvent,
     WeatherEvent,
 )
-from app.schemas.models import HOTEL_ID, MINUTES_PER_DAY
+from app.schemas.models import HOTEL_ID, MINUTES_PER_DAY, Substitute
 from app.schemas.recovery import RecoveryChange, RecoveryInput
 
 
@@ -55,6 +56,15 @@ def _travel_table(inp: RecoveryInput) -> dict[frozenset[str], int]:
     return {frozenset((t.a, t.b)): t.minutes for t in inp.travel}
 
 
+def _node(c: RecoveryChange) -> str:
+    # The place a change actually puts the user at: the substitute if there is one.
+    return c.substitute_id or c.activity_id
+
+
+def _subs(inp: RecoveryInput) -> dict[str, Substitute]:
+    return {s.id: s for s in inp.substitutes}
+
+
 def _placed(changes: tuple[RecoveryChange, ...]) -> list[RecoveryChange]:
     # Dropped activities have no "after". Sort by start, then id, so results are deterministic.
     return sorted(
@@ -85,10 +95,10 @@ def _check_past(inp: RecoveryInput, changes: tuple[RecoveryChange, ...]) -> list
     now = _now(inp)
     out: list[Violation] = []
     for c in sorted(changes, key=lambda c: c.activity_id):
-        if c.after is None:
-            continue
-        start_changed = c.before is None or c.after.start != c.before.start
-        if start_changed and c.after.start < now:
+        if c.after is None or c.activity_id == inp.event.location_id:
+            continue  # the activity the user is in has legitimately started before now
+        # Not "only if the start changed": an untouched activity before now was missed, not kept.
+        if c.after.start < now:
             out.append(
                 Violation(
                     kind="past",
@@ -107,10 +117,51 @@ def _check_must_kept(info: dict[str, _Info], changes: tuple[RecoveryChange, ...]
     ]
 
 
-def _check_each_activity(info: dict[str, _Info], placed: list[RecoveryChange]) -> list[Violation]:
+def _check_substitute(inp: RecoveryInput, changes: tuple[RecoveryChange, ...]) -> list[Violation]:
+    subs = _subs(inp)
+    out: list[Violation] = []
+    for c in sorted(changes, key=lambda c: c.activity_id):
+        if c.substitute_id is None:
+            continue
+        sub = subs.get(c.substitute_id)
+        if sub is None or sub.replaces != c.activity_id:
+            out.append(
+                Violation(
+                    kind="substitute",
+                    activity_id=c.activity_id,
+                    detail=f"{c.substitute_id} is not a candidate for {c.activity_id}",
+                )
+            )
+    return out
+
+
+def _check_closure(inp: RecoveryInput, changes: tuple[RecoveryChange, ...]) -> list[Violation]:
+    ev = inp.event
+    if not isinstance(ev, ClosureEvent):
+        return []
+    change = next(c for c in changes if c.activity_id == ev.activity_id)
+    if change.after is not None and change.substitute_id is None:
+        return [
+            Violation(
+                kind="closure",
+                activity_id=ev.activity_id,
+                detail=f"{ev.activity_id} is closed: replace or drop it",
+            )
+        ]
+    return []
+
+
+def _check_each_activity(
+    inp: RecoveryInput, info: dict[str, _Info], placed: list[RecoveryChange]
+) -> list[Violation]:
+    subs = _subs(inp)
     out: list[Violation] = []
     for c in placed:
         i = info[c.activity_id]
+        if c.substitute_id is not None:
+            # A new place has its own hours and length and no reservation; the tier stays.
+            s = subs[c.substitute_id]
+            i = _Info(s.open_at, s.close_at, s.min_duration, None, i.is_must)
         start, end = c.after.start, c.after.end
         if i.reservation_time is not None and start != i.reservation_time:
             out.append(
@@ -153,7 +204,7 @@ def _check_travel(
     travel = _travel_table(inp)
     out: list[Violation] = []
     for prev, nxt in pairwise(placed):
-        need = travel[frozenset((prev.activity_id, nxt.activity_id))] + min_buffer
+        need = travel[frozenset((_node(prev), _node(nxt)))] + min_buffer
         earliest = prev.after.end + need
         if nxt.after.start < earliest:
             out.append(
@@ -177,7 +228,8 @@ def _check_origin(inp: RecoveryInput, placed: list[RecoveryChange]) -> list[Viol
         return []
     first = ahead[0]
     here = inp.event.location_id
-    need = 0 if here == first.activity_id else _travel_table(inp)[frozenset((here, first.activity_id))]
+    node = _node(first)
+    need = 0 if here == node else _travel_table(inp)[frozenset((here, node))]
     if first.after.start >= now + need:
         return []
     return [
@@ -279,7 +331,7 @@ def _check_deadline(inp: RecoveryInput, placed: list[RecoveryChange]) -> list[Vi
     if not placed:
         return []
     last = max(placed, key=lambda c: (c.after.end, c.activity_id))
-    back = _travel_table(inp)[frozenset((last.activity_id, HOTEL_ID))]
+    back = _travel_table(inp)[frozenset((_node(last), HOTEL_ID))]
     arrival = last.after.end + back
     if arrival <= inp.day.end_deadline:
         return []
@@ -300,11 +352,15 @@ def validate(
     if coverage:
         # Without a complete change list the other checks cannot be trusted.
         return coverage
+    bad_substitute = _check_substitute(inp, changes)
+    if bad_substitute:
+        return bad_substitute  # the other checks look the candidate up and need it to be valid
     placed = _placed(changes)
     return [
         *_check_past(inp, changes),
         *_check_must_kept(info, changes),
-        *_check_each_activity(info, placed),
+        *_check_closure(inp, changes),
+        *_check_each_activity(inp, info, placed),
         *_check_event(inp, changes),
         *_check_weather(inp, placed),
         *_check_fatigue(inp, placed),

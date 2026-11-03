@@ -46,17 +46,18 @@ def compute_cost(
 
     d_shrink = 0.0
     for c in changes:
-        if c.before is not None and c.after is not None:
+        # A substitution is paid for by D_sub only; its stay at the new place is not a "shrink".
+        if c.before is not None and c.after is not None and c.op != Op.SUBSTITUTE:
             before_len = c.before.end - c.before.start
             after_len = c.after.end - c.after.start
             if after_len < before_len:
                 d_shrink += values[c.activity_id] * (before_len - after_len) / before_len
 
-    # New-place penalty is not modeled yet: substitute candidates carry no place data.
+    penalty = {s.id: s.penalty for s in inp.substitutes}
     d_sub = sum(
-        values[c.activity_id] * (1 - subst[c.activity_id])
+        values[c.activity_id] * (1 - subst[c.activity_id]) + penalty[c.substitute_id]
         for c in changes
-        if c.op == Op.SUBSTITUTE
+        if c.op == Op.SUBSTITUTE and c.substitute_id is not None
     )
 
     # Kendall tau distance: pairs of surviving activities whose relative order flipped.
@@ -78,7 +79,8 @@ def compute_cost(
         (c for c in changes if c.after is not None), key=lambda c: (c.after.start, c.activity_id)
     )
     original_travel = _route_minutes([a.id for a in originals], table)
-    new_travel = _route_minutes([c.activity_id for c in placed], table)
+    # The user goes to the substitute's place, not to the closed original.
+    new_travel = _route_minutes([c.substitute_id or c.activity_id for c in placed], table)
     d_move = (new_travel - original_travel) / 60
 
     original_tags = {t for a in inp.activities for t in a.intent_tags}

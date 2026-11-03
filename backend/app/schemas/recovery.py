@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import Field, model_validator
 
 from app.schemas.enums import Op, ReasonType
@@ -8,6 +10,7 @@ from app.schemas.models import (
     Activity,
     Day,
     Preference,
+    Substitute,
     TravelTime,
     _Frozen,
 )
@@ -30,6 +33,7 @@ class RecoveryChange(_Frozen):
     before: Slot | None = None
     after: Slot | None = None
     reason_type: ReasonType | None = None
+    substitute_id: str | None = None  # set exactly when op is SUBSTITUTE
     needs_check: bool = False  # unknown to us: tell the user to check on site
 
     @model_validator(mode="after")
@@ -44,7 +48,21 @@ class RecoveryChange(_Frozen):
             ok = self.before is not None and self.after is not None
         if not ok:
             raise ValueError(f"before/after do not match op={self.op}")
+        if (self.op == Op.SUBSTITUTE) != (self.substitute_id is not None):
+            raise ValueError("substitute_id is required for, and only for, op=substitute")
         return self
+
+
+class Blocker(_Frozen):
+    """A hard constraint that on its own rules out every plan (why recover() came back empty).
+
+    Only certain causes are reported; an empty list means "no single cause found".
+    """
+
+    kind: Literal["reserved_in_past", "reserved_in_rain", "extension_blocked"]
+    activity_id: str
+    blocking_time: int | None = None  # the time that cannot move (a reservation)
+    max_extra_minutes: int | None = None  # extension_blocked: the most that would still fit
 
 
 class RcBreakdown(_Frozen):
@@ -74,6 +92,7 @@ class RecoveryInput(_Frozen):
     preferences: tuple[Preference, ...]
     travel: tuple[TravelTime, ...]
     event: DisruptionEvent
+    substitutes: tuple[Substitute, ...] = ()
 
     @property
     def now(self) -> int:
@@ -94,11 +113,20 @@ class RecoveryInput(_Frozen):
         target = getattr(self.event, "activity_id", None)
         if target is not None and self.event.type != "MUST_VISIT" and target not in ids:
             raise ValueError(f"event references unknown activity: {target}")
+        self._check_substitutes(ids)
         self._check_travel_table(ids, target)
         return self
 
+    def _check_substitutes(self, ids: list[str]) -> None:
+        sub_ids = [s.id for s in self.substitutes]
+        if len(set(sub_ids)) != len(sub_ids) or set(sub_ids) & {HOTEL_ID, *ids}:
+            raise ValueError("substitute ids must be unique and differ from every other node")
+        unknown = {s.replaces for s in self.substitutes} - set(ids)
+        if unknown:
+            raise ValueError(f"substitute replaces unknown activity: {sorted(unknown)}")
+
     def _check_travel_table(self, ids: list[str], target: str | None) -> None:
-        nodes = {HOTEL_ID, *ids}
+        nodes = {HOTEL_ID, *ids, *(s.id for s in self.substitutes)}
         if self.event.type == "MUST_VISIT" and target is not None:
             nodes.add(target)
         if self.event.location_id not in nodes:

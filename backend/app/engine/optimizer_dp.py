@@ -12,15 +12,25 @@ from typing import NamedTuple
 from app.engine.constraint_builder import build_constraints
 from app.engine.presets import DEFAULT_WEIGHTS, Weights
 from app.schemas.enums import Op, Tier
-from app.schemas.models import HOTEL_ID, Activity
+from app.schemas.models import HOTEL_ID, Activity, Substitute
 from app.schemas.recovery import RecoveryChange, RecoveryInput, Slot
 
 STEP = 5  # minutes
 
 # state key: (last placed activity id or None, end time)
 _State = tuple[str | None, int]
-# decision: None = dropped, else (start, duration)
-_Decision = tuple[int, int] | None
+# decision: None = dropped, else (start, duration, node it is placed at)
+_Decision = tuple[int, int, str] | None
+
+
+class _Option(NamedTuple):
+    """One place an activity can go to: its original location or a substitute."""
+
+    node: str
+    open_at: int | None
+    close_at: int | None
+    durations: list[int]
+    substitute: Substitute | None
 
 
 class Solution(NamedTuple):
@@ -45,6 +55,10 @@ def _durations(a: Activity, extend: int) -> list[int]:
         d -= STEP
     out.append(a.min_duration)
     return out
+
+
+def _sub_durations(s: Substitute) -> list[int]:
+    return [*range(s.duration, s.min_duration, -STEP), s.min_duration]
 
 
 _Layer = dict[_State, tuple[float, tuple[_State, _Decision] | None]]
@@ -79,11 +93,15 @@ def solve_fixed_order(
     constraints = build_constraints(inp)
     acts = {a.id: a for a in inp.activities}
     prefs = {p.activity_id: p.tier for p in inp.preferences}
+    substitutability = {p.activity_id: p.substitutability for p in inp.preferences}
     table = {frozenset((t.a, t.b)): t.minutes for t in inp.travel}
 
     def travel(a: str, b: str) -> int:
         return 0 if a == b else table[frozenset((a, b))]
 
+    subs_of: dict[str, list[Substitute]] = {}
+    for sub in inp.substitutes:
+        subs_of.setdefault(sub.replaces, []).append(sub)
     deadline = inp.day.end_deadline
     layers: list[dict[_State, tuple[float, tuple[_State, _Decision] | None]]] = [
         {(None, inp.now): (0.0, None)}
@@ -96,6 +114,14 @@ def solve_fixed_order(
         planned_len = a.planned_end - a.planned_start
         extend = constraints.extension(a.id)
         in_progress = ev.location_id == a.id  # the user is there right now
+        options: list[_Option] = []
+        if a.id not in constraints.closed:
+            options.append(_Option(a.id, a.open_at, a.close_at, _durations(a, extend), None))
+        if not in_progress and extend == 0:
+            options += [
+                _Option(sub.id, sub.open_at, sub.close_at, _sub_durations(sub), sub)
+                for sub in subs_of.get(a.id, [])
+            ]
         nxt: _Layer = {}
 
         for state, (cost, _) in layers[-1].items():
@@ -107,46 +133,57 @@ def solve_fixed_order(
                 _relax(nxt, state, cost + drop_cost, (state, None))
 
             origin = inp.event.location_id if last is None else last
-            earliest = t + travel(origin, a.id) + (min_buffer if last is not None else 0)
-            if a.open_at is not None:
-                earliest = max(earliest, a.open_at)
+            for opt in options:
+                earliest = t + travel(origin, opt.node) + (min_buffer if last is not None else 0)
+                if opt.open_at is not None:
+                    earliest = max(earliest, opt.open_at)
 
-            if in_progress:
-                # Already started: the start cannot move.
-                starts = [a.planned_start] if last is None or a.planned_start >= earliest else []
-            elif a.reservation_time is not None:
-                starts = [a.reservation_time] if a.reservation_time >= earliest else []
-            else:
-                s0 = _round_up(earliest)
-                if dense_starts:
-                    starts = list(range(s0, deadline, STEP))
+                if in_progress:
+                    # Already started: the start cannot move.
+                    starts = [a.planned_start] if last is None or a.planned_start >= earliest else []
+                elif opt.substitute is None and a.reservation_time is not None:
+                    starts = [a.reservation_time] if a.reservation_time >= earliest else []
                 else:
-                    # A later start only adds D_time and delay, except between s0 and the
-                    # planned start: there, waiting trades D_time against how tight the
-                    # following activities become, so every step in between can be optimal.
-                    starts = [*range(s0, a.planned_start, STEP), max(s0, a.planned_start)]
+                    s0 = _round_up(earliest)
+                    if dense_starts:
+                        starts = list(range(s0, deadline, STEP))
+                    else:
+                        # A later start only adds D_time and delay, except between s0 and the
+                        # planned start: there, waiting trades D_time against how tight the
+                        # following activities become, so every step in between can be optimal.
+                        starts = [*range(s0, a.planned_start, STEP), max(s0, a.planned_start)]
 
-            for s in starts:
-                for d in _durations(a, extend):
-                    cap = constraints.duration_cap(a.id)
-                    if cap is not None and d > cap:
-                        continue  # too tiring
-                    end = s + d
-                    if end > deadline or (a.close_at is not None and end > a.close_at):
-                        continue
-                    if in_progress and end < inp.now:
-                        continue  # cannot have ended in the past
-                    if a.outdoor and constraints.rain is not None:
-                        rain_start, rain_end = constraints.rain
-                        if s < rain_end and end > rain_start:
-                            continue  # outdoors during rain
-                    step = (
-                        weights.w_shrink * value * max(0, planned_len - d) / planned_len
-                        + weights.w_time * abs(s - a.planned_start) / 60
-                        + (weights.w_move * travel(last, a.id) / 60 if last is not None else 0.0)
-                        + (weights.w_changed if (s, end) != (a.planned_start, a.planned_end) else 0.0)
-                    )
-                    _relax(nxt, (a.id, end), cost + step, (state, (s, d)))
+                # A substitution is paid by D_sub (not D_shrink) and always counts as a change.
+                sub_cost = (
+                    weights.w_sub * (value * (1 - substitutability[a.id]) + opt.substitute.penalty)
+                    if opt.substitute is not None
+                    else 0.0
+                )
+                for s in starts:
+                    for d in opt.durations:
+                        cap = constraints.duration_cap(a.id)
+                        if cap is not None and d > cap:
+                            continue  # too tiring
+                        end = s + d
+                        if end > deadline or (opt.close_at is not None and end > opt.close_at):
+                            continue
+                        if in_progress and end < inp.now:
+                            continue  # cannot have ended in the past
+                        if a.outdoor and constraints.rain is not None:
+                            rain_start, rain_end = constraints.rain
+                            if s < rain_end and end > rain_start:
+                                continue  # outdoors during rain
+                        if opt.substitute is not None:
+                            step = weights.w_changed + sub_cost
+                        else:
+                            step = (
+                                weights.w_shrink * value * max(0, planned_len - d) / planned_len
+                                + (weights.w_changed if (s, end) != (a.planned_start, a.planned_end) else 0.0)
+                            )
+                        step += weights.w_time * abs(s - a.planned_start) / 60 + (
+                            weights.w_move * travel(last, opt.node) / 60 if last is not None else 0.0
+                        )
+                        _relax(nxt, (opt.node, end), cost + step, (state, (s, d, opt.node)))
         layers.append(nxt)
 
     # Final: the last placed activity must still leave time to get back to the hotel.
@@ -175,7 +212,18 @@ def solve_fixed_order(
             changes.append(RecoveryChange(activity_id=act_id, op=Op.DROP, before=before))
         else:
             after = Slot(start=dec[0], end=dec[0] + dec[1])
-            changes.append(
-                RecoveryChange(activity_id=act_id, op=_op(before, after), before=before, after=after)
-            )
+            if dec[2] != act_id:
+                changes.append(
+                    RecoveryChange(
+                        activity_id=act_id,
+                        op=Op.SUBSTITUTE,
+                        before=before,
+                        after=after,
+                        substitute_id=dec[2],
+                    )
+                )
+            else:
+                changes.append(
+                    RecoveryChange(activity_id=act_id, op=_op(before, after), before=before, after=after)
+                )
     return Solution(tuple(changes), best_cost)
