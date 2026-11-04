@@ -87,8 +87,12 @@ def solve_fixed_order(
     weights: Weights = DEFAULT_WEIGHTS,
     min_buffer: int = 0,
     dense_starts: bool = False,
+    no_drop: frozenset[str] = frozenset(),
 ) -> Solution | None:
-    """`dense_starts` tries every 5-minute start (slow): used by tests to check the pruning."""
+    """`dense_starts` tries every 5-minute start (slow): used by tests to check the pruning.
+
+    `no_drop` lists activities that must survive (counterfactual "what if we keep X?").
+    """
     ev = inp.event
     constraints = build_constraints(inp)
     acts = {a.id: a for a in inp.activities}
@@ -126,7 +130,8 @@ def solve_fixed_order(
 
         for state, (cost, _) in layers[-1].items():
             last, t = state
-            if tier != Tier.MUST and extend == 0:  # asked-for extensions are never dropped
+            droppable = tier != Tier.MUST and extend == 0 and act_id not in no_drop
+            if droppable:  # asked-for extensions are never dropped
                 drop_cost = (
                     weights.w_drop * weights.drop_factor(a.category) * value + weights.w_changed
                 )

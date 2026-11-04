@@ -41,6 +41,33 @@ def _flag_unknown_walking(
     )
 
 
+def solve_candidate(
+    inp: RecoveryInput,
+    strategy: Strategy,
+    order: tuple[str, ...],
+    no_drop: frozenset[str] = frozenset(),
+) -> RecoveryResult | None:
+    """One candidate for one strategy, or None. The single path every plan takes to the user:
+    solve, then the independent validator (a violating plan is discarded, never returned)."""
+    solution = solve_fixed_order(inp, order, strategy.weights, strategy.min_buffer, no_drop=no_drop)
+    if solution is None or validate(inp, solution.changes, strategy.min_buffer):
+        return None
+    cost = compute_cost(inp, solution.changes, strategy.weights)
+    return RecoveryResult(
+        strategy=strategy.name,
+        changes=_flag_unknown_walking(inp, _flag_unknown_outdoor(inp, solution.changes)),
+        rc_total=cost.rc_total,
+        rc_breakdown=cost.breakdown,
+        preservation_rate=cost.preservation_rate,
+        violations=0,
+        solver_ms=0,
+    )
+
+
+def original_order(inp: RecoveryInput) -> tuple[str, ...]:
+    return tuple(a.id for a in sorted(inp.activities, key=lambda a: (a.planned_start, a.id)))
+
+
 def recover(
     inp: RecoveryInput, strategies: tuple[Strategy, ...] = STRATEGIES
 ) -> list[RecoveryResult]:
@@ -51,28 +78,13 @@ def recover(
     comparable across candidates; the preservation rate is. solver_ms is left 0: the engine
     never reads the clock, the service layer fills it in.
     """
-    order = tuple(a.id for a in sorted(inp.activities, key=lambda a: (a.planned_start, a.id)))
+    order = original_order(inp)
     results: list[RecoveryResult] = []
     seen: set[tuple] = set()
     for strategy in strategies:
-        solution = solve_fixed_order(inp, order, strategy.weights, strategy.min_buffer)
-        if solution is None:
+        result = solve_candidate(inp, strategy, order)
+        if result is None or result.changes in seen:
             continue
-        if validate(inp, solution.changes, strategy.min_buffer):
-            continue  # a violating candidate is discarded, never returned
-        if solution.changes in seen:
-            continue
-        seen.add(solution.changes)
-        cost = compute_cost(inp, solution.changes, strategy.weights)
-        results.append(
-            RecoveryResult(
-                strategy=strategy.name,
-                changes=_flag_unknown_walking(inp, _flag_unknown_outdoor(inp, solution.changes)),
-                rc_total=cost.rc_total,
-                rc_breakdown=cost.breakdown,
-                preservation_rate=cost.preservation_rate,
-                violations=0,
-                solver_ms=0,
-            )
-        )
+        seen.add(result.changes)
+        results.append(result)
     return results
