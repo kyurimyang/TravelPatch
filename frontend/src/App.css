@@ -1,0 +1,9 @@
+/* Mobile first: one column, 16px gutters. */
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
