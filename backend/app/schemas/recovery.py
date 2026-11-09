@@ -86,6 +86,13 @@ class RecoveryResult(_Frozen):
     solver_ms: int = Field(ge=0)
 
 
+class RecoveryResponse(_Frozen):
+    """What the API returns: the candidates, or, when none exists, the blockers explaining why."""
+
+    candidates: tuple[RecoveryResult, ...]
+    blockers: tuple[Blocker, ...] = ()
+
+
 class RecoveryInput(_Frozen):
     day: Day
     activities: tuple[Activity, ...]

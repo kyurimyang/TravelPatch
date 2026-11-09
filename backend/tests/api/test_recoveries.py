@@ -1,0 +1,53 @@
+import json
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from app.main import app
+from tests.engine.helpers import load_scenario_a
+
+client = TestClient(app)
+SCENARIOS = Path(__file__).parents[1] / "scenarios"
+
+
+def _body(name: str) -> dict:
+    raw = json.loads((SCENARIOS / name).read_text(encoding="utf-8"))
+    raw.pop("expected", None)
+    return raw
+
+
+def test_returns_valid_candidates_with_the_solver_time_filled_in() -> None:
+    res = client.post("/recoveries", json=load_scenario_a().model_dump(mode="json"))
+    assert res.status_code == 200
+    body = res.json()
+    assert len(body["candidates"]) >= 1
+    assert body["blockers"] == []
+    for c in body["candidates"]:
+        assert c["violations"] == 0
+        assert c["solver_ms"] > 0  # the engine leaves 0; the service layer measures it
+
+
+def test_same_input_gives_the_same_candidates() -> None:
+    body = load_scenario_a().model_dump(mode="json")
+    first = client.post("/recoveries", json=body).json()["candidates"]
+    second = client.post("/recoveries", json=body).json()["candidates"]
+
+    def strip_time(cs: list[dict]) -> list[dict]:
+        return [{k: v for k, v in c.items() if k != "solver_ms"} for c in cs]
+
+    assert strip_time(first) == strip_time(second)
+
+
+def test_no_valid_plan_comes_back_with_the_reason() -> None:
+    # a0 is a reserved must at 9:55; a delay until 10:25 makes that impossible.
+    res = client.post("/recoveries", json=_body("eval50/i02_delay.json"))
+    assert res.status_code == 200
+    body = res.json()
+    assert body["candidates"] == []
+    assert [(b["kind"], b["activity_id"]) for b in body["blockers"]] == [("reserved_in_past", "a0")]
+
+
+def test_malformed_input_is_rejected() -> None:
+    bad = _body("scenario_a.json")
+    bad["preferences"] = bad["preferences"][:-1]  # an activity without a preference
+    assert client.post("/recoveries", json=bad).status_code == 422
