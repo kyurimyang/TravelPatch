@@ -1,88 +1,32 @@
-from app.engine.constraint_builder import build_constraints
-from app.engine.cost import compute_cost
-from app.engine.optimizer_dp import solve_fixed_order
+from app.engine.candidate import original_order, solve_candidate
+from app.engine.local_search import improve_order
 from app.engine.presets import STRATEGIES, Strategy
-from app.engine.validator import validate
-from app.schemas.events import FatigueEvent
-from app.schemas.recovery import RecoveryChange, RecoveryInput, RecoveryResult
+from app.schemas.recovery import RecoveryInput, RecoveryResult
 
-
-def _flag_unknown_outdoor(
-    inp: RecoveryInput, changes: tuple[RecoveryChange, ...]
-) -> tuple[RecoveryChange, ...]:
-    """In rain, activities whose outdoor status is unknown are kept but marked needs_check."""
-    rain = build_constraints(inp).rain
-    if rain is None:
-        return changes
-    unknown = {a.id for a in inp.activities if a.outdoor is None}
-    return tuple(
-        c.model_copy(update={"needs_check": True})
-        if c.activity_id in unknown
-        and c.after is not None
-        and c.after.start < rain[1]
-        and c.after.end > rain[0]
-        else c
-        for c in changes
-    )
-
-
-def _flag_unknown_walking(
-    inp: RecoveryInput, changes: tuple[RecoveryChange, ...]
-) -> tuple[RecoveryChange, ...]:
-    """When tired, activities whose walking load is unknown are kept but marked needs_check."""
-    if not isinstance(inp.event, FatigueEvent):
-        return changes
-    unknown = {a.id for a in inp.activities if a.walking is None}
-    return tuple(
-        c.model_copy(update={"needs_check": True})
-        if c.activity_id in unknown and c.after is not None and c.activity_id != inp.event.location_id
-        else c
-        for c in changes
-    )
-
-
-def solve_candidate(
-    inp: RecoveryInput,
-    strategy: Strategy,
-    order: tuple[str, ...],
-    no_drop: frozenset[str] = frozenset(),
-) -> RecoveryResult | None:
-    """One candidate for one strategy, or None. The single path every plan takes to the user:
-    solve, then the independent validator (a violating plan is discarded, never returned)."""
-    solution = solve_fixed_order(inp, order, strategy.weights, strategy.min_buffer, no_drop=no_drop)
-    if solution is None or validate(inp, solution.changes, strategy.min_buffer):
-        return None
-    cost = compute_cost(inp, solution.changes, strategy.weights)
-    return RecoveryResult(
-        strategy=strategy.name,
-        changes=_flag_unknown_walking(inp, _flag_unknown_outdoor(inp, solution.changes)),
-        rc_total=cost.rc_total,
-        rc_breakdown=cost.breakdown,
-        preservation_rate=cost.preservation_rate,
-        violations=0,
-        solver_ms=0,
-    )
-
-
-def original_order(inp: RecoveryInput) -> tuple[str, ...]:
-    return tuple(a.id for a in sorted(inp.activities, key=lambda a: (a.planned_start, a.id)))
+__all__ = ["original_order", "recover", "solve_candidate"]  # re-exported for callers
 
 
 def recover(
-    inp: RecoveryInput, strategies: tuple[Strategy, ...] = STRATEGIES
+    inp: RecoveryInput,
+    strategies: tuple[Strategy, ...] = STRATEGIES,
+    max_tries: int = 2,
 ) -> list[RecoveryResult]:
     """Distinct candidates that passed the independent validator, one per strategy at most.
 
     Empty list = no valid plan. A strategy that yields the same plan as an earlier one adds
     nothing and is skipped. rc_total uses each strategy's own weights, so it is not
     comparable across candidates; the preservation rate is. solver_ms is left 0: the engine
-    never reads the clock, the service layer fills it in.
+    never reads the clock, the service layer fills it in. `max_tries` caps the order-swap
+    attempts per strategy (0 = keep the original order); a count, not a time, so it stays
+    deterministic.
     """
     order = original_order(inp)
     results: list[RecoveryResult] = []
     seen: set[tuple] = set()
     for strategy in strategies:
         result = solve_candidate(inp, strategy, order)
+        if result is not None:
+            result = improve_order(inp, strategy, result, max_tries)
         if result is None or result.changes in seen:
             continue
         seen.add(result.changes)
