@@ -3,8 +3,8 @@
 | method | scenarios | no solution | violation rate | violation-free | preservation (violation-free) | RC (violation-free) | ms (all) |
 |---|---|---|---|---|---|---|---|
 | right_shift | 50 | 0 | 60% | 20 | 93.9% | 1.468 | 0.2 |
-| greedy | 50 | 0 | 60% | 20 | 93.9% | 1.468 | 0.1 |
-| engine | 50 | 5 | 0% | 45 | 90.2% | 1.673 | 87.3 |
+| greedy | 50 | 0 | 60% | 20 | 93.9% | 1.468 | 0.2 |
+| engine | 50 | 5 | 0% | 45 | 90.3% | 1.646 | 299.4 |
 
 ### Violation rate by event (no solution counted separately)
 
@@ -20,4 +20,4 @@
 |---|---|---|---|
 | right_shift | 93.9% | 1.468 | 0.60 |
 | greedy | 93.9% | 1.468 | 0.60 |
-| engine | 93.7% | 1.399 | 0.60 |
+| engine | 94.0% | 1.338 | 0.55 |
