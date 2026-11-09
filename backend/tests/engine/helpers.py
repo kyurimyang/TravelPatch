@@ -100,3 +100,22 @@ def plan_c(
                     )
                 )
     return tuple(out)
+
+
+def scenario_a_with_unsupported_event(kind: str) -> RecoveryInput:
+    """Scenario A with an event the engine cannot handle yet (kind: RESERVATION_CHANGE or MUST_VISIT)."""
+    from app.services.travel_estimate import fill_missing_travel
+
+    base = load_scenario_a()
+    data = base.model_dump(mode="json")
+    if kind == "RESERVATION_CHANGE":
+        data["event"] = {"type": kind, "occurred_at": 540, "activity_id": "sky", "new_time": 1050}
+    else:
+        points = {"hotel": (base.day.end_lat, base.day.end_lng), "new1": (35.66, 139.70)}
+        points.update({a.id: (a.lat, a.lng) for a in base.activities})
+        data["travel"] = [t.model_dump() for t in fill_missing_travel(points, base.travel)]
+        data["event"] = {
+            "type": kind, "occurred_at": 540, "activity_id": "new1", "title": "new place",
+            "category": "sightseeing", "lat": 35.66, "lng": 139.70, "duration": 60, "min_duration": 30,
+        }
+    return RecoveryInput.model_validate(data)

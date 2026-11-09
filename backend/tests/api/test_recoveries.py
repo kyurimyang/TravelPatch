@@ -1,10 +1,11 @@
 import json
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from tests.engine.helpers import load_scenario_a
+from tests.engine.helpers import load_scenario_a, scenario_a_with_unsupported_event
 
 client = TestClient(app)
 SCENARIOS = Path(__file__).parents[1] / "scenarios"
@@ -51,3 +52,11 @@ def test_malformed_input_is_rejected() -> None:
     bad = _body("scenario_a.json")
     bad["preferences"] = bad["preferences"][:-1]  # an activity without a preference
     assert client.post("/recoveries", json=bad).status_code == 422
+
+
+@pytest.mark.parametrize("kind", ["RESERVATION_CHANGE", "MUST_VISIT"])
+def test_an_unsupported_event_is_answered_with_501(kind: str) -> None:
+    body = scenario_a_with_unsupported_event(kind).model_dump(mode="json")
+    res = client.post("/recoveries", json=body)
+    assert res.status_code == 501
+    assert kind in res.json()["detail"]

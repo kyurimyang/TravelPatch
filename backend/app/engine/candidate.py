@@ -3,8 +3,19 @@ from app.engine.cost import compute_cost
 from app.engine.optimizer_dp import solve_fixed_order
 from app.engine.presets import Strategy
 from app.engine.validator import validate
+from app.schemas.enums import EventType
 from app.schemas.events import FatigueEvent
 from app.schemas.recovery import RecoveryChange, RecoveryInput, RecoveryResult
+
+# Events the solver and validator actually handle. RESERVATION_CHANGE and MUST_VISIT exist
+# in the schema but are not implemented: they must be refused, not silently ignored.
+SUPPORTED_EVENTS = frozenset(
+    {EventType.DELAY, EventType.WEATHER, EventType.CLOSURE, EventType.FATIGUE, EventType.EXTEND}
+)
+
+
+class UnsupportedEventError(ValueError):
+    """The event type has no solver support yet (CLAUDE.md rule 8: never guess)."""
 
 
 def _flag_unknown_outdoor(
@@ -49,7 +60,9 @@ def solve_candidate(
 ) -> RecoveryResult | None:
     """One candidate for one strategy, or None. The single path every plan takes to the user:
     solve, then the independent validator (a violating plan is discarded, never returned)."""
-    solution = solve_fixed_order(inp, order, strategy.weights, strategy.min_buffer, no_drop=no_drop)
+    if inp.event.type not in SUPPORTED_EVENTS:
+        raise UnsupportedEventError(f"event type not supported yet: {inp.event.type}")
+    solution =solve_fixed_order(inp, order, strategy.weights, strategy.min_buffer, no_drop=no_drop)
     if solution is None or validate(inp, solution.changes, strategy.min_buffer):
         return None
     # Changes always come out in the original order, whatever order the solver walked.
