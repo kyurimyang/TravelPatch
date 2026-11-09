@@ -1,0 +1,323 @@
+{
+  "event": {
+    "type": "DELAY",
+    "occurred_at": 660,
+    "start_time": 660
+  },
+  "activities": [
+    {
+      "id": "meiji",
+      "title": "메이지 신궁",
+      "category": "sightseeing"
+    },
+    {
+      "id": "harajuku",
+      "title": "하라주쿠 다케시타 거리",
+      "category": "sightseeing"
+    },
+    {
+      "id": "omotesando",
+      "title": "오모테산도 산책",
+      "category": "sightseeing"
+    },
+    {
+      "id": "ramen",
+      "title": "라멘 점심",
+      "category": "meal"
+    },
+    {
+      "id": "shibuya_shop",
+      "title": "시부야 쇼핑",
+      "category": "shopping"
+    },
+    {
+      "id": "cafe",
+      "title": "카페",
+      "category": "cafe"
+    },
+    {
+      "id": "sky",
+      "title": "시부야 스카이",
+      "category": "sightseeing"
+    },
+    {
+      "id": "izakaya",
+      "title": "이자카야 저녁",
+      "category": "meal"
+    }
+  ],
+  "results": [
+    {
+      "strategy": "balanced",
+      "changes": [
+        {
+          "activity_id": "meiji",
+          "op": "move",
+          "before": {
+            "start": 560,
+            "end": 620
+          },
+          "after": {
+            "start": 680,
+            "end": 740
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "harajuku",
+          "op": "move",
+          "before": {
+            "start": 630,
+            "end": 690
+          },
+          "after": {
+            "start": 745,
+            "end": 805
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "omotesando",
+          "op": "shrink",
+          "before": {
+            "start": 700,
+            "end": 760
+          },
+          "after": {
+            "start": 815,
+            "end": 840
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "ramen",
+          "op": "move",
+          "before": {
+            "start": 770,
+            "end": 830
+          },
+          "after": {
+            "start": 850,
+            "end": 910
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "shibuya_shop",
+          "op": "shrink",
+          "before": {
+            "start": 850,
+            "end": 940
+          },
+          "after": {
+            "start": 930,
+            "end": 960
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "cafe",
+          "op": "move",
+          "before": {
+            "start": 950,
+            "end": 995
+          },
+          "after": {
+            "start": 965,
+            "end": 1010
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "sky",
+          "op": "keep",
+          "before": {
+            "start": 1020,
+            "end": 1080
+          },
+          "after": {
+            "start": 1020,
+            "end": 1080
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "izakaya",
+          "op": "keep",
+          "before": {
+            "start": 1170,
+            "end": 1260
+          },
+          "after": {
+            "start": 1170,
+            "end": 1260
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        }
+      ],
+      "rc_total": 2.3875,
+      "rc_breakdown": {
+        "d_drop": 0.0,
+        "d_shrink": 1.25,
+        "d_sub": 0.0,
+        "d_order": 0.0,
+        "d_time": 8.75,
+        "d_move": 0.0,
+        "d_intent": 0.0,
+        "d_changed": 6.0
+      },
+      "preservation_rate": 0.9519230769230769,
+      "violations": 0,
+      "solver_ms": 0
+    },
+    {
+      "strategy": "relaxed",
+      "changes": [
+        {
+          "activity_id": "meiji",
+          "op": "move",
+          "before": {
+            "start": 560,
+            "end": 620
+          },
+          "after": {
+            "start": 680,
+            "end": 740
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "harajuku",
+          "op": "move",
+          "before": {
+            "start": 630,
+            "end": 690
+          },
+          "after": {
+            "start": 765,
+            "end": 825
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "omotesando",
+          "op": "drop",
+          "before": {
+            "start": 700,
+            "end": 760
+          },
+          "after": null,
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "ramen",
+          "op": "move",
+          "before": {
+            "start": 770,
+            "end": 830
+          },
+          "after": {
+            "start": 860,
+            "end": 920
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "shibuya_shop",
+          "op": "drop",
+          "before": {
+            "start": 850,
+            "end": 940
+          },
+          "after": null,
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "cafe",
+          "op": "shrink",
+          "before": {
+            "start": 950,
+            "end": 995
+          },
+          "after": {
+            "start": 960,
+            "end": 990
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "sky",
+          "op": "keep",
+          "before": {
+            "start": 1020,
+            "end": 1080
+          },
+          "after": {
+            "start": 1020,
+            "end": 1080
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        },
+        {
+          "activity_id": "izakaya",
+          "op": "keep",
+          "before": {
+            "start": 1170,
+            "end": 1260
+          },
+          "after": {
+            "start": 1170,
+            "end": 1260
+          },
+          "reason_type": null,
+          "substitute_id": null,
+          "needs_check": false
+        }
+      ],
+      "rc_total": 4.0625,
+      "rc_breakdown": {
+        "d_drop": 2.0,
+        "d_shrink": 0.3333333333333333,
+        "d_sub": 0.0,
+        "d_order": 0.0,
+        "d_time": 5.916666666666667,
+        "d_move": -0.16666666666666666,
+        "d_intent": 1.0,
+        "d_changed": 6.0
+      },
+      "preservation_rate": 0.9102564102564102,
+      "violations": 0,
+      "solver_ms": 0
+    }
+  ]
+}

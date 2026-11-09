@@ -1,0 +1,88 @@
+/* Per-op colors come from tokens.css. Only changed rows get the stitched patch border. */
+.diff-row {
+  --row-bg: var(--op-keep-bg);
+  --row-fg: var(--op-keep-fg);
+  --row-edge: var(--op-keep-edge);
+
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.diff-row[data-op='move'] {
+  --row-bg: var(--op-move-bg);
+  --row-fg: var(--op-move-fg);
+  --row-edge: var(--op-move-edge);
+}
+.diff-row[data-op='shrink'] {
+  --row-bg: var(--op-shrink-bg);
+  --row-fg: var(--op-shrink-fg);
+  --row-edge: var(--op-shrink-edge);
+}
+.diff-row[data-op='drop'] {
+  --row-bg: var(--op-drop-bg);
+  --row-fg: var(--op-drop-fg);
+  --row-edge: var(--op-drop-edge);
+}
+.diff-row[data-op='substitute'] {
+  --row-bg: var(--op-substitute-bg);
+  --row-fg: var(--op-substitute-fg);
+  --row-edge: var(--op-substitute-edge);
+}
+.diff-row[data-op='extend'] {
+  --row-bg: var(--op-extend-bg);
+  --row-fg: var(--op-extend-fg);
+  --row-edge: var(--op-extend-edge);
+}
+.diff-row[data-op='add'] {
+  --row-bg: var(--op-add-bg);
+  --row-fg: var(--op-add-fg);
+  --row-edge: var(--op-add-edge);
+}
+
+/* patch look: changed rows only, keep stays flat */
+.diff-row:not([data-op='keep']) {
+  background: var(--row-bg);
+  border: var(--patch-stitch-width) var(--patch-stitch-style) var(--row-edge);
+}
+
+.diff-row__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.diff-row__title {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.diff-row__chip {
+  flex: none;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--row-fg);
+  background: var(--color-surface);
+  border: 1px solid var(--row-edge);
+}
+
+.diff-row__time {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.diff-row__check {
+  align-self: flex-start;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--op-shrink-fg);
+}

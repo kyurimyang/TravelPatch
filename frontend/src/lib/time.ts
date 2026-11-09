@@ -1,0 +1,10 @@
+// Minutes since midnight -> "HH:MM".
+export function formatTime(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+export function formatSlot(start: number, end: number): string {
+  return `${formatTime(start)}–${formatTime(end)}`
+}

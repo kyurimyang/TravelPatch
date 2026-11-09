@@ -1,0 +1,18 @@
+.summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.summary-bar strong {
+  color: var(--color-text);
+}
+
+/* thin dot between items; decoration only, the text carries the meaning */
+.summary-bar > * + *::before {
+  content: '·';
+  margin-right: var(--space-3);
+}
