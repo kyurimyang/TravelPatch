@@ -27,12 +27,23 @@ class Slot(_Frozen):
         return self
 
 
+class ReasonData(_Frozen):
+    """The solver's own numbers behind a change. Sentences are filled from these and never
+    invented (CLAUDE.md rule 5). Which fields are set depends on the reason type."""
+
+    forced_by: tuple[str, ...] = ()  # binding: validator kinds that rule out the original slot
+    value: int | None = None  # value: the activity's tier weight
+    minutes_saved: int | None = None  # value: minutes the cut frees for the rest of the day
+    value_lost: float | None = None  # value: weight x share of the activity that is lost
+
+
 class RecoveryChange(_Frozen):
     activity_id: str
     op: Op
     before: Slot | None = None
     after: Slot | None = None
-    reason_type: ReasonType | None = None
+    reason_type: ReasonType | None = None  # None = kept, or no reason could be established
+    reason_data: ReasonData | None = None
     substitute_id: str | None = None  # set exactly when op is SUBSTITUTE
     needs_check: bool = False  # unknown to us: tell the user to check on site
 

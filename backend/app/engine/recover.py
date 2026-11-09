@@ -1,6 +1,7 @@
 from app.engine.candidate import original_order, solve_candidate
 from app.engine.local_search import improve_order
 from app.engine.presets import STRATEGIES, Strategy
+from app.engine.reasons import explain_changes
 from app.schemas.recovery import RecoveryInput, RecoveryResult
 
 __all__ = ["original_order", "recover", "solve_candidate"]  # re-exported for callers
@@ -30,5 +31,7 @@ def recover(
         if result is None or result.changes in seen:
             continue
         seen.add(result.changes)
-        results.append(result)
+        # Reasons only on the final candidates: the search above compares many plans.
+        explained = explain_changes(inp, result.changes, strategy.min_buffer)
+        results.append(result.model_copy(update={"changes": explained}))
     return results

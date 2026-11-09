@@ -7,6 +7,7 @@ result (reason_data), never from a language model.
 """
 
 from app.engine.presets import STRATEGIES, Strategy
+from app.engine.reasons import explain_changes
 from app.engine.recover import original_order, solve_candidate
 from app.schemas.enums import Op
 from app.schemas.models import _Frozen
@@ -46,11 +47,14 @@ def restore(
     result = solve_candidate(inp, strategy, original_order(inp), frozenset({activity_id}))
     if result is None:
         return None
+    result = result.model_copy(
+        update={"changes": explain_changes(inp, result.changes, strategy.min_buffer)}
+    )
     new = {c.activity_id: c for c in result.changes}
     effects = tuple(
         SideEffect(activity_id=i, before=old[i], after=new[i])
         for i in sorted(old)
-        if i != activity_id and old[i] != new[i]
+        if i != activity_id and _differs(old[i], new[i])
     )
     return Counterfactual(
         restored_id=activity_id,
@@ -59,3 +63,8 @@ def restore(
         d_rc=result.rc_total - base.rc_total,
         side_effects=effects,
     )
+
+
+def _differs(a: RecoveryChange, b: RecoveryChange) -> bool:
+    # What the plan does with the activity. The reason text may differ without the plan differing.
+    return (a.op, a.before, a.after, a.substitute_id) != (b.op, b.before, b.after, b.substitute_id)
