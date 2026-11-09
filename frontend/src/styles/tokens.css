@@ -55,7 +55,7 @@
   --space-6: 24px;
 
   /* type */
-  --font-sans: system-ui, -apple-system, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  --font-sans: 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Segoe UI', 'Noto Sans KR', sans-serif;
   --text-sm: 13px;
   --text-md: 15px;
   --text-lg: 18px;
