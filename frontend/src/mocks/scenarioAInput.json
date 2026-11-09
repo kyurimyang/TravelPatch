@@ -1,0 +1,358 @@
+{
+  "day": {
+    "id": "tokyo-day",
+    "start_time": 540,
+    "end_deadline": 1320,
+    "end_lat": 35.6896,
+    "end_lng": 139.7006
+  },
+  "activities": [
+    {
+      "id": "meiji",
+      "title": "메이지 신궁",
+      "category": "sightseeing",
+      "lat": 35.6764,
+      "lng": 139.6993,
+      "planned_start": 560,
+      "planned_end": 620,
+      "min_duration": 40,
+      "intent_tags": [
+        "culture"
+      ],
+      "outdoor": true
+    },
+    {
+      "id": "harajuku",
+      "title": "하라주쿠 다케시타 거리",
+      "category": "sightseeing",
+      "lat": 35.6716,
+      "lng": 139.7058,
+      "planned_start": 630,
+      "planned_end": 690,
+      "min_duration": 30,
+      "intent_tags": [
+        "street"
+      ],
+      "outdoor": true
+    },
+    {
+      "id": "omotesando",
+      "title": "오모테산도 산책",
+      "category": "sightseeing",
+      "lat": 35.6654,
+      "lng": 139.7121,
+      "planned_start": 700,
+      "planned_end": 760,
+      "min_duration": 20,
+      "intent_tags": [
+        "street"
+      ],
+      "outdoor": true
+    },
+    {
+      "id": "ramen",
+      "title": "라멘 점심",
+      "category": "meal",
+      "lat": 35.6595,
+      "lng": 139.7005,
+      "planned_start": 770,
+      "planned_end": 830,
+      "min_duration": 40,
+      "intent_tags": [
+        "local_food"
+      ]
+    },
+    {
+      "id": "shibuya_shop",
+      "title": "시부야 쇼핑",
+      "category": "shopping",
+      "lat": 35.659,
+      "lng": 139.701,
+      "planned_start": 850,
+      "planned_end": 940,
+      "min_duration": 30,
+      "intent_tags": [
+        "shopping"
+      ]
+    },
+    {
+      "id": "cafe",
+      "title": "카페",
+      "category": "cafe",
+      "lat": 35.66,
+      "lng": 139.702,
+      "planned_start": 950,
+      "planned_end": 995,
+      "min_duration": 30,
+      "intent_tags": [
+        "cafe"
+      ]
+    },
+    {
+      "id": "sky",
+      "title": "시부야 스카이",
+      "category": "sightseeing",
+      "lat": 35.6585,
+      "lng": 139.7021,
+      "planned_start": 1020,
+      "planned_end": 1080,
+      "min_duration": 60,
+      "intent_tags": [
+        "view"
+      ],
+      "reservation_time": 1020,
+      "outdoor": null
+    },
+    {
+      "id": "izakaya",
+      "title": "이자카야 저녁",
+      "category": "meal",
+      "lat": 35.661,
+      "lng": 139.7,
+      "planned_start": 1170,
+      "planned_end": 1260,
+      "min_duration": 90,
+      "intent_tags": [
+        "local_food"
+      ],
+      "reservation_time": 1170
+    }
+  ],
+  "preferences": [
+    {
+      "activity_id": "meiji",
+      "tier": "must",
+      "substitutability": 0.2,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "harajuku",
+      "tier": "nice",
+      "substitutability": 0.2,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "omotesando",
+      "tier": "optional",
+      "substitutability": 0.2,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "ramen",
+      "tier": "must",
+      "substitutability": 0.2,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "shibuya_shop",
+      "tier": "optional",
+      "substitutability": 0.2,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "cafe",
+      "tier": "optional",
+      "substitutability": 0.7,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "sky",
+      "tier": "must",
+      "substitutability": 0.2,
+      "time_rigidity": "reserved"
+    },
+    {
+      "activity_id": "izakaya",
+      "tier": "must",
+      "substitutability": 0.6,
+      "time_rigidity": "reserved"
+    }
+  ],
+  "travel": [
+    {
+      "a": "hotel",
+      "b": "meiji",
+      "minutes": 20
+    },
+    {
+      "a": "hotel",
+      "b": "harajuku",
+      "minutes": 25
+    },
+    {
+      "a": "hotel",
+      "b": "omotesando",
+      "minutes": 30
+    },
+    {
+      "a": "hotel",
+      "b": "ramen",
+      "minutes": 35
+    },
+    {
+      "a": "hotel",
+      "b": "shibuya_shop",
+      "minutes": 30
+    },
+    {
+      "a": "hotel",
+      "b": "cafe",
+      "minutes": 30
+    },
+    {
+      "a": "hotel",
+      "b": "sky",
+      "minutes": 30
+    },
+    {
+      "a": "hotel",
+      "b": "izakaya",
+      "minutes": 30
+    },
+    {
+      "a": "meiji",
+      "b": "harajuku",
+      "minutes": 5
+    },
+    {
+      "a": "meiji",
+      "b": "omotesando",
+      "minutes": 15
+    },
+    {
+      "a": "meiji",
+      "b": "ramen",
+      "minutes": 20
+    },
+    {
+      "a": "meiji",
+      "b": "shibuya_shop",
+      "minutes": 25
+    },
+    {
+      "a": "meiji",
+      "b": "cafe",
+      "minutes": 25
+    },
+    {
+      "a": "meiji",
+      "b": "sky",
+      "minutes": 25
+    },
+    {
+      "a": "meiji",
+      "b": "izakaya",
+      "minutes": 25
+    },
+    {
+      "a": "harajuku",
+      "b": "omotesando",
+      "minutes": 10
+    },
+    {
+      "a": "harajuku",
+      "b": "ramen",
+      "minutes": 15
+    },
+    {
+      "a": "harajuku",
+      "b": "shibuya_shop",
+      "minutes": 15
+    },
+    {
+      "a": "harajuku",
+      "b": "cafe",
+      "minutes": 15
+    },
+    {
+      "a": "harajuku",
+      "b": "sky",
+      "minutes": 15
+    },
+    {
+      "a": "harajuku",
+      "b": "izakaya",
+      "minutes": 15
+    },
+    {
+      "a": "omotesando",
+      "b": "ramen",
+      "minutes": 10
+    },
+    {
+      "a": "omotesando",
+      "b": "shibuya_shop",
+      "minutes": 15
+    },
+    {
+      "a": "omotesando",
+      "b": "cafe",
+      "minutes": 15
+    },
+    {
+      "a": "omotesando",
+      "b": "sky",
+      "minutes": 15
+    },
+    {
+      "a": "omotesando",
+      "b": "izakaya",
+      "minutes": 15
+    },
+    {
+      "a": "ramen",
+      "b": "shibuya_shop",
+      "minutes": 20
+    },
+    {
+      "a": "ramen",
+      "b": "cafe",
+      "minutes": 20
+    },
+    {
+      "a": "ramen",
+      "b": "sky",
+      "minutes": 20
+    },
+    {
+      "a": "ramen",
+      "b": "izakaya",
+      "minutes": 20
+    },
+    {
+      "a": "shibuya_shop",
+      "b": "cafe",
+      "minutes": 5
+    },
+    {
+      "a": "shibuya_shop",
+      "b": "sky",
+      "minutes": 10
+    },
+    {
+      "a": "shibuya_shop",
+      "b": "izakaya",
+      "minutes": 10
+    },
+    {
+      "a": "cafe",
+      "b": "sky",
+      "minutes": 10
+    },
+    {
+      "a": "cafe",
+      "b": "izakaya",
+      "minutes": 10
+    },
+    {
+      "a": "sky",
+      "b": "izakaya",
+      "minutes": 5
+    }
+  ],
+  "event": {
+    "type": "DELAY",
+    "occurred_at": 660,
+    "start_time": 660
+  }
+}
