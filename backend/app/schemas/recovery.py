@@ -160,3 +160,32 @@ class RecoveryInput(_Frozen):
         expected = len(nodes) * (len(nodes) - 1) // 2
         if len(seen) != expected:
             raise ValueError(f"travel table incomplete: {len(seen)} of {expected} pairs")
+
+
+class SideEffect(_Frozen):
+    """Another activity whose change differs once X is kept."""
+
+    activity_id: str
+    before: RecoveryChange  # in the candidate the user was looking at
+    after: RecoveryChange  # in the plan where X is kept
+
+
+class Counterfactual(_Frozen):
+    restored_id: str
+    result: RecoveryResult
+    d_preservation: float  # new - old; positive: more of the plan survives
+    d_rc: float  # new - old under the same weights; positive: costlier
+    side_effects: tuple[SideEffect, ...]  # ordered by activity id
+
+
+class RestoreRequest(_Frozen):
+    """"What if I keep X?" The candidate is recomputed from the input on the server, so a
+    client can never hand us a plan the validator has not seen."""
+
+    input: RecoveryInput
+    strategy: str  # which candidate the user is looking at
+    activity_id: str  # a dropped activity in that candidate
+
+
+class RestoreResponse(_Frozen):
+    counterfactual: Counterfactual | None  # None: no valid plan keeps X

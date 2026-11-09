@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recoveries/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Activity */
+        post: operations["restore_activity_recoveries_restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -101,6 +118,18 @@ export interface components {
             type: "CLOSURE";
             /** Activity Id */
             activity_id: string;
+        };
+        /** Counterfactual */
+        Counterfactual: {
+            /** Restored Id */
+            restored_id: string;
+            result: components["schemas"]["RecoveryResult"];
+            /** D Preservation */
+            d_preservation: number;
+            /** D Rc */
+            d_rc: number;
+            /** Side Effects */
+            side_effects: components["schemas"]["SideEffect"][];
         };
         /** Day */
         Day: {
@@ -380,6 +409,32 @@ export interface components {
             /** New Time */
             new_time: number;
         };
+        /**
+         * RestoreRequest
+         * @description "What if I keep X?" The candidate is recomputed from the input on the server, so a
+         *     client can never hand us a plan the validator has not seen.
+         */
+        RestoreRequest: {
+            input: components["schemas"]["RecoveryInput"];
+            /** Strategy */
+            strategy: string;
+            /** Activity Id */
+            activity_id: string;
+        };
+        /** RestoreResponse */
+        RestoreResponse: {
+            counterfactual: components["schemas"]["Counterfactual"] | null;
+        };
+        /**
+         * SideEffect
+         * @description Another activity whose change differs once X is kept.
+         */
+        SideEffect: {
+            /** Activity Id */
+            activity_id: string;
+            before: components["schemas"]["RecoveryChange"];
+            after: components["schemas"]["RecoveryChange"];
+        };
         /** Slot */
         Slot: {
             /** Start */
@@ -505,6 +560,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecoveryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_activity_recoveries_restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreResponse"];
                 };
             };
             /** @description Validation Error */

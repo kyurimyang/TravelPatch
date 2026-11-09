@@ -10,24 +10,13 @@ from app.engine.presets import STRATEGIES, Strategy
 from app.engine.reasons import explain_changes
 from app.engine.recover import original_order, solve_candidate
 from app.schemas.enums import Op
-from app.schemas.models import _Frozen
-from app.schemas.recovery import RecoveryChange, RecoveryInput, RecoveryResult
-
-
-class SideEffect(_Frozen):
-    """Another activity whose change differs once X is kept."""
-
-    activity_id: str
-    before: RecoveryChange  # in the candidate the user was looking at
-    after: RecoveryChange  # in the plan where X is kept
-
-
-class Counterfactual(_Frozen):
-    restored_id: str
-    result: RecoveryResult
-    d_preservation: float  # new - old; positive: more of the plan survives
-    d_rc: float  # new - old under the same weights; positive: costlier
-    side_effects: tuple[SideEffect, ...]  # ordered by activity id
+from app.schemas.recovery import (
+    Counterfactual,
+    RecoveryChange,
+    RecoveryInput,
+    RecoveryResult,
+    SideEffect,
+)
 
 
 def restore(
