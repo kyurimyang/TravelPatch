@@ -276,6 +276,24 @@ export interface components {
             d_changed: number;
         };
         /**
+         * ReasonData
+         * @description The solver's own numbers behind a change. Sentences are filled from these and never
+         *     invented (CLAUDE.md rule 5). Which fields are set depends on the reason type.
+         */
+        ReasonData: {
+            /**
+             * Forced By
+             * @default []
+             */
+            forced_by: string[];
+            /** Value */
+            value?: number | null;
+            /** Minutes Saved */
+            minutes_saved?: number | null;
+            /** Value Lost */
+            value_lost?: number | null;
+        };
+        /**
          * ReasonType
          * @enum {string}
          */
@@ -288,6 +306,7 @@ export interface components {
             before?: components["schemas"]["Slot"] | null;
             after?: components["schemas"]["Slot"] | null;
             reason_type?: components["schemas"]["ReasonType"] | null;
+            reason_data?: components["schemas"]["ReasonData"] | null;
             /** Substitute Id */
             substitute_id?: string | null;
             /**
