@@ -3,7 +3,7 @@ import { formatSlot } from '../lib/time'
 import './DiffRow.css'
 
 // The chip always carries text, so color is never the only signal (CLAUDE.md section 8).
-const OP_LABEL: Record<Op, string> = {
+export const OP_LABEL: Record<Op, string> = {
   keep: '유지',
   move: '이동',
   shrink: '단축',

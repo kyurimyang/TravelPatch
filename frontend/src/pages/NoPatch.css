@@ -1,0 +1,92 @@
+.no-patch {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.no-patch__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 22px 16px 28px;
+}
+
+.no-patch__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.35;
+}
+
+.no-patch__hole {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 2px dashed var(--tp-thread-loose);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.no-patch__tag {
+  align-self: flex-start;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--tp-thread-loose);
+  color: #ffffff;
+  font-family: var(--font-label);
+  font-size: 15px;
+}
+
+.no-patch__hole b {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* BlockerList is shared with older screens; frame it here instead of restyling it. */
+.no-patch__blockers {
+  padding: 16px;
+  border: 1px solid var(--tp-hemp);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.no-patch__blockers h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+
+.no-patch__blockers ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.no-patch__blockers p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.no-patch__note {
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.no-patch__bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px 16px;
+  background: var(--tp-linen);
+  border-top: 2px dashed var(--tp-hemp);
+}

@@ -1,0 +1,172 @@
+.diff-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-view__msg {
+  padding: var(--space-4);
+}
+
+.diff-view__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 16px 28px;
+}
+
+.diff-view__hole {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 2px dashed var(--tp-thread-loose);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.diff-view__hole-tag {
+  align-self: flex-start;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--tp-thread-loose);
+  color: #ffffff;
+  font-family: var(--font-label);
+  font-size: 15px;
+}
+
+.diff-view__hole ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.diff-view__hole p {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.diff-view__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.diff-view__stats > div {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  border: 1px solid var(--tp-hemp);
+  border-radius: 6px;
+  background: var(--tp-lace);
+}
+
+.diff-view__stats span {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.diff-view__stats b {
+  font-size: 22px;
+}
+
+.diff-view__tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.diff-view__tabs button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 60px;
+  padding: 6px 4px;
+  border: 1.5px solid var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-linen);
+  color: #1f2328;
+  font: inherit;
+  cursor: pointer;
+}
+
+.diff-view__tabs button span:first-child {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.diff-view__tabs button span:last-child {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* Selected: fill + dashed border + (via aria-selected) not color alone. */
+.diff-view__tabs button[aria-selected='true'] {
+  border: 2px dashed var(--tp-indigo);
+  background: var(--tp-indigo);
+  color: #ffffff;
+}
+
+.diff-view__tabs button[aria-selected='true'] span:last-child {
+  color: #ffffff;
+}
+
+.diff-view__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 2px dashed var(--tp-denim-deep);
+  border-radius: 14px;
+  background: var(--tp-linen);
+}
+
+.diff-view__preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.diff-view__preview-head .tp-tagstitch {
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--tp-denim-deep);
+  color: #ffffff;
+  font-family: var(--font-label);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.diff-view__note {
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.diff-view__bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px 16px;
+  background: var(--tp-linen);
+  border-top: 2px dashed var(--tp-hemp);
+}
