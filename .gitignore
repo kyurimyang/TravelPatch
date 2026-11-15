@@ -16,3 +16,8 @@ __pycache__/
 
 # Node
 node_modules/
+
+#folder
+TripPatch_Design/
+llm_cache/
+Design/
