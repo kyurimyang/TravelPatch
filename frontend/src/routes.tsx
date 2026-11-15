@@ -1,0 +1,41 @@
+import { Route, Routes } from 'react-router'
+import AppFrame from './layout/AppFrame'
+import BareLayout from './layout/BareLayout'
+import FlowLayout from './layout/FlowLayout'
+import TabLayout from './layout/TabLayout'
+import Confirm from './pages/Confirm'
+import DiffView from './pages/DiffView'
+import Grade from './pages/Grade'
+import Landing from './pages/Landing'
+import Main from './pages/Main'
+import NoPatch from './pages/NoPatch'
+import Patchwork from './pages/Patchwork'
+import Recover from './pages/Recover'
+import Stitched from './pages/Stitched'
+import TripList from './pages/TripList'
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+      {/* Pathless layout routes: they add no URL segment, they only wrap their children. */}
+      <Route element={<AppFrame />}>
+        <Route element={<TabLayout />}>
+          <Route index element={<Main />} />
+          <Route path="trips" element={<TripList />} />
+          <Route path="patchwork" element={<Patchwork />} />
+        </Route>
+        <Route element={<BareLayout />}>
+          <Route path="new" element={<Landing />} />
+          <Route path="recover/done" element={<Stitched />} />
+        </Route>
+        <Route element={<FlowLayout />}>
+          <Route path="new/confirm" element={<Confirm />} />
+          <Route path="new/grade" element={<Grade />} />
+          <Route path="recover" element={<Recover />} />
+          <Route path="recover/patch" element={<DiffView />} />
+          <Route path="recover/blocked" element={<NoPatch />} />
+        </Route>
+      </Route>
+    </Routes>
+  )
+}

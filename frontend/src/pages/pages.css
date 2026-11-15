@@ -1,0 +1,10 @@
+/* Shared by the placeholder pages; each real screen gets its own css in stage 3. */
+.page {
+  padding: var(--space-4);
+}
+
+.page__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+}
