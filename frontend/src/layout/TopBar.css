@@ -1,0 +1,37 @@
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 6px 16px;
+  box-sizing: border-box;
+  background: var(--tp-linen);
+  border-bottom: 2px dashed var(--tp-hemp);
+}
+
+.top-bar__logo {
+  display: block;
+  height: 32px;
+  width: auto;
+}
+
+.top-bar__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.top-bar__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+}

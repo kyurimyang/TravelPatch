@@ -1,0 +1,26 @@
+.app-frame {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  background: var(--tp-weave);
+  color: var(--color-text);
+  word-break: keep-all;
+}
+
+.app-frame__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-frame__column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--layout-app-max);
+  box-sizing: border-box;
+  background: var(--tp-lace);
+  border-left: 2px dashed var(--tp-copper);
+  border-right: 2px dashed var(--tp-copper);
+}
