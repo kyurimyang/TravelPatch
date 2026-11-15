@@ -22,6 +22,7 @@ from app.engine.presets import DEFAULT_WEIGHTS
 from app.engine.recover import recover
 from app.schemas.enums import Op
 from app.schemas.recovery import RecoveryInput, RecoveryResult
+from eval.llm_baselines import CachedProvider, NoPlan, make_llm_only, make_llm_validated
 
 
 def _engine(inp: RecoveryInput) -> RecoveryResult | None:
@@ -44,16 +45,23 @@ def _load(path: Path) -> RecoveryInput:
     return RecoveryInput.model_validate(raw)
 
 
-def run(scenario_dir: Path) -> list[dict]:
+def run(scenario_dir: Path, methods: dict[str, Callable] | None = None) -> list[dict]:
+    methods = methods or METHODS
     rows = []
     for path in sorted(scenario_dir.glob("*.json")):
         inp = _load(path)
-        for name, method in METHODS.items():
+        for name, method in methods.items():
             t0 = time.perf_counter()
-            result = method(inp)
+            try:
+                result = method(inp)
+                why = None
+            except NoPlan as exc:  # an LLM method that gave no usable plan
+                result, why = None, exc.reason
             ms = round((time.perf_counter() - t0) * 1000, 1)
+            if result is not None and result.solver_ms:  # LLM methods report recorded latency
+                ms = float(result.solver_ms)
             if result is None:  # no valid plan exists: not the same as "0 violations"
-                why = "; ".join(f"{b.kind}:{b.activity_id}" for b in find_blockers(inp)) or "unknown"
+                why = why or "; ".join(f"{b.kind}:{b.activity_id}" for b in find_blockers(inp)) or "unknown"
                 rows.append({"scenario": path.stem, "method": name, "violations": "", "preservation": "",
                              "rc_total": "", "dropped": "", "solver_ms": ms, "no_solution_reason": why})
                 continue
@@ -85,6 +93,7 @@ def _stats(rows: list[dict]) -> tuple[str, str, str]:
 
 
 def summarize(rows: list[dict]) -> list[str]:
+    names = list(dict.fromkeys(r["method"] for r in rows))  # methods present, in run order
     """Violating plans must not flatter a method: preservation and RC use violation-free rows."""
     out = [
         "### All scenarios",
@@ -92,7 +101,7 @@ def summarize(rows: list[dict]) -> list[str]:
         "| method | scenarios | no solution | violation rate | violation-free | preservation (violation-free) | RC (violation-free) | ms (all) |",
         "|---|---|---|---|---|---|---|---|",
     ]
-    for name in METHODS:
+    for name in names:
         mine = [r for r in rows if r["method"] == name]
         solved = [r for r in mine if r["violations"] != ""]
         good = _valid(solved)
@@ -104,7 +113,7 @@ def summarize(rows: list[dict]) -> list[str]:
     events = sorted({_event(r) for r in rows})
     out += ["", "### Violation rate by event (no solution counted separately)", "",
             "| method | " + " | ".join(events) + " |", "|---|" + "---|" * len(events)]
-    for name in METHODS:
+    for name in names:
         cells = []
         for ev in events:
             mine = [r for r in rows if r["method"] == name and _event(r) == ev]
@@ -115,11 +124,11 @@ def summarize(rows: list[dict]) -> list[str]:
         out.append(f"| {name} | " + " | ".join(cells) + " |")
 
     # Head to head: only scenarios where EVERY method produced a violation-free plan.
-    ok = {name: {r["scenario"]: r for r in _valid(rows) if r["method"] == name} for name in METHODS}
+    ok = {name: {r["scenario"]: r for r in _valid(rows) if r["method"] == name} for name in names}
     common = sorted(set.intersection(*(set(d) for d in ok.values())))
     out += ["", f"### Same {len(common)} scenarios where all methods are violation-free", "",
             "| method | preservation | RC | dropped (mean) |", "|---|---|---|---|"]
-    for name in METHODS:
+    for name in names:
         picked = [ok[name][sc] for sc in common]
         if picked:
             out.append(f"| {name} | {_mean(picked, 'preservation'):.1%} | {_mean(picked, 'rc_total'):.3f} | {_mean(picked, 'dropped'):.2f} |")
@@ -130,8 +139,17 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenarios", type=Path, default=Path("backend/tests/scenarios"))
     ap.add_argument("--out", type=Path, default=Path("eval/results"))
+    ap.add_argument("--with-llm", action="store_true", help="add (c) LLM-only and (d) LLM+validator")
     args = ap.parse_args()
-    rows = run(args.scenarios)
+    methods = dict(METHODS)
+    if args.with_llm:
+        from app.llm.provider import OpenAIProvider
+
+        inner = OpenAIProvider()
+        provider = CachedProvider(inner, args.out / "llm_cache", inner._model)
+        methods["llm_only"] = make_llm_only(provider)
+        methods["llm_validated"] = make_llm_validated(provider)
+    rows = run(args.scenarios, methods)
     args.out.mkdir(parents=True, exist_ok=True)
     with (args.out / "results.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, FIELDS)
