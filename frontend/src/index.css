@@ -7,5 +7,15 @@ body {
   font-family: var(--font-sans);
   font-size: var(--text-md);
   color: var(--color-text);
-  background: var(--color-bg);
+  background: var(--tp-linen);
+}
+
+/* Visually hidden, still read by screen readers. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

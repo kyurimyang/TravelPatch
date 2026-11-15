@@ -54,6 +54,35 @@
   --space-4: 16px;
   --space-6: 24px;
 
+  /* brand palette (TravelPatch logo, 2026-11-15): denim indigo ground, copper topstitch */
+  --tp-indigo: #24314d;
+  --tp-denim: #9fb0c2;
+  --tp-denim-deep: #2f4a75;
+  --tp-navy: #263152;
+  --tp-copper: #d0a46a;
+  --tp-rust: #c2362f;
+  --tp-olive: #5f9a4e;
+  --tp-mustard: #e0a83a;
+  --tp-pink: #e59aa8;
+  --tp-butter: #f1dd9a;
+  --tp-plaid-brown: #7a4e32;
+  --tp-tan: #c9a27a;
+  --tp-hemp: #e3d3b5;
+  --tp-lace: #fdfaf3;
+  --tp-linen: #f8f1e3;
+
+  /* threads: copper = normal stitching, loose red = warnings only */
+  --tp-thread-stitch: var(--tp-copper);
+  --tp-thread-loose: #d0342c;
+  --tp-thread-baste: #fdfaf3;
+
+  /* layout */
+  --layout-app-max: 480px;
+
+  /* display (headings) and label (hand-lettered tags) fonts, self-hosted via @fontsource */
+  --font-display: 'Gowun Batang', serif;
+  --font-label: 'Gaegu', var(--font-sans);
+
   /* type */
   --font-sans: 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Segoe UI', 'Noto Sans KR', sans-serif;
   --text-sm: 13px;

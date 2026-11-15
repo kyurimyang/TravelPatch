@@ -1,0 +1,38 @@
+/* Primary button from the mockups: indigo denim + copper stitched outline + bottom shadow.
+   Works on <button> and <a>/<Link>. */
+.tp-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--tp-indigo);
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #121a2b;
+  outline: 2px dashed var(--tp-copper);
+  outline-offset: -6px;
+}
+
+.tp-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Quiet text link-button under a primary button. */
+.tp-btn-quiet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  text-decoration: underline dashed;
+  cursor: pointer;
+}

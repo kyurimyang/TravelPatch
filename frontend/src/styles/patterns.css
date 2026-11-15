@@ -1,0 +1,22 @@
+/*
+ * Fabric patterns from the TravelPatch logo. Solid colours live in tokens.css;
+ * these are gradients, so they get their own file. Use as a background value.
+ */
+:root {
+/* 관광: green gingham */
+--tp-check:repeating-linear-gradient(0deg,rgba(255,255,255,.38) 0 7px,transparent 7px 14px),repeating-linear-gradient(90deg,rgba(255,255,255,.38) 0 7px,transparent 7px 14px),var(--tp-olive);
+/* 식사: mustard felt */
+--tp-stripe:repeating-linear-gradient(45deg,rgba(255,255,255,.08) 0 2px,transparent 2px 5px),repeating-linear-gradient(-45deg,rgba(0,0,0,.06) 0 1px,transparent 1px 4px),var(--tp-mustard);
+/* 저녁·휴식: navy floral */
+--tp-dot:radial-gradient(circle,var(--tp-pink) 2.4px,transparent 3px) 0 0/16px 16px,radial-gradient(circle,var(--tp-linen) 1.6px,transparent 2.2px) 8px 8px/16px 16px,var(--tp-navy);
+/* 출발·숙소: beige stripe */
+--tp-hempweave:repeating-linear-gradient(90deg,#a07c55 0 3px,transparent 3px 7px,#a07c55 7px 8px,transparent 8px 22px),#ece0c8;
+/* brown plaid */
+--tp-plaid:repeating-linear-gradient(0deg,rgba(60,30,15,.55) 0 3px,transparent 3px 12px,rgba(60,30,15,.3) 12px 14px,transparent 14px 24px),repeating-linear-gradient(90deg,rgba(60,30,15,.55) 0 3px,transparent 3px 12px,rgba(60,30,15,.3) 12px 14px,transparent 14px 24px),var(--tp-tan);
+/* red floral: 장식 원단 */
+--tp-redfloral:radial-gradient(circle,var(--tp-lace) 2.2px,transparent 2.8px) 0 0/18px 18px,radial-gradient(circle,var(--tp-lace) 1.4px,transparent 2px) 9px 9px/18px 18px,var(--tp-rust);
+/* ground: indigo denim twill with a faint white weft */
+--tp-weave:repeating-linear-gradient(135deg,rgba(255,255,255,.07) 0 1px,transparent 1px 3px),repeating-linear-gradient(45deg,rgba(0,0,0,.18) 0 1px,transparent 1px 4px),var(--tp-indigo);
+/* 다음 조각: butter floral */
+--tp-butterfloral:radial-gradient(circle,var(--tp-pink) 2.4px,transparent 3px) 0 0/16px 16px,radial-gradient(circle,var(--tp-denim-deep) 1.6px,transparent 2.2px) 8px 8px/16px 16px,var(--tp-butter);
+}

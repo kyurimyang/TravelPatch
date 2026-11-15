@@ -1,0 +1,23 @@
+/* TravelPatch fabric details: weave, stitches, pinked edges. Apply by class; colours come from tokens.css. */
+.tp-fabric{
+  background-image:repeating-linear-gradient(0deg,rgba(122,78,50,.045) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(122,78,50,.045) 0 1px,transparent 1px 3px)!important;
+  outline:1.5px dashed rgba(122,78,50,.42);outline-offset:-7px;
+  box-shadow:0 1px 0 rgba(36,49,77,.06),0 5px 10px -6px rgba(36,49,77,.35);
+}
+.tp-linen-tex{
+  background-image:repeating-linear-gradient(0deg,rgba(122,78,50,.03) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(122,78,50,.03) 0 1px,transparent 1px 3px)!important;
+}
+.tp-denim{
+  background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.09) 0 1px,transparent 1px 3px),repeating-linear-gradient(45deg,rgba(0,0,0,.22) 0 1px,transparent 1px 4px)!important;
+}
+.tp-tagstitch{outline:1px dashed rgba(255,255,255,.8);outline-offset:-3px}
+.tp-swatch{outline:2px dashed rgba(253,250,243,.85);outline-offset:-6px;box-shadow:0 0 0 2px rgba(255,255,255,.25),1px 3px 0 rgba(0,0,0,.3)}
+/* pinked (zig-zag) cut edges, as if trimmed with pinking shears */
+.tp-pinked-bottom{position:relative;z-index:2}
+.tp-pinked-bottom::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:9px;pointer-events:none;
+  background:linear-gradient(135deg,var(--tp-linen) 33%,#0000 33.5%) 0 0/18px 18px repeat-x,linear-gradient(225deg,var(--tp-linen) 33%,#0000 33.5%) 0 0/18px 18px repeat-x;
+  filter:drop-shadow(0 2px 1.5px rgba(36,49,77,.28))}
+.tp-pinked-top{position:relative;z-index:2}
+.tp-pinked-top::before{content:"";position:absolute;left:0;right:0;top:-9px;height:9px;pointer-events:none;
+  background:linear-gradient(45deg,var(--tp-linen) 33%,#0000 33.5%) 0 100%/18px 18px repeat-x,linear-gradient(-45deg,var(--tp-linen) 33%,#0000 33.5%) 0 100%/18px 18px repeat-x;
+  filter:drop-shadow(0 -2px 1.5px rgba(36,49,77,.22))}
