@@ -1,0 +1,61 @@
+.tier-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.tier-picker__opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px;
+  border: 1.5px solid var(--tp-hemp);
+  border-radius: 6px;
+  background: var(--tp-lace);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Hidden but still focusable / readable by screen readers. */
+.tier-picker__opt input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.tier-picker__opt:has(input:focus-visible) {
+  outline: 3px solid var(--tp-copper);
+  outline-offset: 2px;
+}
+
+.tier-picker__rec {
+  font-family: var(--font-label);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* Selected: fill / border differ per tier AND the text is bold, so meaning is not color-only. */
+.tier-picker__opt:has(input:checked) {
+  font-weight: 700;
+}
+
+.tier-picker__opt--must:has(input:checked) {
+  border-color: var(--tp-indigo);
+  background: var(--tp-indigo);
+  color: #ffffff;
+}
+
+.tier-picker__opt--nice:has(input:checked) {
+  border-color: var(--tp-mustard);
+  background: var(--tp-mustard);
+  color: #1f2328;
+}
+
+.tier-picker__opt--optional:has(input:checked) {
+  border: 2px dashed var(--tp-denim-deep);
+  color: var(--tp-denim-deep);
+}
