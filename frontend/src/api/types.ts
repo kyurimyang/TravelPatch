@@ -10,6 +10,9 @@ export type RecoveryResponse = Schemas['RecoveryResponse']
 export type RecoveryResult = Schemas['RecoveryResult']
 export type RecoveryChange = Schemas['RecoveryChange']
 export type Blocker = Schemas['Blocker']
+export type InterpretRequest = Schemas['InterpretRequest']
+export type InterpretResponse = Schemas['InterpretResponse']
+export type DisruptionEvent = NonNullable<InterpretResponse['event']>
 
 // What the UI needs to name an activity; the engine's changes only carry the id.
 export type ActivityInfo = Pick<Schemas['Activity'], 'id' | 'title' | 'category'>

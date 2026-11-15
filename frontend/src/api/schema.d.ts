@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/disruptions/interpret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Interpret */
+        post: operations["interpret_disruptions_interpret_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -214,6 +231,93 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * InterpretProblem
+         * @description Why no event could be built. The UI turns it into a chip the user taps to fix.
+         */
+        InterpretProblem: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "LLM_FAILED" | "UNKNOWN_TYPE" | "UNSUPPORTED" | "MISSING_FIELD" | "BAD_TIME" | "NO_MATCH" | "AMBIGUOUS";
+            /** Detail */
+            detail: string;
+            /**
+             * Candidates
+             * @default []
+             */
+            candidates: string[];
+        };
+        /** InterpretRequest */
+        InterpretRequest: {
+            /** Text */
+            text: string;
+            /** Now */
+            now: number;
+            /**
+             * Location Id
+             * @default hotel
+             */
+            location_id: string;
+            /** Activities */
+            activities: components["schemas"]["Activity"][];
+        };
+        /** InterpretResponse */
+        InterpretResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "needs_input";
+            interpretation: components["schemas"]["InterpretedDisruption"] | null;
+            /** Event */
+            event: (components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"]) | null;
+            /**
+             * Chips
+             * @default []
+             */
+            chips: string[];
+            problem?: components["schemas"]["InterpretProblem"] | null;
+        };
+        /** InterpretedDisruption */
+        InterpretedDisruption: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "DELAY" | "WEATHER" | "CLOSURE" | "FATIGUE" | "EXTEND" | "RESERVATION_CHANGE" | "MUST_VISIT" | "UNKNOWN";
+            /**
+             * Delay Minutes
+             * @description DELAY: how long from now, in minutes
+             */
+            delay_minutes: number | null;
+            /**
+             * Time From
+             * @description WEATHER: start time, HH:MM
+             */
+            time_from: string | null;
+            /**
+             * Time To
+             * @description WEATHER: end time, HH:MM
+             */
+            time_to: string | null;
+            /**
+             * Activity Hint
+             * @description CLOSURE/EXTEND/RESERVATION_CHANGE/MUST_VISIT
+             */
+            activity_hint: string | null;
+            /**
+             * Extra Minutes
+             * @description EXTEND: extra minutes at the place
+             */
+            extra_minutes: number | null;
+            /**
+             * New Time
+             * @description RESERVATION_CHANGE: new time, HH:MM
+             */
+            new_time: string | null;
         };
         /** MustVisitEvent */
         MustVisitEvent: {
@@ -593,6 +697,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RestoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    interpret_disruptions_interpret_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InterpretRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterpretResponse"];
                 };
             };
             /** @description Validation Error */
