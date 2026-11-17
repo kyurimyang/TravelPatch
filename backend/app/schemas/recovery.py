@@ -187,6 +187,13 @@ class Counterfactual(_Frozen):
     side_effects: tuple[SideEffect, ...]  # ordered by activity id
 
 
+class LockRequest(_Frozen):
+    """"Leave these pieces as they were": recompute with them held at their original slots."""
+
+    input: RecoveryInput
+    activity_ids: tuple[str, ...] = Field(min_length=1)
+
+
 class RestoreRequest(_Frozen):
     """ "What if I keep X?" The candidate is recomputed from the input on the server, so a
     client can never hand us a plan the validator has not seen."""
