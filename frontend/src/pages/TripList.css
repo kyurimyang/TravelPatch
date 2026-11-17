@@ -1,0 +1,173 @@
+.trip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 16px 28px;
+}
+
+.trip-list__head h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.trip-list__head span {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.trip-list__empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 16px;
+  border: 2px dashed var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.trip-list__empty span {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.trip-list__group h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-label);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tp-denim-deep);
+}
+
+.trip-list__group ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+/* the trip on the road gets the stitched patch edge */
+.trip-card--ongoing {
+  border: 2px dashed var(--tp-copper);
+}
+
+.trip-card--past {
+  opacity: 0.85;
+}
+
+.trip-card__open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trip-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.trip-card__title b {
+  font-size: 18px;
+}
+
+.trip-card__current {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tp-denim-deep);
+}
+
+.trip-card__today {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--tp-indigo);
+  color: #ffffff;
+  font-family: var(--font-label);
+  font-size: 14px;
+}
+
+.trip-card__sub,
+.trip-card__next {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.trip-card__next b {
+  color: var(--tp-indigo);
+}
+
+.trip-card__chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.trip-card__chip {
+  padding: 1px 8px;
+  border: 1.5px dashed var(--op-move-edge);
+  border-radius: 6px;
+  background: var(--op-move-bg);
+  color: var(--op-move-fg);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trip-card__chip--warn {
+  border-color: var(--op-shrink-edge);
+  background: var(--op-shrink-bg);
+  color: var(--op-shrink-fg);
+}
+
+.trip-card__delete,
+.trip-card__confirm button {
+  align-self: flex-end;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-decoration: underline dashed;
+  cursor: pointer;
+}
+
+.trip-card__confirm {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--tp-rust);
+}
+
+.trip-card__confirm button:first-of-type {
+  color: var(--tp-rust);
+  font-weight: 700;
+}
+
+.trip-list__new {
+  margin-top: 4px;
+}

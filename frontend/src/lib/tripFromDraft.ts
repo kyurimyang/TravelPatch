@@ -18,6 +18,7 @@ export function addDays(iso: string, days: number): string {
  */
 export function tripFromDraft(draft: DraftItinerary, meta: TripMeta): Trip {
   return {
+    id: crypto.randomUUID(),
     ...meta,
     endDeadline: DEFAULT_END_DEADLINE,
     patches: [],

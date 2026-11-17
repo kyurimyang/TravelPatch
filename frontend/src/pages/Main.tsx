@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { HoleAlert, isLate } from '../components/HoleAlert'
 import { CATEGORY_LABEL, categoryIcon } from '../lib/category'
 import type { Tier } from '../lib/tier'
 import { formatDate, formatTime, tripLength } from '../lib/time'
-import { useTrip, type TripDay } from '../store/trip'
+import { deviceNow, nextItem } from '../lib/today'
+import { useTrip } from '../store/trip'
 import './Main.css'
 
 // Hand-placed swatch slots (percent of the map box) for up to 4 stops, copied from the mockup.
@@ -15,19 +17,6 @@ const SLOTS = [
 ] as const
 
 const TIER_LABEL: Record<Tier, string> = { must: '꼭 갈 곳', nice: '좋음', optional: '선택' }
-
-/** The device's own date and clock. A traveller's phone is on local time at the destination. */
-function deviceNow(): { date: string; minutes: number } {
-  const d = new Date()
-  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  return { date, minutes: d.getHours() * 60 + d.getMinutes() }
-}
-
-/** First item not finished yet on the day being travelled; on any other day, the first item. */
-function nextItem(day: TripDay, isToday: boolean, now: number) {
-  const timed = day.items.filter((it) => it.start != null && !it.dropped)
-  return isToday ? timed.find((it) => (it.end ?? it.start!) > now) : timed[0]
-}
 
 export default function Main() {
   const { trip } = useTrip()
@@ -71,6 +60,15 @@ export default function Main() {
         </div>
         <h1>{isToday ? '오늘의 원단' : `DAY ${dayIndex + 1}의 원단`}</h1>
       </div>
+
+      {isToday && isLate(next, now.minutes) && (
+        <HoleAlert
+          dayIndex={dayIndex}
+          next={next}
+          following={day.items.filter((it) => !it.dropped && it.start != null && it.start > next.start!).length}
+          now={now.minutes}
+        />
+      )}
 
       <nav className="main-screen__days" aria-label="여행 날짜">
         {trip.days.map((d, i) => (

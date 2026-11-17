@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import type { BuiltPlan, RecoveryResult } from '../api/types'
+import type { BuiltPlan, DisruptionEvent, RecoveryResult } from '../api/types'
 import delayPatch from '../assets/patches/hole-delay.svg'
 import { OP_LABEL } from '../components/DiffRow'
 import { CATEGORY_ICON, DEFAULT_ICON } from '../lib/placeIcons'
@@ -18,6 +18,7 @@ export default function Stitched() {
     plan?: BuiltPlan
     source?: RecoverySource
     chips?: string[]
+    eventType?: DisruptionEvent['type']
     patchId?: string
     titles?: Record<string, string>
   } | null
@@ -30,7 +31,7 @@ export default function Stitched() {
   // Stitch on arrival. Idempotent by patch id, so StrictMode's second run changes nothing.
   useEffect(() => {
     if (!saves || !result) return
-    stitch(patchFrom(navState!.patchId!, date!, result, navState?.chips ?? [], new Date().toISOString()))
+    stitch(patchFrom(navState!.patchId!, date!, result, navState?.chips ?? [], new Date().toISOString(), navState?.eventType ?? null))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

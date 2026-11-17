@@ -47,6 +47,8 @@ export type TripDay = {
 }
 
 export type Trip = {
+  /** Local id, made when the trip is registered. */
+  id: string
   city: string
   startDate: string
   endDate: string
@@ -63,61 +65,110 @@ export type Trip = {
 export const DEFAULT_END_DEADLINE = 22 * 60
 
 type TripStore = {
+  /** The trip being looked at (Main, Recover, ...). */
   trip: Trip | null
+  /** Every trip kept on this device, in the order they were made. */
+  trips: Trip[]
+  /** Replace the current trip; a trip with a new id is added and becomes current. null removes it. */
   setTrip: (trip: Trip | null) => void
-  /** Change one item, leaving everything else as it is. */
+  selectTrip: (id: string) => void
+  deleteTrip: (id: string) => void
+  /** Change one item of the current trip, leaving everything else as it is. */
   updateItem: (itemId: string, patch: Partial<Omit<TripItem, 'id'>>) => void
-  /** Stitch a patch onto its day (idempotent by patch id). */
+  /** Stitch a patch onto its day of the current trip (idempotent by patch id). */
   stitch: (patch: SavedPatch) => void
   /** Take the latest patch of a day back off. */
   unstitch: (patchId: string) => void
 }
 
-const STORAGE_KEY = 'trippatch.trip.v1'
+type Saved = { trips: Trip[]; currentId: string | null }
+
+const STORAGE_KEY = 'trippatch.trips.v2'
+const OLD_KEY = 'trippatch.trip.v1' // one trip, before the trip list existed
 const TripContext = createContext<TripStore | null>(null)
 
-// Storage can be missing or throw (private window, blocked site data): the app then keeps the trip
+// Fields added after a trip may have been saved get their old behaviour.
+const upgrade = (t: Partial<Trip>): Trip =>
+  ({ travelMode: 'transit', patches: [], id: crypto.randomUUID(), ...t }) as Trip
+
+// Storage can be missing or throw (private window, blocked site data): the app then keeps trips
 // in memory only and still works for this visit.
-function load(): Trip | null {
+function load(): Saved {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    // Trips saved before travel modes or patches existed get the old behaviour.
-    return raw ? ({ travelMode: 'transit', patches: [], ...JSON.parse(raw) } as Trip) : null
+    if (raw) {
+      const saved = JSON.parse(raw) as Saved
+      return { trips: saved.trips.map(upgrade), currentId: saved.currentId }
+    }
+    const old = localStorage.getItem(OLD_KEY)
+    if (old) {
+      const trip = upgrade(JSON.parse(old))
+      return { trips: [trip], currentId: trip.id }
+    }
   } catch {
-    return null
+    // fall through
   }
+  return { trips: [], currentId: null }
 }
 
-function save(trip: Trip | null): void {
+function save(saved: Saved): void {
   try {
-    if (trip) localStorage.setItem(STORAGE_KEY, JSON.stringify(trip))
-    else localStorage.removeItem(STORAGE_KEY)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved))
+    localStorage.removeItem(OLD_KEY)
   } catch {
     // ignore: see load()
   }
 }
 
 export function TripProvider({ children }: { children: ReactNode }) {
-  const [trip, setTrip] = useState<Trip | null>(load)
+  const [saved, setSaved] = useState<Saved>(load)
 
-  useEffect(() => save(trip), [trip])
+  useEffect(() => save(saved), [saved])
+
+  const trip = saved.trips.find((t) => t.id === saved.currentId) ?? null
+
+  /** Apply f to the current trip. */
+  const editCurrent = (f: (t: Trip) => Trip) =>
+    setSaved((s) => ({ ...s, trips: s.trips.map((t) => (t.id === s.currentId ? f(t) : t)) }))
+
+  const setTrip: TripStore['setTrip'] = (next) =>
+    setSaved((s) => {
+      if (next === null) {
+        return { trips: s.trips.filter((t) => t.id !== s.currentId), currentId: null }
+      }
+      const exists = s.trips.some((t) => t.id === next.id)
+      return {
+        trips: exists ? s.trips.map((t) => (t.id === next.id ? next : t)) : [...s.trips, next],
+        currentId: next.id,
+      }
+    })
+
+  const selectTrip: TripStore['selectTrip'] = (id) => setSaved((s) => ({ ...s, currentId: id }))
+
+  const deleteTrip: TripStore['deleteTrip'] = (id) =>
+    setSaved((s) => ({
+      trips: s.trips.filter((t) => t.id !== id),
+      currentId: s.currentId === id ? null : s.currentId,
+    }))
 
   const updateItem: TripStore['updateItem'] = (itemId, patch) =>
-    setTrip((t) =>
-      t && {
-        ...t,
-        days: t.days.map((d) => ({
-          ...d,
-          items: d.items.map((it) => (it.id === itemId ? { ...it, ...patch } : it)),
-        })),
-      },
-    )
+    editCurrent((t) => ({
+      ...t,
+      days: t.days.map((d) => ({
+        ...d,
+        items: d.items.map((it) => (it.id === itemId ? { ...it, ...patch } : it)),
+      })),
+    }))
 
-  const stitch: TripStore['stitch'] = (patch) => setTrip((t) => t && applyPatch(t, patch))
-  const unstitch: TripStore['unstitch'] = (id) => setTrip((t) => t && undoPatch(t, id))
+  const stitch: TripStore['stitch'] = (patch) => editCurrent((t) => applyPatch(t, patch))
+  const unstitch: TripStore['unstitch'] = (id) => editCurrent((t) => undoPatch(t, id))
 
   return (
-    <TripContext.Provider value={{ trip, setTrip, updateItem, stitch, unstitch }}>{children}</TripContext.Provider>
+    <TripContext.Provider
+      value={{ trip, trips: saved.trips, setTrip, selectTrip, deleteTrip, updateItem, stitch, unstitch }}
+    >
+      {children}
+    </TripContext.Provider>
   )
 }
 

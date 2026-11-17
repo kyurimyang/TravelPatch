@@ -1,0 +1,266 @@
+.patchwork {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 16px 28px;
+}
+
+.patchwork__head h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.patchwork__head p,
+.patchwork__empty span {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.patchwork__empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 16px;
+  border: 2px dashed var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.patchwork__trip {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 2px dashed var(--tp-copper);
+  border-radius: 14px;
+  background: var(--tp-linen);
+}
+
+.patchwork__trip--weaving {
+  border-color: var(--tp-hemp);
+}
+
+.patchwork__trip header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.patchwork__trip header b {
+  font-size: 18px;
+}
+
+.patchwork__trip header span {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* the quilt: one swatch per piece, patched pieces stitched on */
+.patchwork__quilt {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 6px;
+  border: 3px solid var(--tp-denim);
+  border-radius: 10px;
+  background: var(--tp-indigo);
+}
+
+.patchwork__swatch {
+  position: relative;
+  min-height: 64px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.patchwork__swatch span {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(253, 250, 243, 0.92);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patchwork__swatch--patched {
+  outline: 2px dashed var(--tp-copper);
+  outline-offset: -5px;
+  transform: rotate(-1.5deg);
+}
+
+.patchwork__swatch--dropped {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.patchwork__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.patchwork__stats div {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--tp-lace);
+}
+
+.patchwork__stats span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.patchwork__stats b {
+  font-size: 20px;
+}
+
+.patchwork__patches {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patchwork__patches li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.patchwork__date {
+  font-family: var(--font-label);
+  font-size: 15px;
+  color: var(--tp-denim-deep);
+}
+
+.patchwork__what {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patchwork__op {
+  padding: 1px 8px;
+  border: 1.5px dashed var(--op-move-edge);
+  border-radius: 6px;
+  background: var(--op-move-bg);
+  color: var(--op-move-fg);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.patchwork__badges h2,
+.patchwork__book h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-label);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tp-denim-deep);
+}
+
+.patchwork__badges h2 span,
+.patchwork__book h2 span {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.patchwork__badges ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patchwork__badge {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1.5px dashed var(--tp-copper);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.patchwork__badge-mark {
+  grid-row: span 2;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--tp-redfloral);
+  outline: 2px dashed var(--tp-lace);
+  outline-offset: -5px;
+}
+
+.patchwork__badge b {
+  font-size: 14px;
+}
+
+.patchwork__badge span:last-child {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.patchwork__badge--locked {
+  border-color: var(--tp-hemp);
+  opacity: 0.6;
+}
+
+.patchwork__badge--locked .patchwork__badge-mark {
+  background: var(--tp-hemp);
+}
+
+.patchwork__book ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patchwork__book li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border: 1px solid var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-linen);
+  font-size: 13px;
+}
+
+.patchwork__book img {
+  width: 40px;
+  height: 40px;
+}
+
+.patchwork__book--locked img {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+
+.patchwork__book--locked span {
+  color: var(--color-text-muted);
+}

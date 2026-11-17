@@ -191,6 +191,7 @@ export default function DiffView() {
             source,
             plan,
             chips,
+            eventType: event.type,
             // Made once here, so a re-render or StrictMode re-run of Stitched cannot save twice.
             patchId: `${plan.day.date ?? 'day'}-${Date.now()}`,
             titles: Object.fromEntries(titleOf),

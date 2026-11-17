@@ -12,6 +12,7 @@ import tired from '../assets/patches/hole-tired.svg'
 import { StitchLoader } from '../components/StitchLoader'
 import { planRequestFor, samplePlan, type RecoveryState, type RecoverySource } from '../lib/recovery'
 import { formatTime, parseTime } from '../lib/time'
+import { deviceNow } from '../lib/today'
 import { useTrip } from '../store/trip'
 import './Recover.css'
 
@@ -36,15 +37,10 @@ type DayState =
   | { kind: 'ready'; plan: BuiltPlan; source: RecoverySource }
   | { kind: 'blocked'; message: string }
 
-function deviceToday(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
 /** Default "now": the phone's clock on the day being travelled, else 30 minutes before the first item. */
 function defaultNow(plan: BuiltPlan): number {
   const d = new Date()
-  if (plan.day.date === deviceToday()) return d.getHours() * 60 + d.getMinutes()
+  if (plan.day.date === deviceNow().date) return d.getHours() * 60 + d.getMinutes()
   const first = Math.min(...plan.activities.map((a) => a.planned_start))
   return Math.max(0, Math.floor((first - 30) / 5) * 5)
 }
@@ -52,7 +48,8 @@ function defaultNow(plan: BuiltPlan): number {
 export default function Recover() {
   const navigate = useNavigate()
   const { trip } = useTrip()
-  const dayIndex = (useLocation().state as { dayIndex?: number } | null)?.dayIndex ?? 0
+  const navIn = useLocation().state as { dayIndex?: number; preset?: string } | null
+  const dayIndex = navIn?.dayIndex ?? 0
 
   // Why the trip day cannot be sent yet (derived, not stored): no trip, or unconfirmed items.
   const req = useMemo(() => (trip ? planRequestFor(trip, dayIndex) : null), [trip, dayIndex])
@@ -61,7 +58,8 @@ export default function Recover() {
   const [useSample, setUseSample] = useState(false)
   const [now, setNow] = useState<number | null>(null)
   const [locationId, setLocationId] = useState('hotel')
-  const [text, setText] = useState('')
+  // HoleAlert hands over a sentence it already knows ("25분쯤 늦어지고 있어요").
+  const [text, setText] = useState(navIn?.preset ?? '')
   const [quick, setQuick] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
 

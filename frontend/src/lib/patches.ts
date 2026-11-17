@@ -2,7 +2,7 @@
 // invariant 6), plus how to apply it to the trip and take it back off ("실 풀기").
 // Only the user's own titles and times are kept: no coordinates and no Google names (a substitute
 // is recorded as "substituted", not by the name of the place).
-import type { Op, RecoveryResult } from '../api/types'
+import type { DisruptionEvent, Op, RecoveryResult } from '../api/types'
 import type { Trip, TripItem } from '../store/trip'
 
 type Slot = { start: number; end: number }
@@ -24,6 +24,8 @@ export type SavedPatch = {
   preservationRate: number
   /** What the user said happened, as the chips showed it. */
   chips: string[]
+  /** The kind of hole (DELAY, WEATHER, ...), for the patch list and badges. */
+  eventType: DisruptionEvent['type'] | null
   changes: PatchChange[]
 }
 
@@ -33,6 +35,7 @@ export function patchFrom(
   result: RecoveryResult,
   chips: string[],
   savedAt: string,
+  eventType: DisruptionEvent['type'] | null = null,
 ): SavedPatch {
   return {
     id,
@@ -41,6 +44,7 @@ export function patchFrom(
     strategy: result.strategy,
     preservationRate: result.preservation_rate,
     chips,
+    eventType,
     changes: result.changes
       .filter((c) => c.op !== 'keep')
       .map((c) => ({ itemId: c.activity_id, op: c.op, before: c.before ?? null, after: c.after ?? null })),
