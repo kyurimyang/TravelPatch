@@ -55,6 +55,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/itineraries/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Parse
+         * @description Step ①: pasted text -> draft the Confirm screen shows. Nothing is stored.
+         *
+         *     An LLM failure is not an HTTP error: the screen gets status "manual" and offers to type the
+         *     plan in by hand (invariant 4: retry once inside the provider, then hand over to the user).
+         */
+        post: operations["parse_itineraries_parse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/places/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search
+         * @description Step ②: candidates for one itinerary line, for the user to pick (never auto-picked).
+         */
+        get: operations["search_places_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -187,6 +230,61 @@ export interface components {
             type: "DELAY";
             /** Start Time */
             start_time: number;
+        };
+        /** DraftDay */
+        DraftDay: {
+            /** Day Label */
+            day_label: string | null;
+            /** Items */
+            items: components["schemas"]["DraftItem"][];
+            /**
+             * Issues
+             * @default []
+             */
+            issues: components["schemas"]["DraftIssue"][];
+        };
+        /**
+         * DraftIssue
+         * @description Something the user should look at. `item` is the index in the day's item list.
+         */
+        DraftIssue: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "BAD_TIME" | "BAD_RANGE" | "NO_TIME" | "MISSING_START" | "RESERVED_NO_TIME" | "OVER_MIDNIGHT" | "OUT_OF_ORDER" | "OVERLAP";
+            /** Item */
+            item: number;
+            /** Detail */
+            detail: string;
+        };
+        /** DraftItem */
+        DraftItem: {
+            /** Title */
+            title: string;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "meal" | "sightseeing" | "shopping" | "cafe" | "transport" | "other";
+            /** Start */
+            start?: number | null;
+            /** End */
+            end?: number | null;
+            /**
+             * Duration Estimated
+             * @default false
+             */
+            duration_estimated: boolean;
+            /** Reservation Time */
+            reservation_time?: number | null;
+            /** Note */
+            note?: string | null;
+        };
+        /** DraftItinerary */
+        DraftItinerary: {
+            /** Days */
+            days: components["schemas"]["DraftDay"][];
         };
         /** ExtendEvent */
         ExtendEvent: {
@@ -356,6 +454,53 @@ export interface components {
          * @enum {string}
          */
         Op: "keep" | "move" | "shrink" | "drop" | "substitute" | "extend" | "add";
+        /**
+         * ParseProblem
+         * @description Why no draft came back. The screen then offers manual entry instead of an error.
+         */
+        ParseProblem: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "LLM_FAILED" | "NOTHING_FOUND";
+            /** Detail */
+            detail: string;
+        };
+        /** ParseRequest */
+        ParseRequest: {
+            /** Text */
+            text: string;
+        };
+        /** ParseResponse */
+        ParseResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "manual";
+            draft: components["schemas"]["DraftItinerary"] | null;
+            problem?: components["schemas"]["ParseProblem"] | null;
+        };
+        /**
+         * PlaceOption
+         * @description A search hit as the browser sees it. No coordinates: the browser keeps a trip for longer
+         *     than Google's 30-day limit, so lat/lng stay on the server. Name and address are for the
+         *     picker only; the trip keeps the user's own title and the place_id.
+         */
+        PlaceOption: {
+            /** Place Id */
+            place_id: string;
+            /** Name */
+            name: string;
+            /** Address */
+            address: string | null;
+        };
+        /** PlaceSearchResponse */
+        PlaceSearchResponse: {
+            /** Candidates */
+            candidates: components["schemas"]["PlaceOption"][];
+        };
         /** Preference */
         Preference: {
             /** Activity Id */
@@ -730,6 +875,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InterpretResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    parse_itineraries_parse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_places_search_get: {
+        parameters: {
+            query: {
+                q: string;
+                city?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceSearchResponse"];
                 };
             };
             /** @description Validation Error */

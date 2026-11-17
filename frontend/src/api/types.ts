@@ -16,3 +16,7 @@ export type DisruptionEvent = NonNullable<InterpretResponse['event']>
 
 // What the UI needs to name an activity; the engine's changes only carry the id.
 export type ActivityInfo = Pick<Schemas['Activity'], 'id' | 'title' | 'category'>
+export type ParseResponse = Schemas['ParseResponse']
+export type DraftItinerary = Schemas['DraftItinerary']
+export type PlaceOption = Schemas['PlaceOption']
+export type PlaceSearchResponse = Schemas['PlaceSearchResponse']

@@ -1,10 +1,21 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { parseItinerary } from '../api/itineraries'
+import type { PlaceOption } from '../api/types'
 import wordmark from '../assets/wordmark.png'
 import mend from '../assets/patches/patch-mend.svg'
 import stay from '../assets/patches/place-stay.svg'
 import rain from '../assets/patches/hole-rain.svg'
+import { PlaceSearch } from '../components/PlaceSearch'
+import { tripFromDraft } from '../lib/tripFromDraft'
+import { useTrip } from '../store/trip'
 import './Landing.css'
+
+// Problem codes from POST /itineraries/parse -> what to tell the user.
+const PARSE_PROBLEM: Record<string, string> = {
+  LLM_FAILED: '일정을 읽지 못했어요. 잠시 뒤 다시 해 주세요.',
+  NOTHING_FOUND: '일정을 찾지 못했어요. 한 줄에 하나씩, 시각과 장소를 적어 주세요.',
+}
 
 const FEATURES = [
   { icon: stay, title: '재단하기', text: '일정을 붙여넣으면 장소와 시간을 읽어 하루하루를 원단으로 정리해요.' },
@@ -14,18 +25,43 @@ const FEATURES = [
 
 export default function Landing() {
   const navigate = useNavigate()
+  const { setTrip } = useTrip()
   const [city, setCity] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
+  // The Google option is shown while registering only; the trip keeps the typed words + place_id.
+  const [hotel, setHotel] = useState<{ option: PlaceOption; title: string } | null>(null)
   const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
 
-  const canSubmit = city.trim() !== '' && start !== '' && end !== '' && start <= end && text.trim() !== ''
+  const canSubmit =
+    city.trim() !== '' && start !== '' && end !== '' && start <= end && hotel !== null && text.trim() !== '' && !busy
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!canSubmit) return
-    // The parser API doesn't exist yet (stage 6), so hand the raw input to the next screen via router state.
-    navigate('/new/confirm', { state: { city: city.trim(), start, end, text } })
+    if (!canSubmit || !hotel) return
+    setBusy(true)
+    setProblem(null)
+    try {
+      const res = await parseItinerary(text)
+      if (res.status !== 'ok' || !res.draft) {
+        setProblem(PARSE_PROBLEM[res.problem?.code ?? ''] ?? PARSE_PROBLEM.LLM_FAILED)
+        return
+      }
+      const meta = {
+        city: city.trim(),
+        startDate: start,
+        endDate: end,
+        hotel: { title: hotel.title, placeId: hotel.option.place_id },
+      }
+      setTrip(tripFromDraft(res.draft, meta))
+      navigate('/new/confirm')
+    } catch {
+      setProblem('서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -79,6 +115,18 @@ export default function Landing() {
         </div>
 
         <div className="landing__field">
+          <label htmlFor="reg-hotel">숙소</label>
+          <PlaceSearch
+            inputId="reg-hotel"
+            city={city}
+            placeholder="예: 신주쿠 워싱턴 호텔"
+            picked={hotel?.option ?? null}
+            onPick={(option, title) => setHotel({ option, title })}
+          />
+          <span>하루가 숙소에서 시작하고, 일정이 깨져도 숙소로 돌아올 시간은 지켜요.</span>
+        </div>
+
+        <div className="landing__field">
           <label htmlFor="reg-paste">일정 붙여넣기</label>
           <textarea
             id="reg-paste"
@@ -93,8 +141,13 @@ export default function Landing() {
           </span>
         </div>
 
+        {problem && (
+          <p className="landing__problem" role="alert">
+            {problem}
+          </p>
+        )}
         <button type="submit" className="tp-btn-primary tp-denim" disabled={!canSubmit}>
-          원단 재단하기
+          {busy ? '재단하고 있어요…' : '원단 재단하기'}
         </button>
         {/* "enter one by one" mode is not in the MVP screen list; shown disabled until decided. */}
         <button type="button" className="tp-btn-quiet" disabled>
@@ -102,7 +155,7 @@ export default function Landing() {
         </button>
       </form>
 
-      <footer className="landing__footer">TravelPatch · 지금은 도쿄 일정부터 지원해요</footer>
+      <footer className="landing__footer">TravelPatch · 한 여행에 한 도시씩 지원해요</footer>
     </div>
   )
 }

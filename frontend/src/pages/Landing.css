@@ -163,3 +163,13 @@
   text-align: center;
   border-top: 1.5px dashed var(--tp-hemp);
 }
+
+.landing__problem {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1.5px dashed var(--tp-thread-loose);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: 14px;
+  color: var(--tp-rust);
+}
