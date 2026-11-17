@@ -31,3 +31,19 @@ def get_places_client() -> GooglePlacesClient:
         return _google_places()
     except PlacesConfigError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+# Optional versions: features that work without the key (the solver itself) get None instead of
+# a 503, so a closure is still solved offline, just without searched substitutes.
+def get_provider_optional() -> LLMProvider | None:
+    try:
+        return _openai()
+    except LLMConfigError:
+        return None
+
+
+def get_places_client_optional() -> GooglePlacesClient | None:
+    try:
+        return _google_places()
+    except PlacesConfigError:
+        return None

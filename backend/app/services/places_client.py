@@ -20,8 +20,9 @@ _ENV_PATH = Path(__file__).resolve().parents[3] / ".env"
 BASE_URL = "https://places.googleapis.com/v1"
 TIMEOUT_SECONDS = 10.0
 MAX_CANDIDATES = 5
+NEAR_RADIUS_M = 1500.0  # substitutes: about a 20-minute walk around the closed place
 
-SEARCH_FIELDS = "places.id,places.displayName,places.formattedAddress,places.location"
+SEARCH_FIELDS = "places.id,places.displayName,places.formattedAddress,places.location,places.types"
 DETAIL_FIELDS = "id,location,timeZone,regularOpeningHours.periods"
 
 
@@ -45,6 +46,7 @@ class PlaceCandidate(_Frozen):
     address: str | None
     lat: float
     lng: float
+    types: tuple[str, ...] = ()  # Google place types, e.g. "japanese_izakaya_restaurant"
 
 
 class OpeningPeriod(_Frozen):
@@ -116,9 +118,24 @@ class GooglePlacesClient:
             raise PlacesError(f"Places returned HTTP {response.status_code}: {detail[:200]}")
         return response.json()
 
-    def search(self, query: str, language: str = "ko") -> list[PlaceCandidate]:
-        """Candidates for a place name, in Google's order. The caller (the user) picks one."""
-        body = {"textQuery": query, "languageCode": language, "maxResultCount": MAX_CANDIDATES}
+    def search(
+        self,
+        query: str,
+        language: str = "ko",
+        near: tuple[float, float] | None = None,
+        radius_m: float = NEAR_RADIUS_M,
+    ) -> list[PlaceCandidate]:
+        """Candidates for a place name, in Google's order. The caller (the user) picks one.
+
+        `near` (lat, lng) prefers results around that point (a bias, not a hard limit)."""
+        body: dict[str, Any] = {
+            "textQuery": query,
+            "languageCode": language,
+            "maxResultCount": MAX_CANDIDATES,
+        }
+        if near is not None:
+            center = {"latitude": near[0], "longitude": near[1]}
+            body["locationBias"] = {"circle": {"center": center, "radius": radius_m}}
         data = self._call("POST", f"{BASE_URL}/places:searchText", SEARCH_FIELDS, json=body)
         return [
             PlaceCandidate(
@@ -127,6 +144,7 @@ class GooglePlacesClient:
                 address=p.get("formattedAddress"),
                 lat=p["location"]["latitude"],
                 lng=p["location"]["longitude"],
+                types=tuple(p.get("types", ())),
             )
             for p in data.get("places", [])
             if "id" in p and "location" in p

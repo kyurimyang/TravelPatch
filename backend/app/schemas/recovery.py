@@ -107,6 +107,10 @@ class RecoveryResponse(_Frozen):
 
     candidates: tuple[RecoveryResult, ...]
     blockers: tuple[Blocker, ...] = ()
+    # The input the candidates were computed from. It differs from the request when the server
+    # added substitutes for a closure; the client sends this one back (restore, re-run) so the
+    # same substitutes are used again instead of a new search.
+    used_input: "RecoveryInput | None" = None
 
 
 class RecoveryInput(_Frozen):
@@ -184,7 +188,7 @@ class Counterfactual(_Frozen):
 
 
 class RestoreRequest(_Frozen):
-    """"What if I keep X?" The candidate is recomputed from the input on the server, so a
+    """ "What if I keep X?" The candidate is recomputed from the input on the server, so a
     client can never hand us a plan the validator has not seen."""
 
     input: RecoveryInput

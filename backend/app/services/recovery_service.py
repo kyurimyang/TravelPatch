@@ -4,11 +4,30 @@ import time
 from app.engine.conflict_detector import find_blockers
 from app.engine.counterfactual import restore
 from app.engine.recover import recover
-from app.schemas.recovery import RecoveryInput, RecoveryResponse, RestoreRequest, RestoreResponse
+from app.schemas.recovery import (
+    RecoveryInput,
+    RecoveryResponse,
+    RecoveryResult,
+    RestoreRequest,
+    RestoreResponse,
+)
+from app.services.substitute_finder import needs_check_ids
 
 
 def _elapsed_ms(start: float) -> int:
     return math.ceil((time.perf_counter() - start) * 1000)
+
+
+def _mark_unknown_substitutes(inp: RecoveryInput, result: RecoveryResult) -> RecoveryResult:
+    """A plan that goes to a substitute with unknown hours says "check on site" (invariant 8)."""
+    unknown = needs_check_ids(inp)
+    if not unknown:
+        return result
+    changes = tuple(
+        c.model_copy(update={"needs_check": True}) if c.substitute_id in unknown else c
+        for c in result.changes
+    )
+    return result.model_copy(update={"changes": changes})
 
 
 def run_recovery(inp: RecoveryInput) -> RecoveryResponse:
@@ -20,13 +39,16 @@ def run_recovery(inp: RecoveryInput) -> RecoveryResponse:
     start = time.perf_counter()
     results = recover(inp)
     solver_ms = _elapsed_ms(start)
-    candidates = tuple(r.model_copy(update={"solver_ms": solver_ms}) for r in results)
+    candidates = tuple(
+        _mark_unknown_substitutes(inp, r.model_copy(update={"solver_ms": solver_ms}))
+        for r in results
+    )
     blockers = () if candidates else tuple(find_blockers(inp))
-    return RecoveryResponse(candidates=candidates, blockers=blockers)
+    return RecoveryResponse(candidates=candidates, blockers=blockers, used_input=inp)
 
 
 def run_restore(req: RestoreRequest) -> RestoreResponse:
-    """"What if I keep X?" for a candidate the user is looking at.
+    """ "What if I keep X?" for a candidate the user is looking at.
 
     The candidate is recomputed here from the input, never taken from the client, so the plan
     the counterfactual is measured against has been through the validator too.
@@ -38,6 +60,8 @@ def run_restore(req: RestoreRequest) -> RestoreResponse:
         raise LookupError(f"no candidate for strategy: {req.strategy}")
     cf = restore(req.input, base, req.activity_id)
     if cf is not None:
-        timed = cf.result.model_copy(update={"solver_ms": _elapsed_ms(start)})
+        timed = _mark_unknown_substitutes(
+            req.input, cf.result.model_copy(update={"solver_ms": _elapsed_ms(start)})
+        )
         cf = cf.model_copy(update={"result": timed})
     return RestoreResponse(counterfactual=cf)

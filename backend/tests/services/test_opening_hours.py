@@ -49,3 +49,27 @@ def test_morning_spill_of_an_overnight_period_is_its_own_window():
 def test_overnight_place_open_both_nights_is_unknown_on_the_second_day():
     periods = (_p(5, 1080, 6, 120), _p(6, 1080, 0, 120))
     assert hours_for_weekday(periods, SAT) == UNKNOWN
+
+
+def _period(od: int, om: int, cd: int, cm: int) -> OpeningPeriod:
+    return OpeningPeriod(open_day=od, open_minute=om, close_day=cd, close_minute=cm)
+
+
+# Thursday 17:00 -> Friday 02:00, Friday 17:00 -> Saturday 02:00 (a late-night izakaya).
+LATE = (_period(4, 1020, 5, 120), _period(5, 1020, 6, 120))
+FRIDAY = 4  # python weekday
+
+
+def test_two_windows_without_a_preferred_slot_stay_unknown():
+    assert hours_for_weekday(LATE, FRIDAY).status == "unknown"
+
+
+def test_two_windows_pick_the_real_one_around_the_slot():
+    hours = hours_for_weekday(LATE, FRIDAY, prefer=(1170, 1260))  # dinner 19:30-21:00
+    assert (hours.status, hours.open_at, hours.close_at) == ("known", 1020, 1440)
+
+
+def test_lunch_break_picks_the_window_the_slot_falls_in():
+    lunch_break = (_period(5, 690, 5, 840), _period(5, 1020, 5, 1320))  # 11:30-14:00, 17:00-22:00
+    hours = hours_for_weekday(lunch_break, FRIDAY, prefer=(720, 780))
+    assert (hours.open_at, hours.close_at) == (690, 840)  # never merged into 11:30-22:00

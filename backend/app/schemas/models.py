@@ -1,3 +1,4 @@
+import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -87,6 +88,9 @@ class Preference(_Frozen):
 
 class Day(_Frozen):
     id: str
+    # The calendar day. The engine never reads it (it has no clock and no calendar); the service
+    # layer uses it for the weekday of opening hours. None = unknown, e.g. old scenario files.
+    date: datetime.date | None = None
     timezone: str = "Asia/Tokyo"
     start_time: int = Field(ge=0, le=MINUTES_PER_DAY)
     end_deadline: int = Field(ge=0, le=MINUTES_PER_DAY)

@@ -22,8 +22,18 @@ class DayHours:
 UNKNOWN = DayHours("unknown")
 
 
-def hours_for_weekday(periods: tuple[OpeningPeriod, ...] | None, python_weekday: int) -> DayHours:
-    """`python_weekday`: Monday=0..Sunday=6 (`date.weekday()`). Google counts Sunday as 0."""
+def hours_for_weekday(
+    periods: tuple[OpeningPeriod, ...] | None,
+    python_weekday: int,
+    prefer: tuple[int, int] | None = None,
+) -> DayHours:
+    """`python_weekday`: Monday=0..Sunday=6 (`date.weekday()`). Google counts Sunday as 0.
+
+    Several windows in a day (a lunch break, or last night's hours running past midnight) are
+    never merged. With `prefer` (the slot the visit is meant for), the one real window that
+    overlaps it most is used: the visit then stays inside hours the place is truly open.
+    Without it, several windows stay "unknown".
+    """
     if periods is None:
         return UNKNOWN
     day = (python_weekday + 1) % 7
@@ -39,6 +49,16 @@ def hours_for_weekday(periods: tuple[OpeningPeriod, ...] | None, python_weekday:
     windows = sorted(set(windows))
     if not windows:
         return DayHours("closed")
-    if len(windows) > 1:
+    if len(windows) == 1:
+        return DayHours("known", windows[0][0], windows[0][1])
+    if prefer is None:
         return UNKNOWN
-    return DayHours("known", windows[0][0], windows[0][1])
+
+    def overlap(w: tuple[int, int]) -> int:
+        return max(0, min(w[1], prefer[1]) - max(w[0], prefer[0]))
+
+    # Most overlap first; ties go to the earlier window (sorted), so the choice is deterministic.
+    best = max(windows, key=overlap)
+    if overlap(best) == 0:
+        return UNKNOWN  # no window near the slot: let the user check rather than guess
+    return DayHours("known", best[0], best[1])

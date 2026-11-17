@@ -13,7 +13,9 @@ KEY = "test-key-123"
 
 
 def _client(handler) -> GooglePlacesClient:
-    return GooglePlacesClient(api_key=KEY, client=httpx.Client(transport=httpx.MockTransport(handler)))
+    return GooglePlacesClient(
+        api_key=KEY, client=httpx.Client(transport=httpx.MockTransport(handler))
+    )
 
 
 def test_missing_key_is_a_config_error(monkeypatch):
@@ -45,7 +47,9 @@ def test_search_sends_field_mask_and_key_and_parses_candidates():
         )
 
     found = _client(handler).search("스카이")
-    assert [(c.place_id, c.name, c.lat, c.lng) for c in found] == [("p1", "시부야 스카이", 35.6, 139.7)]
+    assert [(c.place_id, c.name, c.lat, c.lng) for c in found] == [
+        ("p1", "시부야 스카이", 35.6, 139.7)
+    ]
     assert seen["headers"]["x-goog-api-key"] == KEY
     assert "places.location" in seen["headers"]["x-goog-fieldmask"]
     assert seen["body"]["textQuery"] == "스카이" and seen["body"]["maxResultCount"] == 5
@@ -95,3 +99,27 @@ def test_network_failure_becomes_places_error():
     with pytest.raises(PlacesError) as info:
         _client(handler).search("x")
     assert KEY not in str(info.value)
+
+
+def test_search_near_a_point_sends_a_location_bias():
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"places": []})
+
+    _client(handler).search("이자카야", near=(35.66, 139.70))
+    circle = seen["body"]["locationBias"]["circle"]
+    assert circle["center"] == {"latitude": 35.66, "longitude": 139.70}
+    assert circle["radius"] == 1500.0
+
+
+def test_search_without_a_point_sends_no_bias():
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"places": []})
+
+    _client(handler).search("이자카야")
+    assert "locationBias" not in seen["body"]
