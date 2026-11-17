@@ -5,6 +5,7 @@ import type { SavedPatch } from '../lib/patches'
 import { tripLength } from '../lib/time'
 import { deviceNow, tripPhase } from '../lib/today'
 import { useTrip, type Category, type Trip } from '../store/trip'
+import { StateCard } from '../components/StateCard'
 import './Patchwork.css'
 
 // Light fabrics only: the quilt frame is indigo, so a dark weave would vanish into it.
@@ -117,10 +118,9 @@ export default function Patchwork() {
       </div>
 
       {withPatches.length === 0 && (
-        <div className="patchwork__empty tp-fabric">
-          <b>아직 덧댄 패치가 없어요</b>
-          <span>여행 중에 일정이 깨지면 ‘일정이 깨졌어요’에서 패치를 박음질해 보세요.</span>
-        </div>
+        <StateCard kind="empty" title="아직 덧댄 패치가 없어요">
+          <p>여행 중에 일정이 깨지면 ‘일정이 깨졌어요’에서 패치를 박음질해 보세요.</p>
+        </StateCard>
       )}
       {finished.map((t) => tripCard(t, true))}
       {weaving.map((t) => tripCard(t, false))}

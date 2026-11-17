@@ -6,6 +6,7 @@ import type { Tier } from '../lib/tier'
 import { formatDate, formatTime, tripLength } from '../lib/time'
 import { deviceNow, nextItem } from '../lib/today'
 import { useTrip } from '../store/trip'
+import { StateCard } from '../components/StateCard'
 import './Main.css'
 
 // Hand-placed swatch slots (percent of the map box) for up to 4 stops, copied from the mockup.
@@ -30,13 +31,17 @@ export default function Main() {
         <div className="main-screen__head">
           <h1>오늘의 원단</h1>
         </div>
-        <section className="main-screen__empty tp-fabric">
-          <b>아직 재단한 여행이 없어요</b>
-          <span>짜 둔 일정을 붙여넣으면 하루하루를 원단으로 정리해 드려요.</span>
-          <Link className="tp-btn-primary tp-denim" to="/new">
-            여행 일정 등록하기
-          </Link>
-        </section>
+        <StateCard
+          kind="empty"
+          title="아직 재단한 여행이 없어요"
+          actions={
+            <Link className="tp-btn-primary tp-denim" to="/new">
+              여행 일정 등록하기
+            </Link>
+          }
+        >
+          <p>짜 둔 일정을 붙여넣으면 하루하루를 원단으로 정리해 드려요.</p>
+        </StateCard>
       </div>
     )
   }

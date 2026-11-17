@@ -8,6 +8,7 @@ import { TravelModePicker } from '../components/TravelModePicker'
 import { CATEGORY_LABEL, categoryIcon } from '../lib/category'
 import { formatDate, formatTime, parseTime, tripLength } from '../lib/time'
 import { useTrip, type DraftIssue, type TripItem } from '../store/trip'
+import { StateCard } from '../components/StateCard'
 import './Confirm.css'
 
 // What the parser could not settle, in the user's words. Shown until the item has a usable range.
@@ -63,14 +64,17 @@ export default function Confirm() {
 
   if (!trip || !day) {
     return (
-      <div className="confirm">
-        <div className="confirm__body">
-          <p>등록 중인 여행이 없어요.</p>
+      <StateCard
+        kind="empty"
+        title="등록 중인 여행이 없어요"
+        actions={
           <Link className="tp-btn-primary tp-denim" to="/new">
             여행 등록하기
           </Link>
-        </div>
-      </div>
+        }
+      >
+        <p>짜 둔 일정을 붙여넣으면 여기서 장소와 시간을 확인해요.</p>
+      </StateCard>
     )
   }
 

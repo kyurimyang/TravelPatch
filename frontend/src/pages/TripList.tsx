@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { formatTime, tripLength } from '../lib/time'
 import { deviceNow, needsCheck, nextItem, tripPhase, type TripPhase } from '../lib/today'
 import { useTrip, type Trip } from '../store/trip'
+import { StateCard } from '../components/StateCard'
 import './TripList.css'
 
 const SECTION: Record<TripPhase, string> = { ongoing: '진행 중', upcoming: '다가오는 여행', past: '지난 여행' }
@@ -94,10 +95,9 @@ export default function TripList() {
       </div>
 
       {trips.length === 0 && (
-        <div className="trip-list__empty tp-fabric">
-          <b>아직 재단한 여행이 없어요</b>
-          <span>짜 둔 일정을 붙여넣으면 여행 원단으로 정리해 드려요.</span>
-        </div>
+        <StateCard kind="empty" title="아직 재단한 여행이 없어요">
+          <p>짜 둔 일정을 붙여넣으면 여행 원단으로 정리해 드려요.</p>
+        </StateCard>
       )}
 
       {(['ongoing', 'upcoming', 'past'] as const).map((phase) => {

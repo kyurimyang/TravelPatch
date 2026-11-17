@@ -4,6 +4,7 @@ import { createRecovery, lockActivities, restoreActivity } from '../api/recoveri
 import type { Counterfactual, RecoveryInput, RecoveryResponse, RecoveryResult } from '../api/types'
 import { CandidateCard } from '../components/CandidateCard'
 import { WhyPanel } from '../components/WhyPanel'
+import { StateCard } from '../components/StateCard'
 import { StitchLoader } from '../components/StitchLoader'
 import { inputFor, samplePlan, titlesOf, type RecoveryState } from '../lib/recovery'
 import { strategyLabel } from '../lib/strategy'
@@ -30,6 +31,7 @@ export default function DiffView() {
   // it is final for that card (no further restore/lock on top of it).
   const [adopted, setAdopted] = useState<Record<string, RecoveryResult>>({})
   const [busy, setBusy] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export default function DiffView() {
     }
     // baseInput is derived from the navigation state, which only changes together with event.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [event])
+  }, [event, attempt])
 
   if (state.status === 'loading') {
     return (
@@ -53,7 +55,32 @@ export default function DiffView() {
     )
   }
   if (state.status === 'error') {
-    return <div className="diff-view__msg">불러오지 못했어요: {state.message}</div>
+    return (
+      <StateCard
+        kind="error"
+        title="패치를 찾다가 실이 엉켰어요"
+        actions={
+          <>
+            <button
+              type="button"
+              className="tp-btn-primary tp-denim"
+              onClick={() => {
+                setState({ status: 'loading' })
+                setAttempt((n) => n + 1)
+              }}
+            >
+              다시 시도
+            </button>
+            <Link className="tp-btn-quiet" to="/">
+              원래 일정 그대로 두기
+            </Link>
+          </>
+        }
+      >
+        <p>{navigator.onLine ? '서버가 잠시 답하지 않아요. 잠깐 뒤 다시 해 주세요.' : '인터넷이 끊겨서 계산할 수 없어요.'}</p>
+        <p>원래 일정은 그대로 남아 있어요.</p>
+      </StateCard>
+    )
   }
 
   const { candidates, blockers } = state.response

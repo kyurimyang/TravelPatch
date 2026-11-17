@@ -1,0 +1,11 @@
+.offline-banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 8px 14px;
+  border-bottom: 2px dashed var(--tp-copper);
+  background: var(--tp-indigo);
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.5;
+}

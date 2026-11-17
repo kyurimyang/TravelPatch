@@ -8,6 +8,7 @@ import DiffView from './pages/DiffView'
 import Grade from './pages/Grade'
 import Landing from './pages/Landing'
 import Main from './pages/Main'
+import NotFound from './pages/NotFound'
 import NoPatch from './pages/NoPatch'
 import Patchwork from './pages/Patchwork'
 import Recover from './pages/Recover'
@@ -34,6 +35,7 @@ export default function AppRoutes() {
           <Route path="recover" element={<Recover />} />
           <Route path="recover/patch" element={<DiffView />} />
           <Route path="recover/blocked" element={<NoPatch />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Route>
     </Routes>

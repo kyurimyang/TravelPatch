@@ -4,6 +4,7 @@ import { TierPicker } from '../components/TierPicker'
 import { CATEGORY_LABEL, categoryIcon, defaultTier } from '../lib/category'
 import { formatDate, formatTime } from '../lib/time'
 import { useTrip } from '../store/trip'
+import { StateCard } from '../components/StateCard'
 import './Grade.css'
 
 const LEGEND: { cls: string; label: string; text: string }[] = [
@@ -18,14 +19,17 @@ export default function Grade() {
 
   if (!trip) {
     return (
-      <div className="grade">
-        <div className="grade__body">
-          <p>등록 중인 여행이 없어요.</p>
+      <StateCard
+        kind="empty"
+        title="등록 중인 여행이 없어요"
+        actions={
           <Link className="tp-btn-primary tp-denim" to="/new">
             여행 등록하기
           </Link>
-        </div>
-      </div>
+        }
+      >
+        <p>짜 둔 일정을 붙여넣으면 여기서 장소와 시간을 확인해요.</p>
+      </StateCard>
     )
   }
 

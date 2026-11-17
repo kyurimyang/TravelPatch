@@ -17,20 +17,7 @@
   color: var(--color-text-muted);
 }
 
-.trip-list__empty {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 18px 16px;
-  border: 2px dashed var(--tp-hemp);
-  border-radius: 12px;
-  background: var(--tp-linen);
-}
 
-.trip-list__empty span {
-  font-size: 14px;
-  color: var(--color-text-muted);
-}
 
 .trip-list__group h2 {
   margin: 0 0 8px;
