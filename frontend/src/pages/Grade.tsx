@@ -109,7 +109,7 @@ export default function Grade() {
 
       <div className="grade__bar tp-pinked-top">
         <span>나중에 일정 화면에서도 바꿀 수 있어요</span>
-        {/* Goes to Main for now; the location-permission screen is stage 5. */}
+        {/* Goes to Main. No location-permission screen: GPS is out of MVP (2026-11-17). */}
         <Link className="tp-btn-primary tp-denim" to="/">
           원단 완성하기
         </Link>

@@ -127,11 +127,7 @@ export default function Main() {
         <Link className="tp-btn-primary tp-denim" to="/recover">
           일정이 깨졌어요
         </Link>
-        <p>
-          깨진 일정은 직접 알려 주세요.
-          <br />
-          위치를 허용하면 지연도 알려 드려요.
-        </p>
+        <p>깨진 일정은 직접 알려 주세요.</p>
       </div>
     </div>
   )

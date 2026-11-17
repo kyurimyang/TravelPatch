@@ -44,7 +44,7 @@ export default function Recover() {
   async function understand() {
     setPhase({ kind: 'loading' })
     try {
-      // location_id "hotel" = where the user is; real GPS position comes with the location feature.
+      // location_id "hotel" = where the user is. No GPS in MVP (2026-11-17): the user picks their place.
       const response = await interpretDisruption({
         text: text.trim(),
         now: NOW,
