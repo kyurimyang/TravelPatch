@@ -7,7 +7,7 @@ dropped can block: must tier, or the one the user asked to extend.
 """
 
 from app.schemas.enums import Tier
-from app.schemas.events import ExtendEvent, WeatherEvent
+from app.schemas.events import ClosureEvent, ExtendEvent, WeatherEvent
 from app.schemas.models import HOTEL_ID, MINUTES_PER_DAY, Activity
 from app.schemas.recovery import Blocker, RecoveryInput
 
@@ -37,6 +37,15 @@ def find_blockers(inp: RecoveryInput) -> list[Blocker]:
             rain_end = ev.end_time if ev.end_time is not None else MINUTES_PER_DAY
             if r < rain_end and r + (a.planned_end - a.planned_start) > ev.start_time:
                 out.append(Blocker(kind="reserved_in_rain", activity_id=a.id, blocking_time=r))
+
+    # Closed, cannot be dropped, and nothing to stand in for it: no plan can exist.
+    # With any substitute it is not certain (one may fit), so nothing is reported then.
+    if (
+        isinstance(ev, ClosureEvent)
+        and ev.activity_id in musts
+        and not any(s.replaces == ev.activity_id for s in inp.substitutes)
+    ):
+        out.append(Blocker(kind="closed_no_substitute", activity_id=ev.activity_id))
 
     if isinstance(ev, ExtendEvent):
         target = next(a for a in inp.activities if a.id == ev.activity_id)

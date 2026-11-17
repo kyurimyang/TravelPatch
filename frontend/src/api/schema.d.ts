@@ -149,7 +149,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "reserved_in_past" | "reserved_in_rain" | "extension_blocked";
+            kind: "reserved_in_past" | "reserved_in_rain" | "extension_blocked" | "closed_no_substitute";
             /** Activity Id */
             activity_id: string;
             /** Blocking Time */

@@ -55,3 +55,30 @@ def test_sound_and_complete_on_the_evaluation_set() -> None:
         inp = _load(path)
         unsolvable = not recover(inp)
         assert bool(find_blockers(inp)) == unsolvable, path.stem
+
+
+def _closure_input(*, tier: str = "must", substitutes: bool = False) -> RecoveryInput:
+    """Scenario C (izakaya closed), with or without its substitutes and with the izakaya's tier set."""
+    raw = json.loads((SCENARIOS / "scenario_c.json").read_text(encoding="utf-8"))
+    raw.pop("expected", None)
+    if not substitutes:
+        raw["substitutes"] = []
+        raw["travel"] = [t for t in raw["travel"] if not {t["a"], t["b"]} & {"izakaya_near", "izakaya_far"}]
+    for p in raw["preferences"]:
+        if p["activity_id"] == "izakaya":
+            p["tier"] = tier
+    return RecoveryInput.model_validate(raw)
+
+
+def test_closed_must_with_no_substitute_is_a_blocker() -> None:
+    inp = _closure_input()
+    assert recover(inp) == []  # really no plan: the blocker must be certain
+    assert [(b.kind, b.activity_id) for b in find_blockers(inp)] == [("closed_no_substitute", "izakaya")]
+
+
+def test_closed_must_with_a_substitute_is_not_a_blocker() -> None:
+    assert find_blockers(_closure_input(substitutes=True)) == []
+
+
+def test_closed_activity_that_can_be_dropped_is_not_a_blocker() -> None:
+    assert find_blockers(_closure_input(tier="nice")) == []

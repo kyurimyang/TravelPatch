@@ -12,6 +12,8 @@ function describe(blocker: Blocker, title: string): string {
       return `${title}: 비 오는 시간에 잡힌 야외 예약이라 옮길 수 없어요`
     case 'extension_blocked':
       return `${title}: 운영 시간 때문에 ${blocker.max_extra_minutes ?? 0}분까지만 늘릴 수 있어요`
+    case 'closed_no_substitute':
+      return `${title}: 문을 닫았는데 ‘꼭’이라 뺄 수 없고, 근처에 그 시간에 여는 비슷한 곳을 찾지 못했어요`
   }
 }
 

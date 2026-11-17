@@ -70,7 +70,12 @@ class Blocker(_Frozen):
     Only certain causes are reported; an empty list means "no single cause found".
     """
 
-    kind: Literal["reserved_in_past", "reserved_in_rain", "extension_blocked"]
+    kind: Literal[
+        "reserved_in_past",
+        "reserved_in_rain",
+        "extension_blocked",
+        "closed_no_substitute",  # a must is closed and no substitute place was found
+    ]
     activity_id: str
     blocking_time: int | None = None  # the time that cannot move (a reservation)
     max_extra_minutes: int | None = None  # extension_blocked: the most that would still fit
