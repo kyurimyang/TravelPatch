@@ -1,37 +1,26 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { createRecovery } from '../api/recoveries'
-import type { DisruptionEvent, RecoveryInput, RecoveryResponse } from '../api/types'
+import type { RecoveryInput, RecoveryResponse } from '../api/types'
 import { CandidateCard } from '../components/CandidateCard'
+import { inputFor, samplePlan, titlesOf, type RecoveryState } from '../lib/recovery'
 import { strategyLabel } from '../lib/strategy'
 import sample from '../mocks/scenarioAInput.json'
 import './DiffView.css'
-
-// Sample input = scenario A (backend/tests/scenarios/scenario_a.json). Until the register screen
-// exists, this is the day the app recovers.
-const baseInput = sample as unknown as RecoveryInput
-
-// Names by id from the input the server actually used: it may have added substitutes (closure).
-function titlesOf(inp: RecoveryInput): Map<string, string> {
-  return new Map([
-    ...inp.activities.map((a) => [a.id, a.title] as const),
-    ...(inp.substitutes ?? []).map((s) => [s.id, s.title] as const),
-  ])
-}
 
 type State =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'done'; response: RecoveryResponse }
 
-// What Recover hands over: the event the user confirmed and the chips that said what was understood.
-type RecoverState = { event?: DisruptionEvent; chips?: string[] } | null
-
 export default function DiffView() {
-  const nav = (useLocation().state as RecoverState) ?? {}
-  // Opening this URL directly falls back to the sample's own event (scenario A).
-  const event = nav.event ?? baseInput.event
-  const chips = nav.chips ?? []
+  const nav = useLocation().state as RecoveryState | null
+  // Opening this URL directly falls back to the sample day and its own event (scenario A).
+  const plan = nav?.plan ?? samplePlan()
+  const source = nav?.source ?? 'sample'
+  const event = nav?.event ?? (sample as unknown as RecoveryInput).event
+  const chips = nav?.chips ?? []
+  const baseInput = inputFor(plan, event)
 
   const [state, setState] = useState<State>({ status: 'loading' })
   const [picked, setPicked] = useState(0)
@@ -39,12 +28,14 @@ export default function DiffView() {
   useEffect(() => {
     // `cancelled` drops a stale answer if the effect re-runs (StrictMode runs it twice in dev).
     let cancelled = false
-    createRecovery({ ...baseInput, event })
+    createRecovery(baseInput)
       .then((response) => !cancelled && setState({ status: 'done', response }))
       .catch((e: Error) => !cancelled && setState({ status: 'error', message: e.message }))
     return () => {
       cancelled = true
     }
+    // baseInput is derived from the navigation state, which only changes together with event.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event])
 
   if (state.status === 'loading') return <div className="diff-view__msg">복구안을 계산하고 있어요…</div>
@@ -55,7 +46,13 @@ export default function DiffView() {
   const { candidates, blockers } = state.response
   // No plan at all: the blocker screen explains why.
   if (candidates.length === 0) {
-    return <Navigate to="/recover/blocked" replace state={{ blockers, chips }} />
+    return (
+      <Navigate
+        to="/recover/blocked"
+        replace
+        state={{ blockers, chips, titles: Object.fromEntries(titlesOf(baseInput)) }}
+      />
+    )
   }
 
   const result = candidates[picked]
@@ -120,7 +117,7 @@ export default function DiffView() {
         <Link
           className="tp-btn-primary tp-denim"
           to="/recover/done"
-          state={{ result, titles: Object.fromEntries(titleOf) }}
+          state={{ result, source, plan, titles: Object.fromEntries(titleOf) }}
         >
           이 패치로 박음질하기
         </Link>

@@ -209,3 +209,72 @@
   background: var(--tp-linen);
   border-top: 2px dashed var(--tp-hemp);
 }
+
+.recover__blocked {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 2px dashed var(--tp-thread-loose);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.recover__blocked p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.recover__warn {
+  padding: 10px 14px;
+  border: 1.5px dashed var(--tp-mustard);
+  border-radius: 12px;
+  background: var(--op-shrink-bg);
+  color: var(--op-shrink-fg);
+  font-size: 14px;
+}
+
+.recover__warn p {
+  margin: 0;
+}
+
+.recover__where {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.recover__where legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recover__where label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.recover__where input,
+.recover__where select {
+  min-height: 44px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1.5px solid var(--tp-denim-deep);
+  border-radius: 10px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 16px;
+  color: var(--color-text);
+}

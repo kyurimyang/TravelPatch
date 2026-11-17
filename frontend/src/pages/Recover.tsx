@@ -1,26 +1,23 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { interpretDisruption } from '../api/disruptions'
 import { ApiError } from '../api/http'
-import type { InterpretResponse, RecoveryInput } from '../api/types'
+import { buildPlan } from '../api/plans'
+import type { BuiltPlan, InterpretResponse } from '../api/types'
 import closed from '../assets/patches/hole-closed.svg'
 import delay from '../assets/patches/hole-delay.svg'
 import late from '../assets/patches/hole-late.svg'
 import rain from '../assets/patches/hole-rain.svg'
 import tired from '../assets/patches/hole-tired.svg'
-import { formatTime } from '../lib/time'
-import sample from '../mocks/scenarioAInput.json'
+import { planRequestFor, samplePlan, type RecoveryState, type RecoverySource } from '../lib/recovery'
+import { formatTime, parseTime } from '../lib/time'
+import { useTrip } from '../store/trip'
 import './Recover.css'
-
-// Same stand-in day as DiffView (scenario A) until the register API exists (stage 6).
-const activities = (sample as unknown as RecoveryInput).activities
-// Mock "now" (minutes since midnight). The server never reads a clock; the client sends it.
-const NOW = 9 * 60
 
 // Quick buttons only fill the sentence box; they go through the same interpret call as typed text.
 const QUICK = [
   { id: 'delay', label: '열차·버스 지연', icon: delay, text: '열차가 한 시간쯤 늦게 와요' },
-  { id: 'closed', label: '휴무·영업 종료', icon: closed, text: '이자카야가 임시휴무래요' },
+  { id: 'closed', label: '휴무·영업 종료', icon: closed, text: '저녁 먹을 곳이 임시휴무래요' },
   { id: 'rain', label: '비·날씨', icon: rain, text: '12시부터 비가 와요' },
   { id: 'late', label: '출발이 늦어졌어요', icon: late, text: '늦잠 자서 두 시간 뒤에 출발해요' },
   { id: 'tired', label: '지쳤어요 · 쉬고 싶어요', icon: tired, text: '일행이 지쳐서 많이 걷기 힘들어요' },
@@ -32,23 +29,115 @@ type Phase =
   | { kind: 'error'; message: string }
   | { kind: 'result'; response: InterpretResponse }
 
+// The day being recovered: being built by the server, ready, or not possible (with why).
+type DayState =
+  | { kind: 'building' }
+  | { kind: 'ready'; plan: BuiltPlan; source: RecoverySource }
+  | { kind: 'blocked'; message: string }
+
+function deviceToday(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** Default "now": the phone's clock on the day being travelled, else 30 minutes before the first item. */
+function defaultNow(plan: BuiltPlan): number {
+  const d = new Date()
+  if (plan.day.date === deviceToday()) return d.getHours() * 60 + d.getMinutes()
+  const first = Math.min(...plan.activities.map((a) => a.planned_start))
+  return Math.max(0, Math.floor((first - 30) / 5) * 5)
+}
+
 export default function Recover() {
   const navigate = useNavigate()
+  const { trip } = useTrip()
+  const dayIndex = (useLocation().state as { dayIndex?: number } | null)?.dayIndex ?? 0
+
+  // Why the trip day cannot be sent yet (derived, not stored): no trip, or unconfirmed items.
+  const req = useMemo(() => (trip ? planRequestFor(trip, dayIndex) : null), [trip, dayIndex])
+  const notReady = !req ? '등록한 여행이 없어요.' : 'problem' in req ? req.problem : null
+  const [fetched, setFetched] = useState<DayState | null>(null)
+  const [useSample, setUseSample] = useState(false)
+  const [now, setNow] = useState<number | null>(null)
+  const [locationId, setLocationId] = useState('hotel')
   const [text, setText] = useState('')
   const [quick, setQuick] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
 
-  const next = activities.find((a) => a.planned_start >= NOW)
+  // Build the trip day once on the server (coordinates + hours from Google, kept in memory only).
+  useEffect(() => {
+    if (!req || 'problem' in req) return
+    let cancelled = false
+    buildPlan(req)
+      .then((plan) => !cancelled && setFetched({ kind: 'ready', plan, source: 'trip' }))
+      .catch((e: Error) => {
+        if (cancelled) return
+        const message =
+          e instanceof ApiError && e.status === 503
+            ? '장소 정보를 불러올 수 없어요. 서버에 장소 검색 키가 설정되어 있는지 확인해 주세요.'
+            : '장소 정보를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.'
+        setFetched({ kind: 'blocked', message })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [req])
+
+  const day: DayState = useSample
+    ? { kind: 'ready', plan: samplePlan(), source: 'sample' }
+    : notReady
+      ? { kind: 'blocked', message: notReady }
+      : (fetched ?? { kind: 'building' })
+
+  if (day.kind !== 'ready') {
+    return (
+      <div className="recover">
+        <div className="recover__body">
+          <div className="recover__intro">
+            <h1>
+              원단 어디에
+              <br />
+              구멍이 났나요?
+            </h1>
+          </div>
+          {day.kind === 'building' ? (
+            <p className="recover__note">이날 원단을 펼치고 있어요…</p>
+          ) : (
+            <section className="recover__blocked tp-fabric">
+              <p>{day.message}</p>
+              {trip && (
+                <Link className="tp-btn-quiet" to="/new/confirm">
+                  일정 확인으로 가기
+                </Link>
+              )}
+              <button
+                type="button"
+                className="tp-btn-primary tp-denim"
+                onClick={() => setUseSample(true)}
+              >
+                예시 여행(도쿄)으로 해 보기
+              </button>
+            </section>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const { plan, source } = day
+  const activities = plan.activities
+  const nowMin = now ?? defaultNow(plan)
+  const next = activities.find((a) => a.planned_start >= nowMin)
   const titleOf = (id: string) => activities.find((a) => a.id === id)?.title ?? id
 
   async function understand() {
     setPhase({ kind: 'loading' })
     try {
-      // location_id "hotel" = where the user is. No GPS in MVP (2026-11-17): the user picks their place.
+      // No GPS in MVP (2026-11-17): the user says where they are.
       const response = await interpretDisruption({
         text: text.trim(),
-        now: NOW,
-        location_id: 'hotel',
+        now: nowMin,
+        location_id: locationId,
         activities,
       })
       setPhase({ kind: 'result', response })
@@ -63,11 +152,14 @@ export default function Recover() {
 
   const response = phase.kind === 'result' ? phase.response : null
   const ready = response?.status === 'ok' && response.event !== null
+  const reset = () => setPhase({ kind: 'idle' })
 
   return (
     <div className="recover">
       <div className="recover__body">
-        <div className="recover__meta">DAY 1 · {formatTime(NOW)}</div>
+        <div className="recover__meta">
+          {source === 'sample' ? '예시 여행 · 도쿄' : `DAY ${dayIndex + 1}`} · {formatTime(nowMin)}
+        </div>
         <div className="recover__intro">
           <h1>
             원단 어디에
@@ -76,6 +168,48 @@ export default function Recover() {
           </h1>
           <p>고르거나 한 줄로 적어 주시면, 영향 받는 조각을 찾아 볼게요.</p>
         </div>
+
+        {plan.warnings.length > 0 && (
+          <section className="recover__warn" role="note">
+            {plan.warnings.map((w) => (
+              <p key={w.activity_id}>{titleOf(w.activity_id)}: 이날은 쉬는 날로 나와요. 그대로 둘지 확인해 주세요.</p>
+            ))}
+          </section>
+        )}
+
+        <fieldset className="recover__where tp-fabric">
+          <legend>지금</legend>
+          <label>
+            <span>시각</span>
+            <input
+              type="time"
+              step={300}
+              value={formatTime(nowMin)}
+              onChange={(e) => {
+                const m = parseTime(e.target.value)
+                if (m !== null) setNow(m)
+                reset()
+              }}
+            />
+          </label>
+          <label>
+            <span>있는 곳</span>
+            <select
+              value={locationId}
+              onChange={(e) => {
+                setLocationId(e.target.value)
+                reset()
+              }}
+            >
+              <option value="hotel">숙소</option>
+              {activities.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        </fieldset>
 
         {next && (
           <section className="recover__next tp-fabric" aria-label="지금 걸려 있는 조각">
@@ -165,7 +299,10 @@ export default function Recover() {
           <button
             type="button"
             className="tp-btn-primary tp-denim"
-            onClick={() => navigate('/recover/patch', { state: { event: response!.event, chips: response!.chips } })}
+            onClick={() => {
+              const state: RecoveryState = { plan, source, event: response!.event!, chips: response!.chips }
+              navigate('/recover/patch', { state })
+            }}
           >
             패치 찾아보기
           </button>

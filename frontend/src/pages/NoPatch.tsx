@@ -1,17 +1,15 @@
 import { Link, useLocation } from 'react-router'
-import type { Blocker, RecoveryInput } from '../api/types'
+import type { Blocker } from '../api/types'
 import { BlockerList } from '../components/BlockerList'
-import sample from '../mocks/scenarioAInput.json'
 import './NoPatch.css'
 
-const titleOf = new Map((sample as unknown as RecoveryInput).activities.map((a) => [a.id, a.title]))
-
-type NoPatchState = { blockers?: Blocker[]; chips?: string[] } | null
+type NoPatchState = { blockers?: Blocker[]; chips?: string[]; titles?: Record<string, string> } | null
 
 // The mockup also offers "relax a condition and retry" and "tell me when things change". Neither
 // exists yet (no what-if API; live monitoring is out of the MVP), so they are left out on purpose.
 export default function NoPatch() {
-  const { blockers = [], chips = [] } = useLocation().state as NonNullable<NoPatchState> ?? {}
+  const { blockers = [], chips = [], titles = {} } = (useLocation().state as NoPatchState) ?? {}
+  const titleOf = new Map(Object.entries(titles))
 
   return (
     <div className="no-patch">

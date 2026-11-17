@@ -1,20 +1,22 @@
 import { Link, useLocation, useNavigate } from 'react-router'
-import type { RecoveryInput, RecoveryResult } from '../api/types'
+import type { BuiltPlan, RecoveryResult } from '../api/types'
 import delayPatch from '../assets/patches/hole-delay.svg'
 import { OP_LABEL } from '../components/DiffRow'
 import { CATEGORY_ICON, DEFAULT_ICON } from '../lib/placeIcons'
 import { strategyLabel } from '../lib/strategy'
 import { formatTime } from '../lib/time'
-import sample from '../mocks/scenarioAInput.json'
 import './Stitched.css'
-
-const activities = new Map((sample as unknown as RecoveryInput).activities.map((a) => [a.id, a]))
 
 export default function Stitched() {
   const navigate = useNavigate()
-  const navState = useLocation().state as { result?: RecoveryResult; titles?: Record<string, string> } | null
+  const navState = useLocation().state as {
+    result?: RecoveryResult
+    plan?: BuiltPlan
+    titles?: Record<string, string>
+  } | null
   const result = navState?.result
   const titles = navState?.titles ?? {}
+  const activities = new Map((navState?.plan?.activities ?? []).map((a) => [a.id, a]))
 
   // Opened without a chosen patch (e.g. typed URL): nothing to show.
   if (!result) {
