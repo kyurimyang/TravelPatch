@@ -4,6 +4,7 @@ import { searchPlaces } from '../api/places'
 import type { PlaceOption } from '../api/types'
 import { PlaceSearch } from '../components/PlaceSearch'
 import { TimeEditor } from '../components/TimeEditor'
+import { TravelModePicker } from '../components/TravelModePicker'
 import { CATEGORY_ICON, DEFAULT_ICON } from '../lib/placeIcons'
 import { formatDate, formatTime, parseTime, tripLength } from '../lib/time'
 import { useTrip, type DraftIssue, type TripItem } from '../store/trip'
@@ -245,6 +246,15 @@ export default function Confirm() {
               const m = parseTime(e.target.value)
               if (m !== null) setTrip({ ...trip, endDeadline: m })
             }}
+          />
+        </div>
+
+        <div className="confirm__mode">
+          <b>이동수단</b>
+          <TravelModePicker
+            name="confirm-mode"
+            value={trip.travelMode}
+            onChange={(travelMode) => setTrip({ ...trip, travelMode })}
           />
         </div>
 

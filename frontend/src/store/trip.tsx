@@ -5,6 +5,7 @@
 // No coordinates, no Google names or opening hours: the server fetches those per request.
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { components } from '../api/schema'
+import type { TravelMode } from '../api/types'
 import type { Tier } from '../lib/tier'
 
 type Schemas = components['schemas']
@@ -43,6 +44,8 @@ export type Trip = {
   startDate: string
   endDate: string
   hotel: { title: string; placeId: string } | null
+  /** How the traveler moves between places; travel times are estimated with it. */
+  travelMode: TravelMode
   /** Latest return to the hotel, minutes since midnight. Default 22:00, changeable on Confirm. */
   endDeadline: number
   days: TripDay[]
@@ -65,7 +68,8 @@ const TripContext = createContext<TripStore | null>(null)
 function load(): Trip | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Trip) : null
+    // Trips saved before travel modes existed get the old behaviour (transit).
+    return raw ? ({ travelMode: 'transit', ...JSON.parse(raw) } as Trip) : null
   } catch {
     return null
   }

@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { parseItinerary } from '../api/itineraries'
-import type { PlaceOption } from '../api/types'
+import type { PlaceOption, TravelMode } from '../api/types'
 import wordmark from '../assets/wordmark.png'
 import mend from '../assets/patches/patch-mend.svg'
 import stay from '../assets/patches/place-stay.svg'
 import rain from '../assets/patches/hole-rain.svg'
 import { PlaceSearch } from '../components/PlaceSearch'
+import { TravelModePicker } from '../components/TravelModePicker'
 import { tripFromDraft } from '../lib/tripFromDraft'
 import { useTrip } from '../store/trip'
 import './Landing.css'
@@ -31,6 +32,7 @@ export default function Landing() {
   const [end, setEnd] = useState('')
   // The Google option is shown while registering only; the trip keeps the typed words + place_id.
   const [hotel, setHotel] = useState<{ option: PlaceOption; title: string } | null>(null)
+  const [travelMode, setTravelMode] = useState<TravelMode>('transit')
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
@@ -54,6 +56,7 @@ export default function Landing() {
         startDate: start,
         endDate: end,
         hotel: { title: hotel.title, placeId: hotel.option.place_id },
+        travelMode,
       }
       setTrip(tripFromDraft(res.draft, meta))
       navigate('/new/confirm')
@@ -124,6 +127,12 @@ export default function Landing() {
             onPick={(option, title) => setHotel({ option, title })}
           />
           <span>하루가 숙소에서 시작하고, 일정이 깨져도 숙소로 돌아올 시간은 지켜요.</span>
+        </div>
+
+        <div className="landing__field">
+          <span className="landing__label">주로 어떻게 다니세요?</span>
+          <TravelModePicker name="reg-mode" value={travelMode} onChange={setTravelMode} />
+          <span>장소 사이 이동 시간을 이 수단으로 계산해요. 나중에 바꿀 수 있어요.</span>
         </div>
 
         <div className="landing__field">

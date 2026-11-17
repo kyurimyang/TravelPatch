@@ -197,6 +197,8 @@ export interface components {
             id: string;
             /** Date */
             date?: string | null;
+            /** @default transit */
+            travel_mode: components["schemas"]["TravelMode"];
             /**
              * Timezone
              * @default Asia/Tokyo
@@ -736,6 +738,13 @@ export interface components {
          * @enum {string}
          */
         TimeRigidity: "reserved" | "time_window" | "flexible";
+        /**
+         * TravelMode
+         * @description How the traveler gets around. Only the service layer reads it (travel time estimates);
+         *     the engine receives a finished travel table.
+         * @enum {string}
+         */
+        TravelMode: "transit" | "walk" | "car";
         /** TravelTime */
         TravelTime: {
             /** A */
