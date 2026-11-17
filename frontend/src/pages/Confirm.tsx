@@ -5,19 +5,10 @@ import type { PlaceOption } from '../api/types'
 import { PlaceSearch } from '../components/PlaceSearch'
 import { TimeEditor } from '../components/TimeEditor'
 import { TravelModePicker } from '../components/TravelModePicker'
-import { CATEGORY_ICON, DEFAULT_ICON } from '../lib/placeIcons'
+import { CATEGORY_LABEL, categoryIcon } from '../lib/category'
 import { formatDate, formatTime, parseTime, tripLength } from '../lib/time'
 import { useTrip, type DraftIssue, type TripItem } from '../store/trip'
 import './Confirm.css'
-
-const CATEGORY_LABEL: Record<TripItem['category'], string> = {
-  meal: '식사',
-  sightseeing: '관광',
-  shopping: '쇼핑',
-  cafe: '카페',
-  transport: '이동',
-  other: '기타',
-}
 
 // What the parser could not settle, in the user's words. Shown until the item has a usable range.
 const ISSUE_TEXT: Record<DraftIssue['code'], string> = {
@@ -287,7 +278,7 @@ export default function Confirm() {
           {day.items.map((it, index) => (
             <div className="confirm__card tp-fabric" key={it.id}>
               <div className="confirm__card-row">
-                <img src={CATEGORY_ICON[it.category] ?? DEFAULT_ICON} alt="" aria-hidden="true" />
+                <img src={categoryIcon(it.category)} alt="" aria-hidden="true" />
                 <div className="confirm__card-text">
                   <span>
                     {hasTime(it) ? `${formatTime(it.start!)}–${formatTime(it.end!)}` : '시각 없음'} ·{' '}

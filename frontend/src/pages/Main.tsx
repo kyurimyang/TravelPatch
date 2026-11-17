@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { PLACE_ICONS } from '../lib/placeIcons'
+import { CATEGORY_LABEL, categoryIcon } from '../lib/category'
 import type { Tier } from '../lib/tier'
-import { MOCK_DAYS, MOCK_TRIP_TITLE } from '../mocks/draftItinerary'
+import { formatDate, formatTime, tripLength } from '../lib/time'
+import { useTrip, type TripDay } from '../store/trip'
 import './Main.css'
 
 // Hand-placed swatch slots (percent of the map box) for up to 4 stops, copied from the mockup.
@@ -15,43 +16,78 @@ const SLOTS = [
 
 const TIER_LABEL: Record<Tier, string> = { must: '꼭 갈 곳', nice: '좋음', optional: '선택' }
 
-// Mock "today" = DAY 1. The real value must come from the trip dates + current time passed in.
-const TODAY_INDEX = 0
+/** The device's own date and clock. A traveller's phone is on local time at the destination. */
+function deviceNow(): { date: string; minutes: number } {
+  const d = new Date()
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return { date, minutes: d.getHours() * 60 + d.getMinutes() }
+}
+
+/** First item not finished yet on the day being travelled; on any other day, the first item. */
+function nextItem(day: TripDay, isToday: boolean, now: number) {
+  const timed = day.items.filter((it) => it.start != null)
+  return isToday ? timed.find((it) => (it.end ?? it.start!) > now) : timed[0]
+}
 
 export default function Main() {
-  const [dayIndex, setDayIndex] = useState(TODAY_INDEX)
-  const day = MOCK_DAYS[dayIndex]
+  const { trip } = useTrip()
+  const [now] = useState(deviceNow)
+  const todayIndex = trip ? trip.days.findIndex((d) => d.date === now.date) : -1
+  const [dayIndex, setDayIndex] = useState(Math.max(0, todayIndex))
+
+  if (!trip || trip.days.length === 0) {
+    return (
+      <div className="main-screen">
+        <div className="main-screen__head">
+          <h1>오늘의 원단</h1>
+        </div>
+        <section className="main-screen__empty tp-fabric">
+          <b>아직 재단한 여행이 없어요</b>
+          <span>짜 둔 일정을 붙여넣으면 하루하루를 원단으로 정리해 드려요.</span>
+          <Link className="tp-btn-primary tp-denim" to="/new">
+            여행 일정 등록하기
+          </Link>
+        </section>
+      </div>
+    )
+  }
+
+  const day = trip.days[dayIndex]
+  const isToday = dayIndex === todayIndex
+  const next = nextItem(day, isToday, now.minutes)
   const stops = day.items.slice(0, SLOTS.length)
-  const next = day.items[0]
+  const status = (i: number) =>
+    i === todayIndex ? '오늘' : now.date < trip.days[i].date ? '다가오는 날' : '지난 날'
 
   return (
     <div className="main-screen">
       <div className="main-screen__head">
-        {/* Trip switching belongs to TripList (stage 4); shown as a label only for now. */}
-        <span className="main-screen__trip">{MOCK_TRIP_TITLE}</span>
+        <span className="main-screen__trip">
+          {trip.city} {tripLength(trip.startDate, trip.endDate)}
+        </span>
         <div className="main-screen__date">
-          {day.dateLabel} · {day.label} / {MOCK_DAYS.length}
+          {formatDate(day.date)} · DAY {dayIndex + 1} / {trip.days.length}
         </div>
-        <h1>오늘의 원단</h1>
+        <h1>{isToday ? '오늘의 원단' : `DAY ${dayIndex + 1}의 원단`}</h1>
       </div>
 
       <nav className="main-screen__days" aria-label="여행 날짜">
-        {MOCK_DAYS.map((d, i) => (
+        {trip.days.map((d, i) => (
           <button
-            key={d.label}
+            key={d.date}
             type="button"
             className="tp-tagstitch"
             aria-current={i === dayIndex ? 'true' : undefined}
             onClick={() => setDayIndex(i)}
           >
-            {d.label}
-            <span>{i === TODAY_INDEX ? '오늘' : '재단됨'}</span>
+            DAY {i + 1}
+            <span>{status(i)}</span>
           </button>
         ))}
       </nav>
 
       {/* Decorative fabric "map": positions are NOT real locations (real map = Leaflet later). */}
-      <section className="main-screen__map" aria-label="오늘의 원단 지도">
+      <section className="main-screen__map" aria-label="원단 지도">
         {stops.map((it, i) => {
           const s = SLOTS[i]
           return (
@@ -67,10 +103,10 @@ export default function Main() {
               }}
             >
               <span>
-                {it.time} {it.name}
-                {i === 0 && ' · 다음'}
+                {it.start != null && formatTime(it.start)} {it.title}
+                {it.id === next?.id && ' · 다음'}
               </span>
-              <img src={PLACE_ICONS[it.icon]} alt="" aria-hidden="true" />
+              <img src={categoryIcon(it.category)} alt="" aria-hidden="true" />
             </div>
           )
         })}
@@ -87,44 +123,55 @@ export default function Main() {
         </svg>
       </section>
 
-      {/* No travel time shown: it needs the Routes API (stage 6). Only what the plan itself knows. */}
-      <section className="main-screen__next tp-fabric" aria-label="다음 일정">
-        <img src={PLACE_ICONS[next.icon]} alt="" aria-hidden="true" />
-        <div>
-          <span>
-            다음 일정 · <b>{next.time} 시작</b>
-          </span>
-          <strong>{next.name}</strong>
-          <span>
-            {next.categoryLabel}
-            {next.address && ` · ${next.address}`}
-          </span>
-        </div>
-      </section>
+      {next ? (
+        <section className="main-screen__next tp-fabric" aria-label="다음 일정">
+          <img src={categoryIcon(next.category)} alt="" aria-hidden="true" />
+          <div>
+            <span>
+              {isToday ? '다음 일정' : '첫 일정'} · <b>{formatTime(next.start!)} 시작</b>
+            </span>
+            <strong>{next.title}</strong>
+            <span>
+              {CATEGORY_LABEL[next.category]} · {TIER_LABEL[next.tier]}
+              {next.reservationTime != null && ' · 예약'}
+            </span>
+          </div>
+        </section>
+      ) : (
+        <section className="main-screen__next tp-fabric" aria-label="다음 일정">
+          <div>
+            <strong>오늘 일정을 모두 마쳤어요</strong>
+            <span>{trip.hotel?.title ?? '숙소'}로 돌아갈 시간은 {formatTime(trip.endDeadline)}까지예요.</span>
+          </div>
+        </section>
+      )}
 
-      <section className="main-screen__pieces tp-fabric" aria-label="오늘의 조각">
-        <h2>오늘의 조각</h2>
+      <section className="main-screen__pieces tp-fabric" aria-label="조각 목록">
+        <h2>{isToday ? '오늘의 조각' : '이날의 조각'}</h2>
         <ul>
-          {day.items.map((it, i) => (
-            <li key={it.id}>
-              <span className={i === 0 ? 'main-screen__time main-screen__time--next' : 'main-screen__time'}>
-                {it.time}
-              </span>
-              <img src={PLACE_ICONS[it.icon]} alt="" aria-hidden="true" />
-              <span className="main-screen__piece-text">
-                <b>{it.name}</b>
-                <span>
-                  {it.categoryLabel} · {TIER_LABEL[it.recommendedTier]}
+          {day.items.map((it) => {
+            const isNext = it.id === next?.id
+            return (
+              <li key={it.id}>
+                <span className={isNext ? 'main-screen__time main-screen__time--next' : 'main-screen__time'}>
+                  {it.start != null ? formatTime(it.start) : '--:--'}
                 </span>
-              </span>
-              {i === 0 && <span className="main-screen__next-tag tp-tagstitch">다음</span>}
-            </li>
-          ))}
+                <img src={categoryIcon(it.category)} alt="" aria-hidden="true" />
+                <span className="main-screen__piece-text">
+                  <b>{it.title}</b>
+                  <span>
+                    {CATEGORY_LABEL[it.category]} · {TIER_LABEL[it.tier]}
+                  </span>
+                </span>
+                {isNext && <span className="main-screen__next-tag tp-tagstitch">다음</span>}
+              </li>
+            )
+          })}
         </ul>
       </section>
 
       <div className="main-screen__cta">
-        <Link className="tp-btn-primary tp-denim" to="/recover">
+        <Link className="tp-btn-primary tp-denim" to="/recover" state={{ dayIndex }}>
           일정이 깨졌어요
         </Link>
         <p>깨진 일정은 직접 알려 주세요.</p>

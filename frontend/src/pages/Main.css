@@ -252,3 +252,20 @@
   color: var(--color-text-muted);
   text-align: center;
 }
+
+.main-screen__empty {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 16px;
+  padding: 20px 16px;
+  border: 2px dashed var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.main-screen__empty span {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}

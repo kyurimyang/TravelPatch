@@ -1,5 +1,6 @@
 import type { DraftItinerary } from '../api/types'
 import { DEFAULT_END_DEADLINE, type Trip } from '../store/trip'
+import { defaultTier } from './category'
 
 type TripMeta = Pick<Trip, 'city' | 'startDate' | 'endDate' | 'hotel' | 'travelMode'>
 
@@ -33,7 +34,7 @@ export function tripFromDraft(draft: DraftItinerary, meta: TripMeta): Trip {
         reservationTime: it.reservation_time ?? null,
         note: it.note ?? null,
         placeId: null,
-        tier: it.reservation_time != null ? 'must' : 'nice',
+        tier: defaultTier({ reservationTime: it.reservation_time ?? null }),
       })),
     })),
   }

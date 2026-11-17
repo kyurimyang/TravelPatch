@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router'
+import { Link } from 'react-router'
 import { TierPicker } from '../components/TierPicker'
-import type { Tier } from '../lib/tier'
-import { PLACE_ICONS } from '../lib/placeIcons'
-import { MOCK_DAYS, type DraftItemView } from '../mocks/draftItinerary'
+import { CATEGORY_LABEL, categoryIcon, defaultTier } from '../lib/category'
+import { formatDate, formatTime } from '../lib/time'
+import { useTrip } from '../store/trip'
 import './Grade.css'
 
 const LEGEND: { cls: string; label: string; text: string }[] = [
@@ -12,22 +12,22 @@ const LEGEND: { cls: string; label: string; text: string }[] = [
   { cls: 'optional', label: '선택', text: '시간이 남으면 가요. 먼저 빠질 수 있어요.' },
 ]
 
-// Confirm passes the candidate the user picked for ambiguous items (itemId -> candidateId).
-type ConfirmState = { picked?: Record<string, string> } | null
-
 export default function Grade() {
-  const picked = (useLocation().state as ConfirmState)?.picked ?? {}
-
-  // itemId -> tier. Starts from the recommended tier (source = llm_default); any difference is "user".
-  const [tiers, setTiers] = useState<Record<string, Tier>>(() =>
-    Object.fromEntries(MOCK_DAYS.flatMap((d) => d.items.map((it) => [it.id, it.recommendedTier]))),
-  )
+  const { trip, updateItem } = useTrip()
   const [openDay, setOpenDay] = useState(0)
 
-  const nameOf = (it: DraftItemView) =>
-    it.match === 'found'
-      ? it.name
-      : (it.candidates!.find((c) => c.id === picked[it.id]) ?? it.candidates![0]).name
+  if (!trip) {
+    return (
+      <div className="grade">
+        <div className="grade__body">
+          <p>등록 중인 여행이 없어요.</p>
+          <Link className="tp-btn-primary tp-denim" to="/new">
+            여행 등록하기
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="grade">
@@ -58,46 +58,46 @@ export default function Grade() {
           ))}
         </div>
 
-        {MOCK_DAYS.map((day, di) => {
-          const changed = day.items.filter((it) => tiers[it.id] !== it.recommendedTier).length
+        {trip.days.map((day, di) => {
+          const label = `DAY ${di + 1}`
+          const changed = day.items.filter((it) => it.tier !== defaultTier(it)).length
           if (di !== openDay) {
             return (
-              <button type="button" key={day.label} className="grade__collapsed tp-fabric" onClick={() => setOpenDay(di)}>
+              <button type="button" key={day.date} className="grade__collapsed tp-fabric" onClick={() => setOpenDay(di)}>
                 <span>
-                  <b>{day.label}</b> · 조각 {day.items.length}개
+                  <b>{label}</b> · 조각 {day.items.length}개
                 </span>
                 <span>{changed > 0 ? `직접 바꿈 ${changed} · 펼치기` : '추천대로 · 펼치기'}</span>
               </button>
             )
           }
           return (
-            <section key={day.label} aria-label={`${day.label} 조각 중요도`} className="grade__list">
+            <section key={day.date} aria-label={`${label} 조각 중요도`} className="grade__list">
               <h2>
-                {day.label} · {day.dateLabel}
+                {label} · {formatDate(day.date)}
               </h2>
               {day.items.map((it) => {
-                const edited = tiers[it.id] !== it.recommendedTier
+                const recommended = defaultTier(it)
+                const edited = it.tier !== recommended
                 return (
-                  <fieldset
-                    key={it.id}
-                    className={`grade__item tp-fabric${edited ? ' grade__item--edited' : ''}`}
-                  >
-                    <legend className="sr-only">{nameOf(it)} 중요도</legend>
+                  <fieldset key={it.id} className={`grade__item tp-fabric${edited ? ' grade__item--edited' : ''}`}>
+                    <legend className="sr-only">{it.title} 중요도</legend>
                     <div className="grade__item-head">
-                      <img src={PLACE_ICONS[it.icon]} alt="" aria-hidden="true" />
+                      <img src={categoryIcon(it.category)} alt="" aria-hidden="true" />
                       <span>
-                        <b>{nameOf(it)}</b>
+                        <b>{it.title}</b>
                         <span>
-                          {it.time} · {it.categoryLabel}
+                          {it.start != null ? formatTime(it.start) : '시각 없음'} · {CATEGORY_LABEL[it.category]}
+                          {it.reservationTime != null && ' · 예약'}
                         </span>
                       </span>
                       {edited && <em>직접 바꿈</em>}
                     </div>
                     <TierPicker
                       name={it.id}
-                      value={tiers[it.id]}
-                      recommended={it.recommendedTier}
-                      onChange={(t) => setTiers((prev) => ({ ...prev, [it.id]: t }))}
+                      value={it.tier}
+                      recommended={recommended}
+                      onChange={(tier) => updateItem(it.id, { tier })}
                     />
                   </fieldset>
                 )
@@ -109,7 +109,6 @@ export default function Grade() {
 
       <div className="grade__bar tp-pinked-top">
         <span>나중에 일정 화면에서도 바꿀 수 있어요</span>
-        {/* Goes to Main. No location-permission screen: GPS is out of MVP (2026-11-17). */}
         <Link className="tp-btn-primary tp-denim" to="/">
           원단 완성하기
         </Link>
