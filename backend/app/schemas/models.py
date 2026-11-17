@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.schemas.enums import Category, Tier, TimeRigidity
+from app.schemas.enums import Category, Tier, TimeRigidity, TravelMode
 
 # All times are minutes since midnight (int). 09:30 -> 570.
 MINUTES_PER_DAY = 1440
@@ -91,6 +91,8 @@ class Day(_Frozen):
     # The calendar day. The engine never reads it (it has no clock and no calendar); the service
     # layer uses it for the weekday of opening hours. None = unknown, e.g. old scenario files.
     date: datetime.date | None = None
+    # Read by the service layer only, to estimate travel times. The engine never reads it.
+    travel_mode: TravelMode = TravelMode.TRANSIT
     timezone: str = "Asia/Tokyo"
     start_time: int = Field(ge=0, le=MINUTES_PER_DAY)
     end_deadline: int = Field(ge=0, le=MINUTES_PER_DAY)

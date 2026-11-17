@@ -23,6 +23,15 @@ class Category(StrEnum):
     OTHER = "other"
 
 
+class TravelMode(StrEnum):
+    """How the traveler gets around. Only the service layer reads it (travel time estimates);
+    the engine receives a finished travel table."""
+
+    TRANSIT = "transit"  # walking + subway / bus
+    WALK = "walk"
+    CAR = "car"  # taxi or rental car
+
+
 class TimeRigidity(StrEnum):
     RESERVED = "reserved"
     TIME_WINDOW = "time_window"

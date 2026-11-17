@@ -1,5 +1,6 @@
 from app.engine.recover import recover
 from app.engine.validator import validate
+from app.schemas.enums import TravelMode
 from app.schemas.models import HOTEL_ID, TravelTime
 from app.schemas.recovery import RecoveryInput
 from app.services.travel_estimate import estimate_minutes, fill_missing_travel, haversine_km
@@ -47,3 +48,33 @@ def test_engine_works_on_a_fully_estimated_table() -> None:
     results = recover(estimated)
     for r in results:
         assert validate(estimated, r.changes) == []
+
+
+# ---- travel mode ----
+
+FAR = (35.7100, 139.8107)  # Asakusa area, about 15 km from Shibuya
+NEXT_DOOR = (35.6600, 139.7021)  # about 170 m from SHIBUYA
+
+
+def test_default_mode_is_transit_and_keeps_the_old_numbers() -> None:
+    assert estimate_minutes(SHIBUYA, FAR) == estimate_minutes(SHIBUYA, FAR, TravelMode.TRANSIT)
+
+
+def test_walking_far_takes_longer_than_transit_and_car_is_in_between_or_faster() -> None:
+    walk = estimate_minutes(SHIBUYA, FAR, TravelMode.WALK)
+    transit = estimate_minutes(SHIBUYA, FAR, TravelMode.TRANSIT)
+    car = estimate_minutes(SHIBUYA, FAR, TravelMode.CAR)
+    assert walk > transit and walk > car
+
+
+def test_next_door_is_walked_whatever_the_mode() -> None:
+    walk = estimate_minutes(SHIBUYA, NEXT_DOOR, TravelMode.WALK)
+    assert estimate_minutes(SHIBUYA, NEXT_DOOR, TravelMode.CAR) == walk
+    assert estimate_minutes(SHIBUYA, NEXT_DOOR, TravelMode.TRANSIT) == walk
+
+
+def test_fill_uses_the_mode() -> None:
+    points = {"hotel": SHIBUYA, "a": FAR}
+    (walk,) = fill_missing_travel(points, mode=TravelMode.WALK)
+    (transit,) = fill_missing_travel(points)
+    assert walk.minutes > transit.minutes

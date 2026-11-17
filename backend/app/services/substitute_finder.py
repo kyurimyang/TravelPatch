@@ -126,7 +126,7 @@ def add_substitutes(
     points = {a.id: (a.lat, a.lng) for a in inp.activities}
     points[HOTEL_ID] = (inp.day.end_lat, inp.day.end_lng)
     points.update({s.id: (s.lat, s.lng) for s in found.substitutes})
-    travel = fill_missing_travel(points, inp.travel)
+    travel = fill_missing_travel(points, inp.travel, inp.day.travel_mode)
     data = inp.model_dump()
     data["substitutes"] = [s.model_dump() for s in found.substitutes]
     data["travel"] = [t.model_dump() for t in travel]
