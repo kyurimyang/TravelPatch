@@ -86,3 +86,9 @@
   font-weight: 600;
   color: var(--op-shrink-fg);
 }
+
+.diff-row__sub {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--row-fg);
+}

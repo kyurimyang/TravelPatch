@@ -42,15 +42,20 @@ function TimeLine({ change }: { change: RecoveryChange }) {
 interface Props {
   title: string
   change: RecoveryChange
+  /** Name of the place a substitute change goes to instead. */
+  substituteTitle?: string
 }
 
-export function DiffRow({ title, change }: Props) {
+export function DiffRow({ title, change, substituteTitle }: Props) {
   return (
     <li className="diff-row" data-op={change.op}>
       <div className="diff-row__head">
         <span className="diff-row__title">{title}</span>
         <span className="diff-row__chip">{OP_LABEL[change.op]}</span>
       </div>
+      {change.op === 'substitute' && (
+        <span className="diff-row__sub">→ {substituteTitle ?? '다른 곳'}(으)로 바꿔요</span>
+      )}
       <TimeLine change={change} />
       {change.needs_check && <span className="diff-row__check">현장 확인 필요</span>}
     </li>

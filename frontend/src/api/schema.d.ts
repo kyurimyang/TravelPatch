@@ -195,6 +195,8 @@ export interface components {
         Day: {
             /** Id */
             id: string;
+            /** Date */
+            date?: string | null;
             /**
              * Timezone
              * @default Asia/Tokyo
@@ -622,6 +624,7 @@ export interface components {
              * @default []
              */
             blockers: components["schemas"]["Blocker"][];
+            used_input?: components["schemas"]["RecoveryInput"] | null;
         };
         /** RecoveryResult */
         RecoveryResult: {

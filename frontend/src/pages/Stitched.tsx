@@ -12,7 +12,9 @@ const activities = new Map((sample as unknown as RecoveryInput).activities.map((
 
 export default function Stitched() {
   const navigate = useNavigate()
-  const result = (useLocation().state as { result?: RecoveryResult } | null)?.result
+  const navState = useLocation().state as { result?: RecoveryResult; titles?: Record<string, string> } | null
+  const result = navState?.result
+  const titles = navState?.titles ?? {}
 
   // Opened without a chosen patch (e.g. typed URL): nothing to show.
   if (!result) {
@@ -73,7 +75,11 @@ export default function Stitched() {
                   <span className="stitched__time">{formatTime(c.after!.start)}</span>
                   <img src={(a && CATEGORY_ICON[a.category]) ?? DEFAULT_ICON} alt="" aria-hidden="true" />
                   <span className="stitched__text">
-                    <b>{a?.title ?? c.activity_id}</b>
+                    <b>
+                      {c.substitute_id
+                        ? (titles[c.substitute_id] ?? '다른 곳')
+                        : (titles[c.activity_id] ?? a?.title ?? c.activity_id)}
+                    </b>
                     <span>
                       {patched && c.before ? `${formatTime(c.before.start)}에서 ${OP_LABEL[c.op]}` : '그대로'}
                     </span>

@@ -6,6 +6,7 @@ import './CandidateCard.css'
 
 interface Props {
   result: RecoveryResult
+  /** Names by id, for activities and substitutes alike (their ids never clash). */
   titleOf: ReadonlyMap<string, string>
 }
 
@@ -19,6 +20,7 @@ export function CandidateCard({ result, titleOf }: Props) {
           <DiffRow
             key={change.activity_id}
             title={titleOf.get(change.activity_id) ?? change.activity_id}
+            substituteTitle={change.substitute_id ? titleOf.get(change.substitute_id) : undefined}
             change={change}
           />
         ))}

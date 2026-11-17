@@ -10,7 +10,14 @@ import './DiffView.css'
 // Sample input = scenario A (backend/tests/scenarios/scenario_a.json). Until the register screen
 // exists, this is the day the app recovers.
 const baseInput = sample as unknown as RecoveryInput
-const titleOf = new Map(baseInput.activities.map((a) => [a.id, a.title]))
+
+// Names by id from the input the server actually used: it may have added substitutes (closure).
+function titlesOf(inp: RecoveryInput): Map<string, string> {
+  return new Map([
+    ...inp.activities.map((a) => [a.id, a.title] as const),
+    ...(inp.substitutes ?? []).map((s) => [s.id, s.title] as const),
+  ])
+}
 
 type State =
   | { status: 'loading' }
@@ -52,6 +59,7 @@ export default function DiffView() {
   }
 
   const result = candidates[picked]
+  const titleOf = titlesOf(state.response.used_input ?? baseInput)
   const changed = result.changes.filter((c) => c.op !== 'keep').length
 
   return (
@@ -109,7 +117,11 @@ export default function DiffView() {
       </div>
 
       <div className="diff-view__bar tp-pinked-top">
-        <Link className="tp-btn-primary tp-denim" to="/recover/done" state={{ result }}>
+        <Link
+          className="tp-btn-primary tp-denim"
+          to="/recover/done"
+          state={{ result, titles: Object.fromEntries(titleOf) }}
+        >
           이 패치로 박음질하기
         </Link>
         <Link className="tp-btn-quiet" to="/">
