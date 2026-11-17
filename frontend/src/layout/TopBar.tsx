@@ -17,7 +17,9 @@ export default function TopBar({ variant, title }: Props) {
     <header className="top-bar tp-pinked-bottom">
       {variant === 'tab' ? (
         <>
-          <img className="top-bar__logo" src={wordmark} alt="TravelPatch" />
+          <Link className="top-bar__home" to="/" aria-label="홈으로">
+            <img className="top-bar__logo" src={wordmark} alt="TravelPatch" />
+          </Link>
           <Link className="top-bar__account" to={user ? '/settings' : '/login'} aria-label={user ? '설정' : '로그인'}>
             <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <circle cx="12" cy="8" r="4" />

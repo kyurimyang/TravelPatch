@@ -8,3 +8,15 @@
   border-radius: 50%;
   color: var(--tp-indigo);
 }
+
+/* The wordmark is a link home; it keeps the logo's own size and position. */
+.top-bar__home {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+}
+
+.top-bar__home:focus-visible {
+  outline: 2px dashed var(--tp-copper);
+  outline-offset: 2px;
+}
