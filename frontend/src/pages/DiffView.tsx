@@ -178,7 +178,15 @@ export default function DiffView() {
         <Link
           className="tp-btn-primary tp-denim"
           to="/recover/done"
-          state={{ result, source, plan, titles: Object.fromEntries(titleOf) }}
+          state={{
+            result,
+            source,
+            plan,
+            chips,
+            // Made once here, so a re-render or StrictMode re-run of Stitched cannot save twice.
+            patchId: `${plan.day.date ?? 'day'}-${Date.now()}`,
+            titles: Object.fromEntries(titleOf),
+          }}
         >
           이 패치로 박음질하기
         </Link>

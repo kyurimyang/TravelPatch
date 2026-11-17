@@ -6,6 +6,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { components } from '../api/schema'
 import type { TravelMode } from '../api/types'
+import { applyPatch, undoPatch, type SavedPatch } from '../lib/patches'
 import type { Tier } from '../lib/tier'
 
 type Schemas = components['schemas']
@@ -28,6 +29,12 @@ export type TripItem = {
   /** Google place_id the user picked. null = not picked yet. */
   placeId: string | null
   tier: Tier
+  /** Taken out by a stitched patch (kept in the list, shown struck through, not recovered). */
+  dropped?: boolean
+  /** Its time or place was changed by a stitched patch. */
+  patched?: boolean
+  /** Replaced by a nearby place in a patch. The place itself is not stored (Google terms). */
+  substituted?: boolean
 }
 
 export type TripDay = {
@@ -49,6 +56,8 @@ export type Trip = {
   /** Latest return to the hotel, minutes since midnight. Default 22:00, changeable on Confirm. */
   endDeadline: number
   days: TripDay[]
+  /** Stitched patches, oldest first: each is the change list against its day (invariant 6). */
+  patches: SavedPatch[]
 }
 
 export const DEFAULT_END_DEADLINE = 22 * 60
@@ -58,6 +67,10 @@ type TripStore = {
   setTrip: (trip: Trip | null) => void
   /** Change one item, leaving everything else as it is. */
   updateItem: (itemId: string, patch: Partial<Omit<TripItem, 'id'>>) => void
+  /** Stitch a patch onto its day (idempotent by patch id). */
+  stitch: (patch: SavedPatch) => void
+  /** Take the latest patch of a day back off. */
+  unstitch: (patchId: string) => void
 }
 
 const STORAGE_KEY = 'trippatch.trip.v1'
@@ -68,8 +81,8 @@ const TripContext = createContext<TripStore | null>(null)
 function load(): Trip | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    // Trips saved before travel modes existed get the old behaviour (transit).
-    return raw ? ({ travelMode: 'transit', ...JSON.parse(raw) } as Trip) : null
+    // Trips saved before travel modes or patches existed get the old behaviour.
+    return raw ? ({ travelMode: 'transit', patches: [], ...JSON.parse(raw) } as Trip) : null
   } catch {
     return null
   }
@@ -100,7 +113,12 @@ export function TripProvider({ children }: { children: ReactNode }) {
       },
     )
 
-  return <TripContext.Provider value={{ trip, setTrip, updateItem }}>{children}</TripContext.Provider>
+  const stitch: TripStore['stitch'] = (patch) => setTrip((t) => t && applyPatch(t, patch))
+  const unstitch: TripStore['unstitch'] = (id) => setTrip((t) => t && undoPatch(t, id))
+
+  return (
+    <TripContext.Provider value={{ trip, setTrip, updateItem, stitch, unstitch }}>{children}</TripContext.Provider>
+  )
 }
 
 export function useTrip(): TripStore {

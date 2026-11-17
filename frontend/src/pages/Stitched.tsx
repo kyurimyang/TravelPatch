@@ -1,10 +1,14 @@
+import { useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import type { BuiltPlan, RecoveryResult } from '../api/types'
 import delayPatch from '../assets/patches/hole-delay.svg'
 import { OP_LABEL } from '../components/DiffRow'
 import { CATEGORY_ICON, DEFAULT_ICON } from '../lib/placeIcons'
 import { strategyLabel } from '../lib/strategy'
+import { patchFrom } from '../lib/patches'
+import type { RecoverySource } from '../lib/recovery'
 import { formatTime } from '../lib/time'
+import { useTrip } from '../store/trip'
 import './Stitched.css'
 
 export default function Stitched() {
@@ -12,9 +16,28 @@ export default function Stitched() {
   const navState = useLocation().state as {
     result?: RecoveryResult
     plan?: BuiltPlan
+    source?: RecoverySource
+    chips?: string[]
+    patchId?: string
     titles?: Record<string, string>
   } | null
+  const { stitch, unstitch } = useTrip()
   const result = navState?.result
+  const date = navState?.plan?.day.date ?? null
+  // Only a registered trip is saved; the example trip is a demo and leaves nothing behind.
+  const saves = navState?.source === 'trip' && !!navState.patchId && !!date
+
+  // Stitch on arrival. Idempotent by patch id, so StrictMode's second run changes nothing.
+  useEffect(() => {
+    if (!saves || !result) return
+    stitch(patchFrom(navState!.patchId!, date!, result, navState?.chips ?? [], new Date().toISOString()))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function undo() {
+    if (saves) unstitch(navState!.patchId!)
+    navigate(-1)
+  }
   const titles = navState?.titles ?? {}
   const activities = new Map((navState?.plan?.activities ?? []).map((a) => [a.id, a]))
 
@@ -93,12 +116,15 @@ export default function Stitched() {
           </ul>
         </section>
 
-        {/* Saving is not built yet (needs the save API, stage 6): say so rather than imply it. */}
-        <p className="stitched__note">아직 저장되지는 않아요. 저장 기능은 곧 연결할게요.</p>
+        <p className="stitched__note">
+          {saves
+            ? '여행 원단에 박음질해 뒀어요. ‘실 풀기’를 누르면 원래대로 돌아가요.'
+            : '예시 여행이라 저장하지 않았어요.'}
+        </p>
       </div>
 
       <div className="stitched__bar tp-pinked-top">
-        <button type="button" className="stitched__undo" onClick={() => navigate(-1)}>
+        <button type="button" className="stitched__undo" onClick={undo}>
           실 풀기
         </button>
         <Link className="tp-btn-primary tp-denim" to="/">

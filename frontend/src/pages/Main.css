@@ -269,3 +269,24 @@
   line-height: 1.55;
   color: var(--color-text-muted);
 }
+
+.main-screen__patched {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--tp-denim-deep);
+}
+
+.main-screen__piece--dropped {
+  opacity: 0.6;
+}
+
+.main-screen__patch-tag {
+  flex: none;
+  padding: 1px 8px;
+  border: 1.5px dashed var(--op-move-edge);
+  border-radius: 6px;
+  background: var(--op-move-bg);
+  color: var(--op-move-fg);
+  font-size: 12px;
+  font-weight: 700;
+}

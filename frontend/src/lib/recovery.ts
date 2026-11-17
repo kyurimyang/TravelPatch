@@ -43,9 +43,10 @@ export function titlesOf(inp: Pick<RecoveryInput, 'activities' | 'substitutes'>)
 /** The trip day as the server wants it, or why it cannot be sent yet. */
 export function planRequestFor(trip: Trip, dayIndex: number): PlanRequest | { problem: string } {
   const day = trip.days[dayIndex]
-  if (!day || day.items.length === 0) return { problem: '이날에는 일정이 없어요.' }
+  const items = day?.items.filter((it) => !it.dropped) ?? []
+  if (items.length === 0) return { problem: '이날에는 남은 일정이 없어요.' }
   if (!trip.hotel) return { problem: '숙소가 정해지지 않았어요.' }
-  const notReady = day.items.filter((it) => !it.placeId || it.start == null || it.end == null || it.end <= it.start)
+  const notReady = items.filter((it) => !it.placeId || it.start == null || it.end == null || it.end <= it.start)
   if (notReady.length > 0) {
     return { problem: `장소나 시각을 확인하지 않은 조각이 ${notReady.length}개 있어요. 일정 확인에서 마저 정해 주세요.` }
   }
@@ -54,7 +55,7 @@ export function planRequestFor(trip: Trip, dayIndex: number): PlanRequest | { pr
     hotel_place_id: trip.hotel.placeId,
     end_deadline: trip.endDeadline,
     travel_mode: trip.travelMode,
-    items: day.items.map((it) => ({
+    items: items.map((it) => ({
       id: it.id,
       title: it.title,
       category: it.category,

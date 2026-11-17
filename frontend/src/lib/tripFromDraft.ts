@@ -20,6 +20,7 @@ export function tripFromDraft(draft: DraftItinerary, meta: TripMeta): Trip {
   return {
     ...meta,
     endDeadline: DEFAULT_END_DEADLINE,
+    patches: [],
     days: draft.days.map((day, di) => ({
       date: addDays(meta.startDate, di),
       label: day.day_label ?? null,

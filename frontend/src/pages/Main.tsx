@@ -25,7 +25,7 @@ function deviceNow(): { date: string; minutes: number } {
 
 /** First item not finished yet on the day being travelled; on any other day, the first item. */
 function nextItem(day: TripDay, isToday: boolean, now: number) {
-  const timed = day.items.filter((it) => it.start != null)
+  const timed = day.items.filter((it) => it.start != null && !it.dropped)
   return isToday ? timed.find((it) => (it.end ?? it.start!) > now) : timed[0]
 }
 
@@ -55,7 +55,8 @@ export default function Main() {
   const day = trip.days[dayIndex]
   const isToday = dayIndex === todayIndex
   const next = nextItem(day, isToday, now.minutes)
-  const stops = day.items.slice(0, SLOTS.length)
+  const stops = day.items.filter((it) => !it.dropped).slice(0, SLOTS.length)
+  const dayPatches = trip.patches.filter((p) => p.date === day.date)
   const status = (i: number) =>
     i === todayIndex ? '오늘' : now.date < trip.days[i].date ? '다가오는 날' : '지난 날'
 
@@ -148,22 +149,31 @@ export default function Main() {
 
       <section className="main-screen__pieces tp-fabric" aria-label="조각 목록">
         <h2>{isToday ? '오늘의 조각' : '이날의 조각'}</h2>
+        {dayPatches.length > 0 && (
+          <p className="main-screen__patched">
+            덧댄 패치 {dayPatches.length}개 · 마지막 패치로 원래 계획의{' '}
+            {Math.floor(dayPatches[dayPatches.length - 1].preservationRate * 100)}%를 지켰어요
+          </p>
+        )}
         <ul>
           {day.items.map((it) => {
             const isNext = it.id === next?.id
             return (
-              <li key={it.id}>
+              <li key={it.id} className={it.dropped ? 'main-screen__piece--dropped' : undefined}>
                 <span className={isNext ? 'main-screen__time main-screen__time--next' : 'main-screen__time'}>
                   {it.start != null ? formatTime(it.start) : '--:--'}
                 </span>
                 <img src={categoryIcon(it.category)} alt="" aria-hidden="true" />
                 <span className="main-screen__piece-text">
-                  <b>{it.title}</b>
+                  <b>{it.dropped ? <s>{it.title}</s> : it.title}</b>
                   <span>
-                    {CATEGORY_LABEL[it.category]} · {TIER_LABEL[it.tier]}
+                    {it.dropped
+                      ? '패치로 뺐어요'
+                      : `${CATEGORY_LABEL[it.category]} · ${TIER_LABEL[it.tier]}${it.substituted ? ' · 근처 다른 곳' : ''}`}
                   </span>
                 </span>
                 {isNext && <span className="main-screen__next-tag tp-tagstitch">다음</span>}
+                {!isNext && it.patched && !it.dropped && <span className="main-screen__patch-tag">패치</span>}
               </li>
             )
           })}
