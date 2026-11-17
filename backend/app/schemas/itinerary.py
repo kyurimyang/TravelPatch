@@ -1,7 +1,8 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import Field, StringConstraints
 
+from app.llm.parser import MAX_TEXT_CHARS
 from app.schemas.models import MINUTES_PER_DAY, _Frozen
 
 IssueCode = Literal[
@@ -43,3 +44,26 @@ class DraftDay(_Frozen):
 
 class DraftItinerary(_Frozen):
     days: tuple[DraftDay, ...]
+
+
+class ParseRequest(_Frozen):
+    # Stripped first, so whitespace-only text is refused before any LLM call.
+    text: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_TEXT_CHARS)
+    ]
+
+
+class ParseProblem(_Frozen):
+    """Why no draft came back. The screen then offers manual entry instead of an error."""
+
+    code: Literal[
+        "LLM_FAILED",  # the model gave no usable answer twice
+        "NOTHING_FOUND",  # the model read no item at all from the text
+    ]
+    detail: str
+
+
+class ParseResponse(_Frozen):
+    status: Literal["ok", "manual"]
+    draft: DraftItinerary | None  # set exactly when status is "ok"
+    problem: ParseProblem | None = None
