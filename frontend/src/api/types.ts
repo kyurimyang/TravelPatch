@@ -23,3 +23,7 @@ export type PlaceSearchResponse = Schemas['PlaceSearchResponse']
 export type TravelMode = Schemas['TravelMode']
 export type PlanRequest = Schemas['PlanRequest']
 export type BuiltPlan = Schemas['BuiltPlan']
+export type RestoreRequest = Schemas['RestoreRequest']
+export type RestoreResponse = Schemas['RestoreResponse']
+export type Counterfactual = NonNullable<RestoreResponse['counterfactual']>
+export type LockRequest = Schemas['LockRequest']

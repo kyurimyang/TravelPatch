@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Op, RecoveryChange } from '../api/types'
 import { formatSlot } from '../lib/time'
 import './DiffRow.css'
@@ -44,9 +45,11 @@ interface Props {
   change: RecoveryChange
   /** Name of the place a substitute change goes to instead. */
   substituteTitle?: string
+  /** "왜?" content, folded under the row. Changed rows only (a kept row needs no reason). */
+  detail?: ReactNode
 }
 
-export function DiffRow({ title, change, substituteTitle }: Props) {
+export function DiffRow({ title, change, substituteTitle, detail }: Props) {
   return (
     <li className="diff-row" data-op={change.op}>
       <div className="diff-row__head">
@@ -58,6 +61,12 @@ export function DiffRow({ title, change, substituteTitle }: Props) {
       )}
       <TimeLine change={change} />
       {change.needs_check && <span className="diff-row__check">현장 확인 필요</span>}
+      {detail && change.op !== 'keep' && (
+        <details className="diff-row__why">
+          <summary>왜?</summary>
+          {detail}
+        </details>
+      )}
     </li>
   )
 }

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
-import { createRecovery } from '../api/recoveries'
-import type { RecoveryInput, RecoveryResponse } from '../api/types'
+import { createRecovery, lockActivities, restoreActivity } from '../api/recoveries'
+import type { Counterfactual, RecoveryInput, RecoveryResponse, RecoveryResult } from '../api/types'
 import { CandidateCard } from '../components/CandidateCard'
+import { WhyPanel } from '../components/WhyPanel'
 import { inputFor, samplePlan, titlesOf, type RecoveryState } from '../lib/recovery'
 import { strategyLabel } from '../lib/strategy'
 import sample from '../mocks/scenarioAInput.json'
@@ -24,6 +25,11 @@ export default function DiffView() {
 
   const [state, setState] = useState<State>({ status: 'loading' })
   const [picked, setPicked] = useState(0)
+  // A "what if I keep X" plan the user switched to, per strategy. Shown instead of the candidate;
+  // it is final for that card (no further restore/lock on top of it).
+  const [adopted, setAdopted] = useState<Record<string, RecoveryResult>>({})
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
     // `cancelled` drops a stale answer if the effect re-runs (StrictMode runs it twice in dev).
@@ -55,8 +61,45 @@ export default function DiffView() {
     )
   }
 
-  const result = candidates[picked]
-  const titleOf = titlesOf(state.response.used_input ?? baseInput)
+  const candidate = candidates[picked]
+  const result = adopted[candidate.strategy] ?? candidate
+  const isAdopted = result !== candidate
+  // The input the server really used (with searched substitutes and earlier locks).
+  const currentInput = state.response.used_input ?? baseInput
+  const titleOf = titlesOf(currentInput)
+
+  async function restore(activityId: string): Promise<Counterfactual | null> {
+    const res = await restoreActivity({ input: currentInput, strategy: candidate.strategy, activity_id: activityId })
+    return res.counterfactual ?? null
+  }
+
+  function adopt(cf: Counterfactual) {
+    setAdopted((a) => ({ ...a, [candidate.strategy]: cf.result }))
+    setNotice(`${titleOf.get(cf.restored_id) ?? '그 조각'}을(를) 살린 안으로 바꿨어요.`)
+  }
+
+  async function lock(activityId: string) {
+    setBusy(true)
+    setNotice(null)
+    try {
+      const res = await lockActivities({ input: currentInput, activity_ids: [activityId] })
+      const name = titleOf.get(activityId) ?? '그 조각'
+      if (res.candidates.length === 0) {
+        setNotice(`${name}을(를) 원래대로 두면 맞출 수 있는 일정이 없어요. 지금 안을 그대로 둘게요.`)
+        return
+      }
+      // Stay on the same strategy if it still exists.
+      const keep = res.candidates.findIndex((c) => c.strategy === candidate.strategy)
+      setState({ status: 'done', response: res })
+      setPicked(Math.max(0, keep))
+      setAdopted({})
+      setNotice(`${name}을(를) 원래대로 고정하고 다시 맞췄어요.`)
+    } catch {
+      setNotice('다시 맞추지 못했어요. 잠시 뒤 다시 해 주세요.')
+    } finally {
+      setBusy(false)
+    }
+  }
   const changed = result.changes.filter((c) => c.op !== 'keep').length
 
   return (
@@ -107,7 +150,25 @@ export default function DiffView() {
             <span>원래 일정과 달라지는 곳</span>
             <span className="tp-tagstitch">시침질 중</span>
           </div>
-          <CandidateCard result={result} titleOf={titleOf} />
+          {notice && (
+            <p className="diff-view__notice" role="status">
+              {notice}
+            </p>
+          )}
+          <CandidateCard
+            result={result}
+            titleOf={titleOf}
+            renderDetail={(change) => (
+              <WhyPanel
+                change={change}
+                titleOf={titleOf}
+                onRestore={isAdopted ? undefined : restore}
+                onAdopt={isAdopted ? undefined : adopt}
+                onLock={isAdopted ? undefined : lock}
+                busy={busy}
+              />
+            )}
+          />
         </section>
 
         <p className="diff-view__note">박음질 전까지 원래 일정은 그대로 남아 있어요.</p>

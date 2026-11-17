@@ -38,6 +38,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recoveries/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lock Activities
+         * @description Recompute with the given activities held in place. `used_input` in the answer carries the
+         *     lock, so a later restore or lock builds on it.
+         */
+        post: operations["lock_activities_recoveries_lock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/disruptions/interpret": {
         parameters: {
             query?: never;
@@ -364,6 +385,17 @@ export interface components {
              */
             walking_ratio: number;
         };
+        /**
+         * Flight
+         * @description A flight that bounds the day. `time` is local wall-clock minutes on the request's date:
+         *     landing for an arrival, take-off for a departure. Entered by the user, never looked up.
+         */
+        Flight: {
+            /** Time */
+            time: number;
+            /** Airport Place Id */
+            airport_place_id: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -455,6 +487,15 @@ export interface components {
              * @description RESERVATION_CHANGE: new time, HH:MM
              */
             new_time: string | null;
+        };
+        /**
+         * LockRequest
+         * @description "Leave these pieces as they were": recompute with them held at their original slots.
+         */
+        LockRequest: {
+            input: components["schemas"]["RecoveryInput"];
+            /** Activity Ids */
+            activity_ids: string[];
         };
         /** MustVisitEvent */
         MustVisitEvent: {
@@ -567,11 +608,13 @@ export interface components {
             /** Hotel Place Id */
             hotel_place_id: string;
             /** End Deadline */
-            end_deadline: number;
+            end_deadline?: number | null;
             /** @default transit */
             travel_mode: components["schemas"]["TravelMode"];
             /** Items */
             items: components["schemas"]["PlanItem"][];
+            arrival?: components["schemas"]["Flight"] | null;
+            departure?: components["schemas"]["Flight"] | null;
         };
         /**
          * PlanWarning
@@ -935,6 +978,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RestoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lock_activities_recoveries_lock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LockRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryResponse"];
                 };
             };
             /** @description Validation Error */

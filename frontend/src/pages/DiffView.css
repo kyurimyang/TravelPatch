@@ -170,3 +170,12 @@
   background: var(--tp-linen);
   border-top: 2px dashed var(--tp-hemp);
 }
+
+.diff-view__notice {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--tp-lace);
+  border: 1px dashed var(--tp-denim-deep);
+  font-size: 14px;
+}
