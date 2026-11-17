@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router'
 import AppFrame from './layout/AppFrame'
+import Admin from './pages/Admin'
 import BareLayout from './layout/BareLayout'
 import FlowLayout from './layout/FlowLayout'
 import TabLayout from './layout/TabLayout'
@@ -15,9 +16,11 @@ import NotFound from './pages/NotFound'
 import NoPatch from './pages/NoPatch'
 import Patchwork from './pages/Patchwork'
 import Recover from './pages/Recover'
+import Settings from './pages/Settings'
 import Signup from './pages/Signup'
 import Stitched from './pages/Stitched'
 import TripList from './pages/TripList'
+import Withdraw from './pages/Withdraw'
 
 export default function AppRoutes() {
   return (
@@ -43,6 +46,9 @@ export default function AppRoutes() {
           <Route path="signup" element={<Signup />} />
           <Route path="consent" element={<Consent />} />
           <Route path="legal/:doc" element={<Legal />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="settings/withdraw" element={<Withdraw />} />
+          <Route path="admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Route>

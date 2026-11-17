@@ -21,6 +21,8 @@ type AuthStore = {
   signInWithGoogle: () => Promise<string | null>
   agree: (nickname: string, consent: Consent) => Promise<string | null>
   sendPasswordReset: (email: string) => Promise<string | null>
+  updateProfile: (fields: { nickname: string }) => Promise<string | null>
+  updatePassword: (password: string) => Promise<string | null>
   signOut: () => Promise<void>
 }
 
@@ -97,6 +99,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async sendPasswordReset(email) {
       if (!supabase) return '처리하지 못했어요.'
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/settings` })
+      return error ? korean(error.message) : null
+    },
+    async updateProfile({ nickname }) {
+      if (!supabase) return '처리하지 못했어요.'
+      const { error } = await supabase.auth.updateUser({ data: { nickname } })
+      return error ? korean(error.message) : null
+    },
+    async updatePassword(password) {
+      if (!supabase) return '처리하지 못했어요.'
+      const { error } = await supabase.auth.updateUser({ password })
       return error ? korean(error.message) : null
     },
     async signOut() {

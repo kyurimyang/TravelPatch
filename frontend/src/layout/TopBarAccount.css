@@ -1,0 +1,10 @@
+.top-bar__account {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border: 1.5px dashed var(--tp-copper);
+  border-radius: 50%;
+  color: var(--tp-indigo);
+}

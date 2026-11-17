@@ -1,0 +1,186 @@
+.admin {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 20px 16px 32px;
+}
+
+.admin h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.admin h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-label);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tp-denim-deep);
+}
+
+.admin__head p,
+.admin__note {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.admin__warn {
+  color: var(--tp-rust) !important;
+}
+
+.admin__scroll {
+  overflow-x: auto;
+  border: 1px solid var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.admin__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin__table th,
+.admin__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.admin__table thead th {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--tp-lace);
+}
+
+.admin__table th[scope='row'],
+.admin__table thead th:first-child {
+  text-align: left;
+}
+
+.admin__table th[scope='row'] {
+  font-weight: 400;
+}
+
+.admin__table th[scope='row'] span {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.admin__table--dense th,
+.admin__table--dense td {
+  padding: 6px 10px;
+}
+
+/* our method: marked by a stitched edge and a label, never colour alone */
+.admin__ours {
+  background: var(--tp-linen);
+  outline: 2px dashed var(--tp-copper);
+  outline-offset: -3px;
+}
+
+.admin__muted {
+  color: var(--color-text-muted);
+}
+
+/* histogram: one series, thin bars on a recessive grid */
+.admin__chart {
+  position: relative;
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: end;
+  gap: 2px;
+  height: 160px;
+  padding: 0 4px 0 24px;
+  border-bottom: 1px solid var(--color-text-muted);
+}
+
+.admin__grid {
+  position: absolute;
+  left: 24px;
+  right: 0;
+  border-top: 1px dashed var(--color-border);
+}
+
+.admin__grid span {
+  position: absolute;
+  left: -22px;
+  top: -8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.admin__col {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 100%;
+  outline: none;
+  cursor: default;
+}
+
+.admin__bar {
+  width: 60%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--tp-indigo);
+}
+
+.admin__col:hover .admin__bar,
+.admin__col:focus-visible .admin__bar {
+  background: var(--tp-denim-deep);
+}
+
+.admin__tip {
+  position: absolute;
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--tp-indigo);
+  color: #ffffff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.admin__axis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  padding: 4px 4px 0 24px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.admin__filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.admin__filters button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1.5px dashed var(--tp-hemp);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.admin__filters button[aria-selected='true'] {
+  border-color: var(--tp-copper);
+  background: var(--tp-indigo);
+  color: #ffffff;
+}

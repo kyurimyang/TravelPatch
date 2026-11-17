@@ -1,0 +1,144 @@
+.settings__group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.settings__group h2 {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tp-denim-deep);
+}
+
+.settings__email {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.settings__row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.settings__row input {
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1.5px solid var(--tp-denim-deep);
+  border-radius: 10px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 16px;
+}
+
+.settings__row button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1.5px solid var(--tp-denim-deep);
+  border-radius: 10px;
+  background: var(--tp-indigo);
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings__row button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.settings__on {
+  color: var(--op-extend-fg);
+}
+
+.settings__off {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.settings__link {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  font-size: 15px;
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--tp-hemp);
+}
+
+.settings__bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings__withdraw {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.settings__version {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.withdraw__list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.withdraw__reasons {
+  margin: 0;
+}
+
+.withdraw__reasons legend {
+  padding: 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.withdraw__reasons label,
+.withdraw__agree {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  font-size: 14px;
+}
+
+.withdraw__reasons input,
+.withdraw__agree input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--tp-rust);
+}
+
+.withdraw__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.withdraw__go {
+  background: var(--tp-rust);
+}
