@@ -9,6 +9,7 @@ import delay from '../assets/patches/hole-delay.svg'
 import late from '../assets/patches/hole-late.svg'
 import rain from '../assets/patches/hole-rain.svg'
 import tired from '../assets/patches/hole-tired.svg'
+import { StitchLoader } from '../components/StitchLoader'
 import { planRequestFor, samplePlan, type RecoveryState, type RecoverySource } from '../lib/recovery'
 import { formatTime, parseTime } from '../lib/time'
 import { useTrip } from '../store/trip'
@@ -101,7 +102,7 @@ export default function Recover() {
             </h1>
           </div>
           {day.kind === 'building' ? (
-            <p className="recover__note">이날 원단을 펼치고 있어요…</p>
+            <StitchLoader steps={['이날 원단을 펼치고 있어요', '장소와 영업시간을 확인하고 있어요', '이동 시간을 재고 있어요']} />
           ) : (
             <section className="recover__blocked tp-fabric">
               <p>{day.message}</p>
@@ -259,6 +260,8 @@ export default function Recover() {
             }}
           />
         </div>
+
+        {phase.kind === 'loading' && <StitchLoader size="inline" steps={['한 줄을 읽고 있어요', '무슨 일인지 정리하고 있어요']} />}
 
         {phase.kind === 'error' && (
           <p className="recover__error" role="alert">

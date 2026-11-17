@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Counterfactual, RecoveryChange } from '../api/types'
 import { describeReason, NO_SINGLE_REASON } from '../lib/reasons'
 import { OP_LABEL } from './DiffRow'
+import { StitchLoader } from './StitchLoader'
 import './WhyPanel.css'
 
 type Props = {
@@ -47,7 +48,7 @@ export function WhyPanel({ change, titleOf, onRestore, onAdopt, onLock, busy }: 
           되살리면 어떻게 되나요?
         </button>
       )}
-      {restore.kind === 'loading' && <p className="why__note">다시 맞춰 보고 있어요…</p>}
+      {restore.kind === 'loading' && <StitchLoader size="inline" steps={['살려서 다시 맞춰 보고 있어요']} />}
       {restore.kind === 'error' && <p className="why__note">계산하지 못했어요. 잠시 뒤 다시 해 주세요.</p>}
       {restore.kind === 'done' && restore.cf === null && (
         <p className="why__note">이 조각을 살리면서 지킬 수 있는 일정이 없어요. 위 이유 때문에 빼야 해요.</p>

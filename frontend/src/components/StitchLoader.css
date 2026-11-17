@@ -1,0 +1,144 @@
+.stitch-loader {
+  --stitch-duration: 2.4s;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.stitch-loader--page {
+  min-height: 60vh;
+  padding: 32px 16px;
+}
+
+.stitch-loader--inline {
+  padding: 12px 0;
+}
+
+.stitch-loader__art {
+  width: 132px;
+  height: 132px;
+  overflow: visible;
+  transform: rotate(-3deg);
+}
+
+.stitch-loader--inline .stitch-loader__art {
+  width: 72px;
+  height: 72px;
+}
+
+.stitch-loader__cloth {
+  stroke: none;
+  filter: drop-shadow(0 3px 2px rgba(36, 49, 77, 0.18));
+}
+
+.stitch-loader__cloth-base {
+  fill: var(--tp-lace);
+}
+
+.stitch-loader__cloth-band {
+  fill: var(--tp-denim);
+  opacity: 0.35;
+}
+
+/* needle holes: the whole path, faint, so the eye sees where the thread will go */
+.stitch-loader__holes {
+  fill: none;
+  stroke: var(--tp-tan);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 2.4;
+  opacity: 0.45;
+}
+
+/* the thread: same dashes, in thread colour, uncovered by the growing mask */
+.stitch-loader__thread {
+  fill: none;
+  stroke: var(--tp-copper);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-dasharray: 3 2.4;
+}
+
+.stitch-loader__reveal {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 12;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: stitch-reveal var(--stitch-duration) linear infinite;
+}
+
+/* the needle follows the same outline */
+.stitch-loader__needle {
+  offset-path: path('M14 16 L106 12 L108 104 L12 108 Z');
+  offset-rotate: auto;
+  animation: stitch-needle var(--stitch-duration) linear infinite;
+}
+
+.stitch-loader__needle line {
+  stroke: var(--tp-indigo);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.stitch-loader__tail {
+  fill: none;
+  stroke: var(--tp-copper);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.stitch-loader__needle ellipse {
+  fill: var(--tp-lace);
+  stroke: var(--tp-indigo);
+  stroke-width: 0.8;
+}
+
+.stitch-loader__text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tp-indigo);
+}
+
+.stitch-loader--inline .stitch-loader__text {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@keyframes stitch-reveal {
+  from {
+    stroke-dashoffset: 100;
+  }
+  85%,
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes stitch-needle {
+  from {
+    offset-distance: 0%;
+  }
+  85%,
+  to {
+    offset-distance: 100%;
+  }
+}
+
+/* Reduced motion: the finished stitching, still. */
+@media (prefers-reduced-motion: reduce) {
+  .stitch-loader__reveal {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .stitch-loader__needle {
+    animation: none;
+    offset-distance: 0%;
+  }
+}

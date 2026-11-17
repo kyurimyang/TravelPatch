@@ -4,6 +4,7 @@ import { createRecovery, lockActivities, restoreActivity } from '../api/recoveri
 import type { Counterfactual, RecoveryInput, RecoveryResponse, RecoveryResult } from '../api/types'
 import { CandidateCard } from '../components/CandidateCard'
 import { WhyPanel } from '../components/WhyPanel'
+import { StitchLoader } from '../components/StitchLoader'
 import { inputFor, samplePlan, titlesOf, type RecoveryState } from '../lib/recovery'
 import { strategyLabel } from '../lib/strategy'
 import sample from '../mocks/scenarioAInput.json'
@@ -44,7 +45,13 @@ export default function DiffView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event])
 
-  if (state.status === 'loading') return <div className="diff-view__msg">복구안을 계산하고 있어요…</div>
+  if (state.status === 'loading') {
+    return (
+      <StitchLoader
+        steps={['구멍 크기를 재고 있어요', '덧댈 조각을 고르고 있어요', '원래 계획을 최대한 살리는 중이에요', '실을 꿰고 있어요']}
+      />
+    )
+  }
   if (state.status === 'error') {
     return <div className="diff-view__msg">불러오지 못했어요: {state.message}</div>
   }
@@ -150,6 +157,7 @@ export default function DiffView() {
             <span>원래 일정과 달라지는 곳</span>
             <span className="tp-tagstitch">시침질 중</span>
           </div>
+          {busy && <StitchLoader size="inline" steps={['고정하고 다시 맞추는 중이에요']} />}
           {notice && (
             <p className="diff-view__notice" role="status">
               {notice}

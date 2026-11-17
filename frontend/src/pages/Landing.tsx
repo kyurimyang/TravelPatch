@@ -7,6 +7,7 @@ import mend from '../assets/patches/patch-mend.svg'
 import stay from '../assets/patches/place-stay.svg'
 import rain from '../assets/patches/hole-rain.svg'
 import { PlaceSearch } from '../components/PlaceSearch'
+import { StitchLoader } from '../components/StitchLoader'
 import { TravelModePicker } from '../components/TravelModePicker'
 import { tripFromDraft } from '../lib/tripFromDraft'
 import { useTrip } from '../store/trip'
@@ -150,6 +151,12 @@ export default function Landing() {
           </span>
         </div>
 
+        {busy && (
+          <StitchLoader
+            size="inline"
+            steps={['붙여넣은 일정을 읽고 있어요', '날짜와 시간을 나누고 있어요', '조각으로 재단하고 있어요']}
+          />
+        )}
         {problem && (
           <p className="landing__problem" role="alert">
             {problem}
