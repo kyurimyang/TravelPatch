@@ -139,9 +139,9 @@
   color: var(--color-text-muted);
 }
 
-.confirm__card,
-.confirm__ambiguous {
+.confirm__card {
   display: flex;
+  flex-direction: column;
   gap: 12px;
   padding: 14px;
   border-radius: 12px;
@@ -152,7 +152,6 @@
   border: 1px solid var(--tp-hemp);
 }
 
-.confirm__card img,
 .confirm__card-row img {
   flex: none;
   width: 46px;
@@ -186,20 +185,6 @@
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
-}
-
-.confirm__ambiguous {
-  flex-direction: column;
-  margin: 0;
-  gap: 10px;
-  border: 2px dashed var(--tp-thread-loose);
-}
-
-.confirm__ambiguous legend {
-  padding: 0 6px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #a12a22;
 }
 
 .confirm__card-row {
@@ -245,32 +230,6 @@
   color: var(--color-text-muted);
 }
 
-.confirm__manual {
-  min-height: 44px;
-  border: 0;
-  background: none;
-  text-align: left;
-  font-size: 14px;
-  color: var(--tp-denim-deep);
-  text-decoration: underline dashed;
-}
-
-.confirm__manual:disabled,
-.confirm__add:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.confirm__add {
-  min-height: 52px;
-  border: 2px dashed var(--tp-denim-deep);
-  border-radius: 12px;
-  background: transparent;
-  color: var(--tp-denim-deep);
-  font-size: 15px;
-  font-weight: 600;
-}
-
 .confirm__bar {
   position: sticky;
   bottom: 0;
@@ -286,4 +245,56 @@
   font-size: 13px;
   color: var(--color-text-muted);
   text-align: center;
+}
+
+.confirm__card-row {
+  align-items: flex-start;
+}
+
+.confirm__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.confirm__choose {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.confirm__found {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-lace);
+}
+
+.confirm__found > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.confirm__found > span span {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.confirm__found button {
+  flex: none;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--tp-denim-deep);
+  text-decoration: underline dashed;
+  cursor: pointer;
 }

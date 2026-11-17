@@ -8,3 +8,19 @@ export function formatTime(minutes: number): string {
 export function formatSlot(start: number, end: number): string {
   return `${formatTime(start)}–${formatTime(end)}`
 }
+
+// ISO date "2026-10-08" -> "10월 8일 목요일". Read as UTC so the viewer's own zone never shifts the day.
+export function formatDate(iso: string): string {
+  return new Intl.DateTimeFormat('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+    timeZone: 'UTC',
+  }).format(new Date(`${iso}T00:00:00Z`))
+}
+
+// "2026-10-07".."2026-10-09" -> "2박 3일".
+export function tripLength(startIso: string, endIso: string): string {
+  const nights = Math.round((Date.parse(endIso) - Date.parse(startIso)) / 86_400_000)
+  return `${nights}박 ${nights + 1}일`
+}
