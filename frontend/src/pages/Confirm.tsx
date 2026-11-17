@@ -3,9 +3,10 @@ import { Link } from 'react-router'
 import { searchPlaces } from '../api/places'
 import type { PlaceOption } from '../api/types'
 import { PlaceSearch } from '../components/PlaceSearch'
+import { TimeEditor } from '../components/TimeEditor'
 import { CATEGORY_ICON, DEFAULT_ICON } from '../lib/placeIcons'
-import { formatDate, formatTime, tripLength } from '../lib/time'
-import { useTrip, type TripItem } from '../store/trip'
+import { formatDate, formatTime, parseTime, tripLength } from '../lib/time'
+import { useTrip, type DraftIssue, type TripItem } from '../store/trip'
 import './Confirm.css'
 
 const CATEGORY_LABEL: Record<TripItem['category'], string> = {
@@ -17,11 +18,27 @@ const CATEGORY_LABEL: Record<TripItem['category'], string> = {
   other: '기타',
 }
 
+// What the parser could not settle, in the user's words. Shown until the item has a usable range.
+const ISSUE_TEXT: Record<DraftIssue['code'], string> = {
+  NO_TIME: '시각이 적혀 있지 않아요',
+  MISSING_START: '끝나는 시각만 있어요',
+  BAD_TIME: '시각을 읽지 못했어요',
+  BAD_RANGE: '끝나는 시각이 시작보다 빨라요',
+  RESERVED_NO_TIME: '예약이라고 적혀 있는데 시각이 없어요',
+  OVER_MIDNIGHT: '자정을 넘겨요',
+  OUT_OF_ORDER: '',
+  OVERLAP: '',
+}
+
+// The engine can use an item only with a start and a later end (same rule as its Activity model).
+// Judged from the item itself, not from the parser's issue list, which goes stale once the user edits.
+const hasTime = (it: TripItem) => it.start != null && it.end != null && it.end > it.start
+
 // Search result for one item. Missing from the map = still searching.
 type Match = { status: 'ok'; options: PlaceOption[] } | { status: 'error' }
 
 export default function Confirm() {
-  const { trip, updateItem } = useTrip()
+  const { trip, setTrip, updateItem } = useTrip()
   const [dayIndex, setDayIndex] = useState(0)
   const [matches, setMatches] = useState<Record<string, Match>>({})
   // The place shown for each item before the day is confirmed (first candidate, or the user's tap).
@@ -29,6 +46,8 @@ export default function Confirm() {
   const [choice, setChoice] = useState<Record<string, PlaceOption>>({})
   // Item whose candidate list is open ("다른 곳이에요" / "바꾸기").
   const [open, setOpen] = useState<string | null>(null)
+  // Item whose time editor is open (items without a usable time always show it).
+  const [editing, setEditing] = useState<string | null>(null)
   // Items already searched. A ref, so StrictMode's second effect run does not search twice.
   const requested = useRef(new Set<string>())
 
@@ -64,9 +83,10 @@ export default function Confirm() {
   }
 
   const unplaced = (items: TripItem[]) => items.filter((it) => !it.placeId).length
+  const needs = (items: TripItem[]) => items.filter((it) => !it.placeId || !hasTime(it)).length
   const totalItems = trip.days.reduce((n, d) => n + d.items.length, 0)
-  const totalNeeds = trip.days.reduce((n, d) => n + unplaced(d.items), 0)
-  const otherNeeds = totalNeeds - unplaced(day.items)
+  const totalNeeds = trip.days.reduce((n, d) => n + needs(d.items), 0)
+  const otherNeeds = totalNeeds - needs(day.items)
   const dayReady = day.items.every((it) => it.placeId || choice[it.id])
 
   function pick(item: TripItem, place: PlaceOption) {
@@ -74,6 +94,47 @@ export default function Confirm() {
     // Changing an already confirmed item saves at once: the user is looking right at it.
     if (item.placeId) updateItem(item.id, { placeId: place.place_id })
     setOpen(null)
+  }
+
+  function saveTime(item: TripItem, index: number, start: number, end: number) {
+    // A line marked as booked but without a time lost its booking on the server (no time to hold);
+    // the issue still says so, so the booking comes back with the time the user gives.
+    const wasReserved = day!.issues.some((i) => i.item === index && i.code === 'RESERVED_NO_TIME')
+    const reserved = item.reservationTime != null || wasReserved
+    updateItem(item.id, { start, end, durationEstimated: false, reservationTime: reserved ? start : null })
+    setEditing(null)
+  }
+
+  function renderTime(it: TripItem, index: number, prev: TripItem | undefined) {
+    const ready = hasTime(it)
+    const problem = day!.issues.find((i) => i.item === index && ISSUE_TEXT[i.code])
+    const overlaps = ready && prev && hasTime(prev) && it.start! < prev.end!
+
+    if (!ready || editing === it.id) {
+      return (
+        <div className="confirm__time">
+          {!ready && <p className="confirm__warn">{problem ? ISSUE_TEXT[problem.code] : '시각을 정해 주세요'}</p>}
+          <TimeEditor
+            idPrefix={`time-${it.id}`}
+            start={it.start}
+            end={it.end}
+            onSave={(s, e) => saveTime(it, index, s, e)}
+            onCancel={ready ? () => setEditing(null) : undefined}
+          />
+        </div>
+      )
+    }
+    return (
+      <>
+        {it.durationEstimated && (
+          <p className="confirm__hint">끝나는 시각은 짐작한 값이에요 (약 {it.end! - it.start!}분)</p>
+        )}
+        {overlaps && <p className="confirm__hint">앞 일정과 시간이 겹쳐요. 맞는지 확인해 주세요</p>}
+        <button type="button" className="confirm__link" onClick={() => setEditing(it.id)}>
+          시각 고치기
+        </button>
+      </>
+    )
   }
 
   function confirmDay() {
@@ -170,9 +231,26 @@ export default function Confirm() {
           </div>
         </div>
 
+        <div className="confirm__deadline tp-fabric">
+          <label htmlFor="deadline">
+            <b>숙소로 돌아올 시각</b>
+            <span>{trip.hotel?.title ?? '숙소'} · 일정이 깨져도 이 시각은 지켜요</span>
+          </label>
+          <input
+            id="deadline"
+            type="time"
+            step={300}
+            value={formatTime(trip.endDeadline)}
+            onChange={(e) => {
+              const m = parseTime(e.target.value)
+              if (m !== null) setTrip({ ...trip, endDeadline: m })
+            }}
+          />
+        </div>
+
         <nav className="confirm__days" aria-label="여행 날짜">
           {trip.days.map((d, i) => {
-            const n = unplaced(d.items)
+            const n = needs(d.items)
             return (
               <button
                 key={d.date}
@@ -196,18 +274,21 @@ export default function Confirm() {
             DAY {dayIndex + 1} · {formatDate(day.date)}
           </h2>
 
-          {day.items.map((it) => (
+          {day.items.map((it, index) => (
             <div className="confirm__card tp-fabric" key={it.id}>
               <div className="confirm__card-row">
                 <img src={CATEGORY_ICON[it.category] ?? DEFAULT_ICON} alt="" aria-hidden="true" />
                 <div className="confirm__card-text">
                   <span>
-                    {it.start != null ? formatTime(it.start) : '시각 없음'} · {CATEGORY_LABEL[it.category]}
+                    {hasTime(it) ? `${formatTime(it.start!)}–${formatTime(it.end!)}` : '시각 없음'} ·{' '}
+                    {CATEGORY_LABEL[it.category]}
+                    {it.reservationTime != null && ' · 예약'}
                   </span>
                   <b>{it.title}</b>
                 </div>
                 {it.placeId && <span className="confirm__chip">확인됨</span>}
               </div>
+              {renderTime(it, index, day.items[index - 1])}
               {renderPlace(it)}
             </div>
           ))}

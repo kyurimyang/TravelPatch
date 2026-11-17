@@ -298,3 +298,67 @@
   text-decoration: underline dashed;
   cursor: pointer;
 }
+
+.confirm__time {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1.5px dashed var(--tp-thread-loose);
+  border-radius: 12px;
+  background: var(--tp-lace);
+}
+
+.confirm__warn {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #a12a22;
+}
+
+.confirm__link {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--tp-denim-deep);
+  text-decoration: underline dashed;
+  cursor: pointer;
+}
+
+.confirm__deadline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.confirm__deadline label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.confirm__deadline label span {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.confirm__deadline input {
+  flex: none;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--tp-denim-deep);
+  border-radius: 12px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 16px;
+}

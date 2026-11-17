@@ -1,0 +1,65 @@
+.time-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.time-editor__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.time-editor__row label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.time-editor__row input {
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1.5px solid var(--tp-denim-deep);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 16px;
+  color: inherit;
+}
+
+.time-editor__warn {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tp-rust);
+}
+
+.time-editor__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.time-editor__actions button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1.5px solid var(--tp-denim-deep);
+  border-radius: var(--radius-md);
+  background: var(--tp-indigo);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.time-editor__actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.time-editor__actions .time-editor__quiet {
+  background: none;
+  color: var(--tp-denim-deep);
+  border-color: transparent;
+}

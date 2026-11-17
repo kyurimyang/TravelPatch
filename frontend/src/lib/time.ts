@@ -24,3 +24,9 @@ export function tripLength(startIso: string, endIso: string): string {
   const nights = Math.round((Date.parse(endIso) - Date.parse(startIso)) / 86_400_000)
   return `${nights}박 ${nights + 1}일`
 }
+
+// "HH:MM" (what <input type="time"> gives) -> minutes since midnight; null for empty or bad text.
+export function parseTime(text: string): number | null {
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(text)
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null
+}
