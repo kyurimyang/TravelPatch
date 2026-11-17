@@ -4,14 +4,18 @@ import BareLayout from './layout/BareLayout'
 import FlowLayout from './layout/FlowLayout'
 import TabLayout from './layout/TabLayout'
 import Confirm from './pages/Confirm'
+import Consent from './pages/Consent'
 import DiffView from './pages/DiffView'
 import Grade from './pages/Grade'
 import Landing from './pages/Landing'
+import Legal from './pages/Legal'
+import Login from './pages/Login'
 import Main from './pages/Main'
 import NotFound from './pages/NotFound'
 import NoPatch from './pages/NoPatch'
 import Patchwork from './pages/Patchwork'
 import Recover from './pages/Recover'
+import Signup from './pages/Signup'
 import Stitched from './pages/Stitched'
 import TripList from './pages/TripList'
 
@@ -35,6 +39,10 @@ export default function AppRoutes() {
           <Route path="recover" element={<Recover />} />
           <Route path="recover/patch" element={<DiffView />} />
           <Route path="recover/blocked" element={<NoPatch />} />
+          <Route path="login" element={<Login />} />
+          <Route path="signup" element={<Signup />} />
+          <Route path="consent" element={<Consent />} />
+          <Route path="legal/:doc" element={<Legal />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Route>

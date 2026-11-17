@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { parseItinerary } from '../api/itineraries'
 import type { PlaceOption, TravelMode } from '../api/types'
 import wordmark from '../assets/wordmark.png'
@@ -10,6 +10,7 @@ import { PlaceSearch } from '../components/PlaceSearch'
 import { StitchLoader } from '../components/StitchLoader'
 import { TravelModePicker } from '../components/TravelModePicker'
 import { tripFromDraft } from '../lib/tripFromDraft'
+import { useAuth } from '../store/auth'
 import { useTrip } from '../store/trip'
 import './Landing.css'
 
@@ -28,6 +29,7 @@ const FEATURES = [
 export default function Landing() {
   const navigate = useNavigate()
   const { setTrip } = useTrip()
+  const auth = useAuth()
   const [city, setCity] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
@@ -171,7 +173,20 @@ export default function Landing() {
         </button>
       </form>
 
-      <footer className="landing__footer">TravelPatch · 한 여행에 한 도시씩 지원해요</footer>
+      <p className="landing__account">
+        {auth.user ? (
+          <>{auth.nickname ?? auth.user.email}님으로 로그인했어요</>
+        ) : (
+          <>
+            여행을 다른 기기에서도 보려면 <Link to="/login">로그인</Link>
+          </>
+        )}
+      </p>
+
+      <footer className="landing__footer">
+        TravelPatch · 한 여행에 한 도시씩 지원해요 · <Link to="/legal/terms">약관</Link> ·{' '}
+        <Link to="/legal/privacy">개인정보 처리방침</Link>
+      </footer>
     </div>
   )
 }

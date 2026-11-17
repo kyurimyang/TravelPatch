@@ -1,0 +1,245 @@
+/* Shared by Login, Signup, Consent, Legal (and Settings, Withdraw later). */
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 20px 32px;
+}
+
+.account h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.account__lead {
+  margin: -6px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.account__badge {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--tp-indigo);
+  color: #ffffff;
+  font-family: var(--font-label);
+  font-size: 15px;
+}
+
+.account__social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  border: 1.5px solid var(--tp-denim-deep);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.account__social span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--tp-copper);
+  font-family: var(--font-display);
+}
+
+.account__or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.account__or::before,
+.account__or::after {
+  content: '';
+  flex: 1;
+  border-top: 1.5px dashed var(--tp-hemp);
+}
+
+.account__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.account__form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.account__form input:not([type='checkbox']) {
+  min-height: 52px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1.5px solid var(--tp-denim-deep);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  color: inherit;
+}
+
+.account__form input[readonly] {
+  background: var(--tp-lace);
+  color: var(--color-text-muted);
+}
+
+.account__hint {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.account__hint--warn {
+  color: var(--tp-rust);
+}
+
+.account__link {
+  align-self: flex-end;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--tp-denim-deep);
+  text-decoration: underline dashed;
+  cursor: pointer;
+}
+
+.account__msg {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.account__msg--error {
+  border: 1.5px dashed var(--tp-thread-loose);
+  color: var(--tp-rust);
+  background: var(--color-surface);
+}
+
+.account__msg--info {
+  border: 1.5px dashed var(--tp-denim-deep);
+  background: var(--tp-lace);
+}
+
+.account__switch {
+  margin: 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.account__switch a {
+  color: var(--tp-indigo);
+  font-weight: 700;
+}
+
+.account__consent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--tp-hemp);
+  border-radius: 12px;
+  background: var(--tp-linen);
+}
+
+.account__consent legend {
+  padding: 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.account__consent label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.account__consent input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--tp-indigo);
+}
+
+.account__consent-all {
+  padding-bottom: 6px;
+  border-bottom: 1.5px dashed var(--tp-hemp);
+  font-weight: 700;
+}
+
+.account__consent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.account__consent-row a {
+  font-size: 13px;
+  color: var(--tp-denim-deep);
+}
+
+.account__required {
+  color: var(--tp-rust);
+  font-weight: 700;
+}
+
+.account__legal h2 {
+  margin: 8px 0 4px;
+  font-size: 16px;
+}
+
+.account__legal p {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.account__legal-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.account__legal-tabs a {
+  padding: 4px 10px;
+  border: 1.5px dashed var(--tp-hemp);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.account__legal-tabs a[aria-current='page'] {
+  border-color: var(--tp-copper);
+  background: var(--tp-indigo);
+  color: #ffffff;
+}
