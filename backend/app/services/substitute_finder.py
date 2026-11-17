@@ -9,6 +9,7 @@ then picks the one that changes the day least, or none.
 """
 
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from app.llm.provider import LLMProvider
@@ -111,12 +112,17 @@ def add_substitutes(
         hits = places.search(query, near=(target.lat, target.lng))
     except PlacesError:
         return inp
-    details: list[tuple[PlaceCandidate, PlaceDetails]] = []
-    for hit in hits:
+
+    def lookup(hit: PlaceCandidate) -> PlaceDetails | None:
         try:
-            details.append((hit, places.details(hit.place_id)))
+            return places.details(hit.place_id)
         except PlacesError:
-            continue  # one failed lookup only loses that candidate
+            return None  # one failed lookup only loses that candidate
+
+    # In parallel: each lookup waits on the network. map keeps Google's order.
+    with ThreadPoolExecutor(max_workers=len(hits) or 1) as pool:
+        looked_up = list(pool.map(lookup, hits))
+    details = [(hit, d) for hit, d in zip(hits, looked_up, strict=True) if d is not None]
 
     weekday = inp.day.date.weekday() if inp.day.date is not None else None
     found = build_substitutes(target, details, weekday)
