@@ -4,12 +4,12 @@ import { useAuth } from '../store/auth'
 import './TopBar.css'
 import './TopBarAccount.css'
 
-type Props = { variant: 'tab' | 'flow'; title?: string }
+type Props = { variant: 'tab' | 'flow'; title?: string; aside?: string }
 
 // tab  = top-level screens: wordmark only.
 // flow = screens inside a flow: back button (+ optional title).
 // Account button: settings when signed in, login otherwise. (The mockup's bell is out: no alerts in MVP.)
-export default function TopBar({ variant, title }: Props) {
+export default function TopBar({ variant, title, aside }: Props) {
   const navigate = useNavigate()
   const { user } = useAuth()
 
@@ -36,6 +36,7 @@ export default function TopBar({ variant, title }: Props) {
             </svg>
           </button>
           {title && <h1 className="top-bar__title">{title}</h1>}
+          {aside && <span className="top-bar__aside">{aside}</span>}
         </>
       )}
     </header>

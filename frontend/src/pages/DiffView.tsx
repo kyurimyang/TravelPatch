@@ -2,14 +2,41 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { createRecovery, lockActivities, restoreActivity } from '../api/recoveries'
 import type { Counterfactual, RecoveryInput, RecoveryResponse, RecoveryResult } from '../api/types'
+import closedArt from '../assets/patches/hole-closed.svg'
+import delayArt from '../assets/patches/hole-delay.svg'
+import lateArt from '../assets/patches/hole-late.svg'
+import rainArt from '../assets/patches/hole-rain.svg'
+import tiredArt from '../assets/patches/hole-tired.svg'
+import mendArt from '../assets/patches/patch-mend.svg'
 import { CandidateCard } from '../components/CandidateCard'
+import { SummaryBar } from '../components/SummaryBar'
 import { WhyPanel } from '../components/WhyPanel'
 import { StateCard } from '../components/StateCard'
 import { StitchLoader } from '../components/StitchLoader'
+import { useFlowTitle } from '../layout/flowTitle'
+import { categoryIcon } from '../lib/category'
 import { inputFor, samplePlan, titlesOf, type RecoveryState } from '../lib/recovery'
 import { strategyLabel } from '../lib/strategy'
 import sample from '../mocks/scenarioAInput.json'
 import './DiffView.css'
+
+// The hole patch that shows what kind of thing broke the day.
+const HOLE_ART: Record<string, string> = {
+  DELAY: delayArt,
+  WEATHER: rainArt,
+  CLOSURE: closedArt,
+  FATIGUE: tiredArt,
+  EXTEND: lateArt,
+}
+
+// Headline when there are no chips (the page was opened directly): say what kind of hole it is.
+const HOLE_TITLE: Record<string, string> = {
+  DELAY: '출발이 늦어졌어요',
+  WEATHER: '비 때문에 밖이 어려워요',
+  CLOSURE: '가려던 곳이 문을 닫았어요',
+  FATIGUE: '많이 걷기 힘들어요',
+  EXTEND: '더 머물고 싶어요',
+}
 
 type State =
   | { status: 'loading' }
@@ -33,6 +60,12 @@ export default function DiffView() {
   const [busy, setBusy] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [notice, setNotice] = useState<string | null>(null)
+  useFlowTitle(
+    '패치 고르기',
+    state.status === 'done' && state.response.candidates.length > 0
+      ? `후보 ${state.response.candidates.length}개`
+      : undefined,
+  )
 
   useEffect(() => {
     // `cancelled` drops a stale answer if the effect re-runs (StrictMode runs it twice in dev).
@@ -101,6 +134,7 @@ export default function DiffView() {
   // The input the server really used (with searched substitutes and earlier locks).
   const currentInput = state.response.used_input ?? baseInput
   const titleOf = titlesOf(currentInput)
+  const iconOf = new Map(currentInput.activities.map((a) => [a.id, categoryIcon(a.category)]))
 
   async function restore(activityId: string): Promise<Counterfactual | null> {
     const res = await restoreActivity({ input: currentInput, strategy: candidate.strategy, activity_id: activityId })
@@ -140,15 +174,15 @@ export default function DiffView() {
     <div className="diff-view">
       <div className="diff-view__body">
         <section className="diff-view__hole tp-fabric" aria-label="구멍 요약">
+          <img className="diff-view__hole-art" src={HOLE_ART[event.type] ?? mendArt} alt="" aria-hidden="true" />
           <span className="diff-view__hole-tag tp-tagstitch">풀린 실</span>
-          {chips.length > 0 ? (
+          <h1>{chips[0] ?? HOLE_TITLE[event.type] ?? '일정에 구멍이 났어요'}</h1>
+          {chips.length > 1 && (
             <ul>
-              {chips.map((c) => (
+              {chips.slice(1).map((c) => (
                 <li key={c}>{c}</li>
               ))}
             </ul>
-          ) : (
-            <p>이 사건으로 일정을 다시 맞췄어요</p>
           )}
           <div className="diff-view__stats">
             <div>
@@ -179,6 +213,8 @@ export default function DiffView() {
           ))}
         </div>
 
+        <SummaryBar result={result} />
+
         <section className="diff-view__preview" aria-label="선택한 패치 미리보기">
           <div className="diff-view__preview-head">
             <span>원래 일정과 달라지는 곳</span>
@@ -193,6 +229,7 @@ export default function DiffView() {
           <CandidateCard
             result={result}
             titleOf={titleOf}
+            iconOf={iconOf}
             renderDetail={(change) => (
               <WhyPanel
                 change={change}

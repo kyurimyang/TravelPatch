@@ -20,3 +20,10 @@
   outline: 2px dashed var(--tp-copper);
   outline-offset: 2px;
 }
+
+/* Flow screens: a short note on the right of the title ("후보 2개"). */
+.top-bar__aside {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}

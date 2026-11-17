@@ -1,4 +1,5 @@
-/* Per-op colors come from tokens.css. Only changed rows get the stitched patch border. */
+/* Per-op colors come from tokens.css. Only changed rows get the stitched patch edge;
+   kept rows stay flat, like the day's list on the main screen. */
 .diff-row {
   --row-bg: var(--op-keep-bg);
   --row-fg: var(--op-keep-fg);
@@ -6,13 +7,15 @@
 
   list-style: none;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px dashed var(--tp-hemp);
   color: var(--color-text);
-  border: 1px solid var(--color-border);
+}
+
+.diff-row:last-child {
+  border-bottom: 0;
 }
 
 .diff-row[data-op='move'] {
@@ -46,10 +49,51 @@
   --row-edge: var(--op-add-edge);
 }
 
-/* patch look: changed rows only, keep stays flat */
+/* the patch: a piece of linen stitched on with thread in the op colour */
 .diff-row:not([data-op='keep']) {
-  background: var(--row-bg);
+  margin: 6px 0;
+  padding: 12px 10px;
   border: var(--patch-stitch-width) var(--patch-stitch-style) var(--row-edge);
+  border-radius: 10px;
+  background: var(--tp-lace);
+  box-shadow: 0 2px 0 rgba(36, 49, 77, 0.08);
+}
+
+.diff-row[data-op='keep'] {
+  opacity: 0.85;
+}
+
+.diff-row__time {
+  flex: none;
+  width: 42px;
+  padding-top: 2px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.diff-row:not([data-op='keep']) .diff-row__time {
+  font-weight: 700;
+  color: var(--row-fg);
+}
+
+.diff-row__icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+
+.diff-row[data-op='drop'] .diff-row__icon {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.diff-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-grow: 1;
+  min-width: 0;
 }
 
 .diff-row__head {
@@ -64,20 +108,35 @@
   font-weight: 600;
 }
 
+/* hand-written label, like the "다음" tag on the main screen */
 .diff-row__chip {
   flex: none;
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-  font-weight: 700;
+  padding: 0 10px;
+  border: 1.5px dashed var(--row-edge);
+  border-radius: 999px;
+  background: var(--row-bg);
   color: var(--row-fg);
-  background: var(--color-surface);
-  border: 1px solid var(--row-edge);
+  font-family: var(--font-label);
+  font-size: 15px;
+  font-weight: 700;
+  transform: rotate(-2deg);
 }
 
-.diff-row__time {
+.diff-row[data-op='keep'] .diff-row__chip {
+  border-style: solid;
+  border-color: var(--tp-hemp);
+  background: transparent;
+  color: var(--color-text-muted);
+  transform: none;
+}
+
+.diff-row__change {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+.diff-row__change b {
+  color: var(--color-text);
 }
 
 .diff-row__check {
@@ -87,18 +146,39 @@
   color: var(--op-shrink-fg);
 }
 
-.diff-row__sub {
-  font-size: var(--text-md);
-  font-weight: 600;
-  color: var(--row-fg);
+.diff-row__why {
+  margin-top: 4px;
 }
 
 .diff-row__why summary {
-  min-height: 32px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1.5px dashed var(--row-edge);
+  border-radius: 999px;
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--row-fg);
   cursor: pointer;
+  list-style: none;
+}
+
+.diff-row__why summary::-webkit-details-marker {
+  display: none;
+}
+
+.diff-row__why summary::before {
+  content: '▸';
+  margin-right: 6px;
+}
+
+.diff-row__why[open] summary::before {
+  content: '▾';
+}
+
+.diff-row__why[open] > :not(summary) {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--tp-hemp);
 }

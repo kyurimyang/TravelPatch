@@ -38,11 +38,13 @@
 
 .why__action {
   align-self: flex-start;
-  min-height: 44px;
+  min-height: 40px;
   padding: 0 14px;
-  border: 1.5px solid var(--tp-denim-deep);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: 999px;
   background: var(--tp-indigo);
+  outline: 1.5px dashed var(--tp-copper);
+  outline-offset: -4px;
   color: #ffffff;
   font: inherit;
   font-size: 14px;
@@ -50,8 +52,10 @@
   cursor: pointer;
 }
 
+/* the gentler action ("원래대로 둘래요"): a linen tag stitched in denim */
 .why__action--quiet {
-  background: var(--color-surface);
+  background: var(--tp-linen);
+  outline-color: var(--tp-denim-deep);
   color: var(--tp-denim-deep);
 }
 
