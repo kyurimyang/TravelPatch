@@ -10,7 +10,11 @@ MINUTES_PER_DAY = 1440
 
 
 # Location id of the hotel in travel tables (start of day and the return deadline).
+# On a departure day the service layer puts the airport here: it is where the day must end.
 HOTEL_ID = "hotel"
+# Location id of where the day starts when that is not the hotel (an arrival airport). It exists
+# only when the Day has start coordinates, and is only ever a current location, never a stop.
+START_ID = "start"
 
 
 class _Frozen(BaseModel):
@@ -98,10 +102,19 @@ class Day(_Frozen):
     end_deadline: int = Field(ge=0, le=MINUTES_PER_DAY)
     end_lat: float
     end_lng: float
+    # Where the day starts, when that is not the hotel (arrival airport). Both or neither.
+    start_lat: float | None = None
+    start_lng: float | None = None
     version: int = Field(default=1, ge=1)
+
+    @property
+    def has_start(self) -> bool:
+        return self.start_lat is not None
 
     @model_validator(mode="after")
     def _check_window(self) -> "Day":
         if self.end_deadline <= self.start_time:
             raise ValueError("end_deadline must be after start_time")
+        if (self.start_lat is None) != (self.start_lng is None):
+            raise ValueError("give both start_lat and start_lng, or neither")
         return self

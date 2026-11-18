@@ -1,12 +1,19 @@
 from datetime import date
 
 import pytest
+from pydantic import ValidationError
 
 from app.engine.recover import recover
 from app.schemas.enums import Category, Tier, TimeRigidity, TravelMode
 from app.schemas.events import DelayEvent
-from app.schemas.models import HOTEL_ID
-from app.schemas.plan import PlanItem, PlanRequest
+from app.schemas.models import HOTEL_ID, START_ID
+from app.schemas.plan import (
+    ARRIVAL_BUFFER,
+    DEPARTURE_BUFFER,
+    Flight,
+    PlanItem,
+    PlanRequest,
+)
 from app.schemas.recovery import RecoveryInput
 from app.services.places_client import OpeningPeriod, PlaceDetails, PlacesError
 from app.services.plan_builder import build_plan, min_duration_for
@@ -30,7 +37,9 @@ def _every_day(open_minute: int, close_minute: int) -> tuple[OpeningPeriod, ...]
 
 class FakePlaces:
     def __init__(
-        self, hours: dict[str, tuple[OpeningPeriod, ...] | None], fail: set[str] = frozenset()
+        self,
+        hours: dict[str, tuple[OpeningPeriod, ...] | None],
+        fail: set[str] = frozenset(),
     ):
         self.hours = hours
         self.fail = fail
@@ -131,9 +140,7 @@ def test_travel_table_covers_every_pair_with_the_chosen_mode():
     transit = build_plan(_request(), _places()).travel
     walk = build_plan(_request(TravelMode.WALK), _places()).travel
     assert len(transit) == 6  # hotel + 3 places = 4 points, 6 pairs
-    far = lambda table: next(
-        t.minutes for t in table if {t.a, t.b} == {HOTEL_ID, "sky"}
-    )
+    far = lambda table: next(t.minutes for t in table if {t.a, t.b} == {HOTEL_ID, "sky"})
     assert far(walk) > far(transit)
 
 
@@ -165,6 +172,107 @@ def test_the_built_plan_goes_straight_into_the_engine():
         preferences=plan.preferences,
         travel=plan.travel,
         event=DelayEvent(occurred_at=540, location_id=HOTEL_ID, start_time=660),
+    )
+    results = recover(inp)
+    assert results and all(r.violations == 0 for r in results)
+
+
+# --- flights (decision 2026-11-18): the arrival sets the start, the departure the deadline ---
+
+COORDS["haneda"] = (35.5494, 139.7798)
+
+
+def _flight_request(
+    *, arrival: Flight | None = None, departure: Flight | None = None
+) -> PlanRequest:
+    return PlanRequest(
+        date=FRIDAY,
+        hotel_place_id="hotel",
+        end_deadline=None if departure else 22 * 60,
+        items=_request().items,
+        arrival=arrival,
+        departure=departure,
+    )
+
+
+def test_arrival_day_starts_at_the_airport_after_the_default_buffer():
+    plan = build_plan(
+        _flight_request(arrival=Flight(time=420, airport_place_id="haneda")), _places()
+    )
+    assert plan.day.start_time == 420 + ARRIVAL_BUFFER
+    assert (plan.day.start_lat, plan.day.start_lng) == COORDS["haneda"]
+    assert (plan.day.end_lat, plan.day.end_lng) == COORDS["hotel"]  # still ends at the hotel
+    assert len(plan.travel) == 10  # start + hotel + 3 places = 5 points, 10 pairs
+
+
+def test_departure_day_ends_at_the_airport_before_the_default_buffer():
+    plan = build_plan(
+        _flight_request(departure=Flight(time=23 * 60, airport_place_id="haneda")),
+        _places(),
+    )
+    assert plan.day.end_deadline == 23 * 60 - DEPARTURE_BUFFER
+    assert (plan.day.end_lat, plan.day.end_lng) == COORDS["haneda"]
+    assert plan.day.start_lat is None  # the morning still starts at the hotel
+
+
+def test_the_user_can_change_the_buffer():
+    arrival = Flight(time=420, airport_place_id="haneda", buffer_minutes=30)
+    departure = Flight(time=23 * 60, airport_place_id="haneda", buffer_minutes=120)
+    plan = build_plan(_flight_request(arrival=arrival, departure=departure), _places())
+    assert (plan.day.start_time, plan.day.end_deadline) == (450, 23 * 60 - 120)
+
+
+def test_an_item_before_the_user_can_get_there_from_the_airport_is_a_warning():
+    # Lands 9:00 + 60 min: meiji at 10:00 cannot be reached in time. Warned, not moved.
+    plan = build_plan(
+        _flight_request(arrival=Flight(time=540, airport_place_id="haneda")), _places()
+    )
+    assert ("BEFORE_ARRIVAL", "meiji") in [(w.code, w.activity_id) for w in plan.warnings]
+    meiji = next(a for a in plan.activities if a.id == "meiji")
+    assert meiji.planned_start == 600
+
+
+def test_an_item_that_misses_the_flight_is_a_warning():
+    # Take-off 20:00 - 180 = 17:00 at the airport: sky (17:00-18:30) cannot fit.
+    plan = build_plan(
+        _flight_request(departure=Flight(time=20 * 60, airport_place_id="haneda")),
+        _places(),
+    )
+    assert ("AFTER_DEPARTURE", "sky") in [(w.code, w.activity_id) for w in plan.warnings]
+
+
+def test_end_deadline_or_departure_but_not_both():
+    with pytest.raises(ValidationError):
+        PlanRequest(date=FRIDAY, hotel_place_id="hotel", items=_request().items)
+    with pytest.raises(ValidationError):
+        PlanRequest(
+            date=FRIDAY,
+            hotel_place_id="hotel",
+            end_deadline=22 * 60,
+            items=_request().items,
+            departure=Flight(time=23 * 60, airport_place_id="haneda"),
+        )
+
+
+def test_buffers_must_leave_some_day():
+    # Lands 20:00 + 60 = 21:00, but the flight out needs the airport by 21:00 (24:00 - 180).
+    with pytest.raises(ValidationError, match="no time left"):
+        _flight_request(
+            arrival=Flight(time=20 * 60, airport_place_id="haneda"),
+            departure=Flight(time=24 * 60, airport_place_id="haneda"),
+        )
+
+
+def test_arrival_day_goes_straight_into_the_engine_from_the_airport():
+    plan = build_plan(
+        _flight_request(arrival=Flight(time=420, airport_place_id="haneda")), _places()
+    )
+    inp = RecoveryInput(
+        day=plan.day,
+        activities=plan.activities,
+        preferences=plan.preferences,
+        travel=plan.travel,
+        event=DelayEvent(occurred_at=600, location_id=START_ID, start_time=600),
     )
     results = recover(inp)
     assert results and all(r.violations == 0 for r in results)

@@ -7,6 +7,7 @@ from app.schemas.events import DelayEvent, DisruptionEvent
 from app.schemas.models import (
     HOTEL_ID,
     MINUTES_PER_DAY,
+    START_ID,
     Activity,
     Day,
     Preference,
@@ -146,7 +147,7 @@ class RecoveryInput(_Frozen):
 
     def _check_substitutes(self, ids: list[str]) -> None:
         sub_ids = [s.id for s in self.substitutes]
-        if len(set(sub_ids)) != len(sub_ids) or set(sub_ids) & {HOTEL_ID, *ids}:
+        if len(set(sub_ids)) != len(sub_ids) or set(sub_ids) & {HOTEL_ID, START_ID, *ids}:
             raise ValueError("substitute ids must be unique and differ from every other node")
         unknown = {s.replaces for s in self.substitutes} - set(ids)
         if unknown:
@@ -154,6 +155,8 @@ class RecoveryInput(_Frozen):
 
     def _check_travel_table(self, ids: list[str], target: str | None) -> None:
         nodes = {HOTEL_ID, *ids, *(s.id for s in self.substitutes)}
+        if self.day.has_start:
+            nodes.add(START_ID)
         if self.event.type == "MUST_VISIT" and target is not None:
             nodes.add(target)
         if self.event.location_id not in nodes:

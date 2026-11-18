@@ -7,12 +7,16 @@ values decided 2026-11-17, until the LLM suggestion step exists:
   substitutability meal/cafe 0.6 (can eat elsewhere), others 0.2
   time_rigidity    reserved if there is a reservation, else flexible
   outdoor/walking  unknown (None): never guessed (invariant 8)
+
+Flights (decision 2026-11-18): an arrival starts the day at the airport (START_ID) once the
+buffer has passed; a departure ends it at the airport (put in the HOTEL_ID node, "where the day
+ends") a buffer before take-off. Items that no longer fit are warned about, never moved.
 """
 
 from concurrent.futures import ThreadPoolExecutor
 
 from app.schemas.enums import Category, TimeRigidity
-from app.schemas.models import HOTEL_ID, Activity, Day, Preference
+from app.schemas.models import HOTEL_ID, START_ID, Activity, Day, Preference
 from app.schemas.plan import BuiltPlan, PlanRequest, PlanWarning
 from app.services.opening_hours import hours_for_weekday
 from app.services.places_client import GooglePlacesClient, PlaceDetails
@@ -44,7 +48,8 @@ def _lookup(places: GooglePlacesClient, place_ids: list[str]) -> dict[str, Place
 
 def build_plan(req: PlanRequest, places: GooglePlacesClient) -> BuiltPlan:
     items = sorted(req.items, key=lambda it: (it.start, it.id))  # deterministic order
-    details = _lookup(places, [req.hotel_place_id, *(it.place_id for it in items)])
+    airports = [f.airport_place_id for f in (req.arrival, req.departure) if f is not None]
+    details = _lookup(places, [req.hotel_place_id, *airports, *(it.place_id for it in items)])
     weekday = req.date.weekday()
 
     activities: list[Activity] = []
@@ -88,12 +93,33 @@ def build_plan(req: PlanRequest, places: GooglePlacesClient) -> BuiltPlan:
         )
 
     hotel = details[req.hotel_place_id]
+    end = details[req.departure.airport_place_id] if req.departure else hotel
+    start = details[req.arrival.airport_place_id] if req.arrival else None
     points = {a.id: (a.lat, a.lng) for a in activities}
-    points[HOTEL_ID] = (hotel.lat, hotel.lng)
+    points[HOTEL_ID] = (end.lat, end.lng)
+    if start is not None:
+        points[START_ID] = (start.lat, start.lng)
     travel = fill_missing_travel(points, mode=req.travel_mode)
+    minutes = {frozenset((t.a, t.b)): t.minutes for t in travel}
 
-    first = activities[0]
-    to_first = next(t.minutes for t in travel if {t.a, t.b} == {HOTEL_ID, first.id})
+    ready_at = req.ready_at
+    if ready_at is None:
+        to_first = minutes[frozenset((HOTEL_ID, activities[0].id))]
+        start_time = max(0, activities[0].planned_start - to_first)
+    else:
+        start_time = ready_at
+        warnings += [
+            PlanWarning(code="BEFORE_ARRIVAL", activity_id=a.id)
+            for a in activities
+            if a.planned_start < ready_at + minutes[frozenset((START_ID, a.id))]
+        ]
+    if req.departure is not None:
+        warnings += [
+            PlanWarning(code="AFTER_DEPARTURE", activity_id=a.id)
+            for a in activities
+            if a.planned_end + minutes[frozenset((a.id, HOTEL_ID))] > req.deadline
+        ]
+
     zone = hotel.time_zone or next(
         (details[it.place_id].time_zone for it in items if details[it.place_id].time_zone),
         DEFAULT_TIMEZONE,
@@ -103,10 +129,12 @@ def build_plan(req: PlanRequest, places: GooglePlacesClient) -> BuiltPlan:
         date=req.date,
         timezone=zone,
         travel_mode=req.travel_mode,
-        start_time=max(0, first.planned_start - to_first),
-        end_deadline=req.end_deadline,
-        end_lat=hotel.lat,
-        end_lng=hotel.lng,
+        start_time=start_time,
+        end_deadline=req.deadline,
+        end_lat=end.lat,
+        end_lng=end.lng,
+        start_lat=start.lat if start else None,
+        start_lng=start.lng if start else None,
     )
     return BuiltPlan(
         day=day,

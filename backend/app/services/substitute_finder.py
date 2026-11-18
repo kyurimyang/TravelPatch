@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from app.llm.provider import LLMProvider
 from app.llm.substitute_query import substitute_query
 from app.schemas.events import ClosureEvent
-from app.schemas.models import HOTEL_ID, Activity, Substitute
+from app.schemas.models import HOTEL_ID, START_ID, Activity, Substitute
 from app.schemas.recovery import RecoveryInput
 from app.services.opening_hours import hours_for_weekday
 from app.services.places_client import (
@@ -131,6 +131,8 @@ def add_substitutes(
 
     points = {a.id: (a.lat, a.lng) for a in inp.activities}
     points[HOTEL_ID] = (inp.day.end_lat, inp.day.end_lng)
+    if inp.day.start_lat is not None and inp.day.start_lng is not None:
+        points[START_ID] = (inp.day.start_lat, inp.day.start_lng)
     points.update({s.id: (s.lat, s.lng) for s in found.substitutes})
     travel = fill_missing_travel(points, inp.travel, inp.day.travel_mode)
     data = inp.model_dump()
