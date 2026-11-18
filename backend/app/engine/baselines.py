@@ -7,7 +7,9 @@ validator counts what they break. When the day overflows (deadline, closing time
 reserved slot missed) they drop an activity and place again. They differ only in WHO goes:
 
 - right_shift: the latest droppable activity at or before the one that failed (position).
-- greedy: the lowest-value droppable one at or before it (value; ties -> later, then id).
+- greedy: the lowest-value droppable activity of the whole remaining day (value; ties -> later).
+  It may give up something that does not help with the failure and then have to drop more:
+  that is what choosing by value alone does (decision 2026-11-18).
 
 "must", an asked-for extension and the activity the user is in right now are never dropped.
 Pure functions: no clock, no I/O.
@@ -51,7 +53,10 @@ def _place(
 
 
 def _first_failure(
-    inp: RecoveryInput, order: tuple[str, ...], acts: dict[str, Activity], slots: list[tuple[int, int]]
+    inp: RecoveryInput,
+    order: tuple[str, ...],
+    acts: dict[str, Activity],
+    slots: list[tuple[int, int]],
 ) -> int | None:
     table = {frozenset((t.a, t.b)): t.minutes for t in inp.travel}
     deadline = inp.day.end_deadline
@@ -67,7 +72,9 @@ def _first_failure(
     return None
 
 
-def _run(inp: RecoveryInput, name: str, pick: _Victim) -> RecoveryResult:
+def _run(inp: RecoveryInput, name: str, pick: _Victim, whole_day: bool = False) -> RecoveryResult:
+    """`whole_day`: candidates are every droppable activity left, not only those up to the
+    first failure."""
     acts = {a.id: a for a in inp.activities}
     values = {p.activity_id: p.tier.weight for p in inp.preferences}
     musts = {p.activity_id for p in inp.preferences if p.tier == Tier.MUST}
@@ -81,7 +88,8 @@ def _run(inp: RecoveryInput, name: str, pick: _Victim) -> RecoveryResult:
         failed = _first_failure(inp, order, acts, slots)
         if failed is None:
             break
-        candidates = [i for i in range(failed + 1) if order[i] not in protected]
+        scope = len(order) if whole_day else failed + 1
+        candidates = [i for i in range(scope) if order[i] not in protected]
         if not candidates:
             break  # nothing left to give up: the validator will report the violation
         drop = pick(candidates, order, values)
@@ -132,4 +140,4 @@ def right_shift(inp: RecoveryInput) -> RecoveryResult:
 
 
 def greedy(inp: RecoveryInput) -> RecoveryResult:
-    return _run(inp, "greedy", _lowest_value)
+    return _run(inp, "greedy", _lowest_value, whole_day=True)

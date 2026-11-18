@@ -2,9 +2,9 @@
 
 | method | scenarios | no solution | violation rate | violation-free | preservation (violation-free) | RC (violation-free) | ms (all) |
 |---|---|---|---|---|---|---|---|
-| right_shift | 50 | 0 | 60% | 20 | 93.9% | 1.468 | 0.7 |
-| greedy | 50 | 0 | 60% | 20 | 93.9% | 1.468 | 0.5 |
-| engine | 50 | 5 | 0% | 45 | 90.3% | 1.646 | 890.0 |
+| right_shift | 50 | 0 | 60% | 20 | 93.9% | 1.468 | 0.5 |
+| greedy | 50 | 0 | 60% | 20 | 76.2% | 4.456 | 0.4 |
+| engine | 50 | 5 | 0% | 45 | 90.3% | 1.646 | 649.7 |
 | llm_only | 50 | 5 | 91% | 4 | 88.2% | 2.450 | 2332.0 |
 | llm_validated | 50 | 44 | 0% | 6 | 88.3% | 2.284 | 4110.5 |
 
@@ -23,7 +23,7 @@
 | method | preservation | RC | dropped (mean) |
 |---|---|---|---|
 | right_shift | 94.1% | 1.266 | 0.33 |
-| greedy | 94.1% | 1.266 | 0.33 |
+| greedy | 76.5% | 4.766 | 2.00 |
 | engine | 94.1% | 1.266 | 0.33 |
 | llm_only | 85.2% | 2.888 | 0.33 |
 | llm_validated | 85.2% | 2.888 | 0.33 |

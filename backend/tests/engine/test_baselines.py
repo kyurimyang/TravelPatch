@@ -73,3 +73,25 @@ def test_right_shift_drops_by_position_greedy_by_value() -> None:
     assert "cafe" in _dropped(shifted) or "shibuya_shop" not in _dropped(shifted)
     assert "shibuya_shop" in _dropped(value_based)
     assert _dropped(shifted) != _dropped(value_based)
+
+
+def test_greedy_picks_the_lowest_value_in_the_whole_remaining_day() -> None:
+    # eval50 i01_delay: up again at 11:00, the first activity (a0, nice) closes at 11:25 and
+    # fails at once. right_shift may only give up what comes up to the failure (a0 alone);
+    # greedy looks at the whole remaining day and gives up an optional one first.
+    import json
+    from pathlib import Path
+
+    raw = json.loads(
+        (Path(__file__).parents[1] / "scenarios" / "eval50" / "i01_delay.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    raw.pop("expected", None)
+    inp = RecoveryInput.model_validate(raw)
+    optional = {p.activity_id for p in inp.preferences if p.tier == Tier.OPTIONAL}
+
+    assert _dropped(right_shift(inp)) == {"a0"}
+    by_value = _dropped(greedy(inp))
+    assert by_value & optional  # value first, wherever it sits in the day
+    assert by_value != _dropped(right_shift(inp))
