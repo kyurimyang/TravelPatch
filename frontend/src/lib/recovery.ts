@@ -3,7 +3,7 @@
 // Google coordinates, which the browser must not store (decision 2026-11-16).
 import type { BuiltPlan, DisruptionEvent, PlanRequest, RecoveryInput } from '../api/types'
 import sample from '../mocks/scenarioAInput.json'
-import type { Trip } from '../store/trip'
+import type { Trip, TripFlight } from '../store/trip'
 
 export type RecoverySource = 'trip' | 'sample'
 
@@ -40,6 +40,9 @@ export function titlesOf(inp: Pick<RecoveryInput, 'activities' | 'substitutes'>)
   ])
 }
 
+const flight = (f: TripFlight | null) =>
+  f ? { time: f.time, airport_place_id: f.airport.placeId, buffer_minutes: f.bufferMinutes } : null
+
 /** The trip day as the server wants it, or why it cannot be sent yet. */
 export function planRequestFor(trip: Trip, dayIndex: number): PlanRequest | { problem: string } {
   const day = trip.days[dayIndex]
@@ -53,7 +56,11 @@ export function planRequestFor(trip: Trip, dayIndex: number): PlanRequest | { pr
   return {
     date: day.date,
     hotel_place_id: trip.hotel.placeId,
-    end_deadline: trip.endDeadline,
+    // The arrival flight bounds the first day, the departure flight the last one; a departure
+    // replaces the back-at-hotel deadline on its day (the server accepts one or the other).
+    arrival: day.date === trip.startDate ? flight(trip.arrival) : null,
+    departure: day.date === trip.endDate ? flight(trip.departure) : null,
+    end_deadline: day.date === trip.endDate && trip.departure ? null : trip.endDeadline,
     travel_mode: trip.travelMode,
     items: items.map((it) => ({
       id: it.id,

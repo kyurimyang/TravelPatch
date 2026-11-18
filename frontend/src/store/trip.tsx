@@ -46,6 +46,16 @@ export type TripDay = {
   issues: DraftIssue[]
 }
 
+/** A flight that bounds a day, as the user entered it (never looked up). */
+export type TripFlight = {
+  /** Local minutes: landing for the arrival, take-off for the departure. */
+  time: number
+  /** The user's words + Google place_id, like the hotel (no Google name stored). */
+  airport: { title: string; placeId: string }
+  /** null = the server default (60 after landing, 180 before take-off). */
+  bufferMinutes: number | null
+}
+
 export type Trip = {
   /** Local id, made when the trip is registered. */
   id: string
@@ -57,6 +67,10 @@ export type Trip = {
   travelMode: TravelMode
   /** Latest return to the hotel, minutes since midnight. Default 22:00, changeable on Confirm. */
   endDeadline: number
+  /** Lands on the first day: that day starts at the airport. */
+  arrival: TripFlight | null
+  /** Takes off on the last day: that day ends at the airport. */
+  departure: TripFlight | null
   days: TripDay[]
   /** Stitched patches, oldest first: each is the change list against its day (invariant 6). */
   patches: SavedPatch[]
@@ -89,7 +103,7 @@ const TripContext = createContext<TripStore | null>(null)
 
 // Fields added after a trip may have been saved get their old behaviour.
 const upgrade = (t: Partial<Trip>): Trip =>
-  ({ travelMode: 'transit', patches: [], id: crypto.randomUUID(), ...t }) as Trip
+  ({ travelMode: 'transit', patches: [], arrival: null, departure: null, id: crypto.randomUUID(), ...t }) as Trip
 
 // Storage can be missing or throw (private window, blocked site data): the app then keeps trips
 // in memory only and still works for this visit.

@@ -37,10 +37,22 @@ type DayState =
   | { kind: 'ready'; plan: BuiltPlan; source: RecoverySource }
   | { kind: 'blocked'; message: string }
 
-/** Default "now": the phone's clock on the day being travelled, else 30 minutes before the first item. */
+// Where the day starts when it is not the hotel (arrival airport). Same id as backend START_ID.
+const START_ID = 'start'
+const hasStart = (plan: BuiltPlan) => plan.day.start_lat != null
+
+const WARNING_TEXT: Record<string, string> = {
+  CLOSED_THAT_DAY: '이날은 쉬는 날로 나와요. 그대로 둘지 확인해 주세요.',
+  BEFORE_ARRIVAL: '도착 후 공항에서 가기엔 시작이 너무 일러요.',
+  AFTER_DEPARTURE: '출국 시각에 맞추기엔 너무 늦게 끝나요.',
+}
+
+/** Default "now": the phone's clock on the day being travelled; on an arrival day, when the
+ * user can leave the airport; else 30 minutes before the first item. */
 function defaultNow(plan: BuiltPlan): number {
   const d = new Date()
   if (plan.day.date === deviceNow().date) return d.getHours() * 60 + d.getMinutes()
+  if (hasStart(plan)) return plan.day.start_time
   const first = Math.min(...plan.activities.map((a) => a.planned_start))
   return Math.max(0, Math.floor((first - 30) / 5) * 5)
 }
@@ -57,7 +69,8 @@ export default function Recover() {
   const [fetched, setFetched] = useState<DayState | null>(null)
   const [useSample, setUseSample] = useState(false)
   const [now, setNow] = useState<number | null>(null)
-  const [locationId, setLocationId] = useState('hotel')
+  // null = not chosen yet: the day's start (airport on an arrival day, else the hotel).
+  const [locationId, setLocationId] = useState<string | null>(null)
   // HoleAlert hands over a sentence it already knows ("25분쯤 늦어지고 있어요").
   const [text, setText] = useState(navIn?.preset ?? '')
   const [quick, setQuick] = useState<string | null>(null)
@@ -126,6 +139,9 @@ export default function Recover() {
   const { plan, source } = day
   const activities = plan.activities
   const nowMin = now ?? defaultNow(plan)
+  const where = locationId ?? (hasStart(plan) ? START_ID : 'hotel')
+  const departureDay =
+    source === 'trip' && !!trip?.departure && trip.days[dayIndex]?.date === trip.endDate
   const next = activities.find((a) => a.planned_start >= nowMin)
   const titleOf = (id: string) => activities.find((a) => a.id === id)?.title ?? id
 
@@ -136,7 +152,7 @@ export default function Recover() {
       const response = await interpretDisruption({
         text: text.trim(),
         now: nowMin,
-        location_id: locationId,
+        location_id: where,
         activities,
       })
       setPhase({ kind: 'result', response })
@@ -171,7 +187,9 @@ export default function Recover() {
         {plan.warnings.length > 0 && (
           <section className="recover__warn" role="note">
             {plan.warnings.map((w) => (
-              <p key={w.activity_id}>{titleOf(w.activity_id)}: 이날은 쉬는 날로 나와요. 그대로 둘지 확인해 주세요.</p>
+              <p key={`${w.code}-${w.activity_id}`}>
+                {titleOf(w.activity_id)}: {WARNING_TEXT[w.code] ?? '확인이 필요해요.'}
+              </p>
             ))}
           </section>
         )}
@@ -194,13 +212,15 @@ export default function Recover() {
           <label>
             <span>있는 곳</span>
             <select
-              value={locationId}
+              value={where}
               onChange={(e) => {
                 setLocationId(e.target.value)
                 reset()
               }}
             >
-              <option value="hotel">숙소</option>
+              {hasStart(plan) && <option value={START_ID}>도착 공항</option>}
+              {/* On a departure day the backend puts the airport in the hotel node (the day's end). */}
+              <option value="hotel">{departureDay ? '출발 공항' : '숙소'}</option>
               {activities.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.title}

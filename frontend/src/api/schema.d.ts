@@ -268,6 +268,10 @@ export interface components {
             end_lat: number;
             /** End Lng */
             end_lng: number;
+            /** Start Lat */
+            start_lat?: number | null;
+            /** Start Lng */
+            start_lng?: number | null;
             /**
              * Version
              * @default 1
@@ -395,6 +399,8 @@ export interface components {
             time: number;
             /** Airport Place Id */
             airport_place_id: string;
+            /** Buffer Minutes */
+            buffer_minutes?: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -623,9 +629,9 @@ export interface components {
         PlanWarning: {
             /**
              * Code
-             * @constant
+             * @enum {string}
              */
-            code: "CLOSED_THAT_DAY";
+            code: "CLOSED_THAT_DAY" | "BEFORE_ARRIVAL" | "AFTER_DEPARTURE";
             /** Activity Id */
             activity_id: string;
         };

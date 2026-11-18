@@ -4,6 +4,7 @@ import { searchPlaces } from '../api/places'
 import type { PlaceOption } from '../api/types'
 import { PlaceSearch } from '../components/PlaceSearch'
 import { TimeEditor } from '../components/TimeEditor'
+import { FlightFields } from '../components/FlightFields'
 import { TravelModePicker } from '../components/TravelModePicker'
 import { CATEGORY_LABEL, categoryIcon } from '../lib/category'
 import { formatDate, formatTime, parseTime, tripLength } from '../lib/time'
@@ -251,6 +252,23 @@ export default function Confirm() {
             value={trip.travelMode}
             onChange={(travelMode) => setTrip({ ...trip, travelMode })}
           />
+        </div>
+
+        <div className="confirm__mode">
+          <b>항공편</b>
+          <FlightFields
+            direction="arrival"
+            city={trip.city}
+            value={trip.arrival}
+            onChange={(arrival) => setTrip({ ...trip, arrival })}
+          />
+          <FlightFields
+            direction="departure"
+            city={trip.city}
+            value={trip.departure}
+            onChange={(departure) => setTrip({ ...trip, departure })}
+          />
+          {trip.departure && <p className="confirm__hint">마지막 날은 숙소 대신 출발 공항이 하루의 끝이에요.</p>}
         </div>
 
         <nav className="confirm__days" aria-label="여행 날짜">

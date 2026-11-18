@@ -2,7 +2,7 @@ import type { DraftItinerary } from '../api/types'
 import { DEFAULT_END_DEADLINE, type Trip } from '../store/trip'
 import { defaultTier } from './category'
 
-type TripMeta = Pick<Trip, 'city' | 'startDate' | 'endDate' | 'hotel' | 'travelMode'>
+type TripMeta = Pick<Trip, 'city' | 'startDate' | 'endDate' | 'hotel' | 'travelMode' | 'arrival' | 'departure'>
 
 /** ISO date `days` after `iso` ("2026-10-08" + 1 -> "2026-10-09"). UTC math: no DST surprises. */
 export function addDays(iso: string, days: number): string {
