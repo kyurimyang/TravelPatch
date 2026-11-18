@@ -113,3 +113,30 @@ def test_validated_stops_at_the_first_clean_plan(inp, tmp_path):
     result = make_llm_validated(provider)(inp)
     assert result.violations == 0 and result.strategy == "llm_validated"
     assert inner.calls == 2  # one bad answer, one repair, then it stops
+
+
+# ---- repeated runs (decision 2026-11-18): run 1 reuses the cache, run n > 1 asks again ----
+
+
+def test_run_one_keeps_the_existing_cache_keys(tmp_path) -> None:
+    inner = Scripted([KEEP_ALL])
+    CachedProvider(inner, tmp_path, "test-model").complete_json(
+        system="s", user="u", schema=LLMPlan
+    )
+    again = Scripted([])
+    CachedProvider(again, tmp_path, "test-model", run=1).complete_json(
+        system="s", user="u", schema=LLMPlan
+    )
+    assert again.calls == 0  # same key as before the option existed
+
+
+def test_a_later_run_asks_the_model_again_and_is_cached_on_its_own(tmp_path) -> None:
+    CachedProvider(Scripted([KEEP_ALL]), tmp_path, "test-model").complete_json(
+        system="s", user="u", schema=LLMPlan
+    )
+    second = Scripted([KEEP_ALL])
+    p2 = CachedProvider(second, tmp_path, "test-model", run=2)
+    p2.complete_json(system="s", user="u", schema=LLMPlan)
+    assert second.calls == 1  # not answered from run 1
+    p2.complete_json(system="s", user="u", schema=LLMPlan)
+    assert second.calls == 1  # but run 2 is itself repeatable from its cache

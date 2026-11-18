@@ -36,7 +36,16 @@ METHODS: dict[str, Callable[[RecoveryInput], RecoveryResult | None]] = {
     "greedy": greedy,
     "engine": _engine,
 }
-FIELDS = ["scenario", "method", "violations", "preservation", "rc_total", "dropped", "solver_ms", "no_solution_reason"]
+FIELDS = [
+    "scenario",
+    "method",
+    "violations",
+    "preservation",
+    "rc_total",
+    "dropped",
+    "solver_ms",
+    "no_solution_reason",
+]
 
 
 def _load(path: Path) -> RecoveryInput:
@@ -61,15 +70,37 @@ def run(scenario_dir: Path, methods: dict[str, Callable] | None = None) -> list[
             if result is not None and result.solver_ms:  # LLM methods report recorded latency
                 ms = float(result.solver_ms)
             if result is None:  # no valid plan exists: not the same as "0 violations"
-                why = why or "; ".join(f"{b.kind}:{b.activity_id}" for b in find_blockers(inp)) or "unknown"
-                rows.append({"scenario": path.stem, "method": name, "violations": "", "preservation": "",
-                             "rc_total": "", "dropped": "", "solver_ms": ms, "no_solution_reason": why})
+                why = (
+                    why
+                    or "; ".join(f"{b.kind}:{b.activity_id}" for b in find_blockers(inp))
+                    or "unknown"
+                )
+                rows.append(
+                    {
+                        "scenario": path.stem,
+                        "method": name,
+                        "violations": "",
+                        "preservation": "",
+                        "rc_total": "",
+                        "dropped": "",
+                        "solver_ms": ms,
+                        "no_solution_reason": why,
+                    }
+                )
                 continue
-            rows.append({
-                "scenario": path.stem, "method": name, "violations": result.violations,
-                "preservation": round(result.preservation_rate, 4), "rc_total": round(compute_cost(inp, result.changes, DEFAULT_WEIGHTS).rc_total, 3),  # same weights for all
-                "dropped": sum(c.op == Op.DROP for c in result.changes), "solver_ms": ms,
-            })
+            rows.append(
+                {
+                    "scenario": path.stem,
+                    "method": name,
+                    "violations": result.violations,
+                    "preservation": round(result.preservation_rate, 4),
+                    "rc_total": round(
+                        compute_cost(inp, result.changes, DEFAULT_WEIGHTS).rc_total, 3
+                    ),  # same weights for all
+                    "dropped": sum(c.op == Op.DROP for c in result.changes),
+                    "solver_ms": ms,
+                }
+            )
     return rows
 
 
@@ -89,7 +120,11 @@ def _stats(rows: list[dict]) -> tuple[str, str, str]:
     """Preservation / RC / ms over the rows (only call with violation-free rows)."""
     if not rows:
         return "-", "-", "-"
-    return f"{_mean(rows, 'preservation'):.1%}", f"{_mean(rows, 'rc_total'):.3f}", f"{_mean(rows, 'solver_ms'):.1f}"
+    return (
+        f"{_mean(rows, 'preservation'):.1%}",
+        f"{_mean(rows, 'rc_total'):.3f}",
+        f"{_mean(rows, 'solver_ms'):.1f}",
+    )
 
 
 def summarize(rows: list[dict]) -> list[str]:
@@ -108,11 +143,18 @@ def summarize(rows: list[dict]) -> list[str]:
         pres, rc, _ = _stats(good)
         rate = f"{sum(r['violations'] > 0 for r in solved) / len(solved):.0%}" if solved else "-"
         ms = f"{_mean(solved, 'solver_ms'):.1f}" if solved else "-"
-        out.append(f"| {name} | {len(mine)} | {len(mine) - len(solved)} | {rate} | {len(good)} | {pres} | {rc} | {ms} |")
+        out.append(
+            f"| {name} | {len(mine)} | {len(mine) - len(solved)} | {rate} | {len(good)} | {pres} | {rc} | {ms} |"
+        )
 
     events = sorted({_event(r) for r in rows})
-    out += ["", "### Violation rate by event (no solution counted separately)", "",
-            "| method | " + " | ".join(events) + " |", "|---|" + "---|" * len(events)]
+    out += [
+        "",
+        "### Violation rate by event (no solution counted separately)",
+        "",
+        "| method | " + " | ".join(events) + " |",
+        "|---|" + "---|" * len(events),
+    ]
     for name in names:
         cells = []
         for ev in events:
@@ -126,12 +168,19 @@ def summarize(rows: list[dict]) -> list[str]:
     # Head to head: only scenarios where EVERY method produced a violation-free plan.
     ok = {name: {r["scenario"]: r for r in _valid(rows) if r["method"] == name} for name in names}
     common = sorted(set.intersection(*(set(d) for d in ok.values())))
-    out += ["", f"### Same {len(common)} scenarios where all methods are violation-free", "",
-            "| method | preservation | RC | dropped (mean) |", "|---|---|---|---|"]
+    out += [
+        "",
+        f"### Same {len(common)} scenarios where all methods are violation-free",
+        "",
+        "| method | preservation | RC | dropped (mean) |",
+        "|---|---|---|---|",
+    ]
     for name in names:
         picked = [ok[name][sc] for sc in common]
         if picked:
-            out.append(f"| {name} | {_mean(picked, 'preservation'):.1%} | {_mean(picked, 'rc_total'):.3f} | {_mean(picked, 'dropped'):.2f} |")
+            out.append(
+                f"| {name} | {_mean(picked, 'preservation'):.1%} | {_mean(picked, 'rc_total'):.3f} | {_mean(picked, 'dropped'):.2f} |"
+            )
     return out
 
 
@@ -139,14 +188,22 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenarios", type=Path, default=Path("backend/tests/scenarios"))
     ap.add_argument("--out", type=Path, default=Path("eval/results"))
-    ap.add_argument("--with-llm", action="store_true", help="add (c) LLM-only and (d) LLM+validator")
+    ap.add_argument(
+        "--with-llm", action="store_true", help="add (c) LLM-only and (d) LLM+validator"
+    )
+    ap.add_argument(
+        "--run", type=int, default=1, help="repeat number for the LLM methods (2, 3, ... ask again)"
+    )
     args = ap.parse_args()
+    cache_dir = args.out / "llm_cache"  # one cache for every run (keys differ per run)
+    if args.run > 1:
+        args.out = args.out / f"run{args.run}"
     methods = dict(METHODS)
     if args.with_llm:
         from app.llm.provider import OpenAIProvider
 
         inner = OpenAIProvider()
-        provider = CachedProvider(inner, args.out / "llm_cache", inner._model)
+        provider = CachedProvider(inner, cache_dir, inner._model, run=args.run)
         methods["llm_only"] = make_llm_only(provider)
         methods["llm_validated"] = make_llm_validated(provider)
     rows = run(args.scenarios, methods)

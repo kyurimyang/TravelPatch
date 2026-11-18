@@ -47,10 +47,13 @@ class NoPlan(Exception):
 class CachedProvider:
     """Wraps a provider: answers are stored in `cache_dir` keyed by the exact prompt."""
 
-    def __init__(self, inner: LLMProvider, cache_dir: Path, model: str) -> None:
+    def __init__(self, inner: LLMProvider, cache_dir: Path, model: str, run: int = 1) -> None:
+        """`run` > 1 asks the model again for a repeated measurement: its answers are kept under
+        their own keys. Run 1 keeps the keys used before repeats existed."""
         self._inner = inner
         self._dir = cache_dir
         self._model = model
+        self._run = run
         self._dir.mkdir(parents=True, exist_ok=True)
         self.ms = 0.0  # latency of the calls since the last `take_ms`
 
@@ -59,9 +62,10 @@ class CachedProvider:
         return taken
 
     def complete_json(self, *, system: str, user: str, schema: type[T]) -> T:
-        digest = hashlib.sha256(
-            json.dumps([self._model, schema.__name__, system, user]).encode()
-        ).hexdigest()
+        key = [self._model, schema.__name__, system, user]
+        if self._run > 1:
+            key.append(f"run{self._run}")
+        digest = hashlib.sha256(json.dumps(key).encode()).hexdigest()
         path = self._dir / f"{digest}.json"
         if path.exists():
             record = json.loads(path.read_text(encoding="utf-8"))
@@ -83,7 +87,11 @@ def _ask(provider: CachedProvider, user: str) -> LLMPlan:
 
 
 def _result(
-    inp: RecoveryInput, name: str, changes: tuple[RecoveryChange, ...], problems: list[Violation], ms: int
+    inp: RecoveryInput,
+    name: str,
+    changes: tuple[RecoveryChange, ...],
+    problems: list[Violation],
+    ms: int,
 ) -> RecoveryResult:
     cost = compute_cost(inp, changes, DEFAULT_WEIGHTS)
     return RecoveryResult(
