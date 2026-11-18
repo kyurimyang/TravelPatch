@@ -2,9 +2,9 @@
 
 | method | scenarios | no solution | violation rate | violation-free | preservation (violation-free) | RC (violation-free) | ms (all) |
 |---|---|---|---|---|---|---|---|
-| right_shift | 50 | 0 | 60% | 20 | 93.9% | 1.468 | 0.5 |
-| greedy | 50 | 0 | 60% | 20 | 76.2% | 4.456 | 0.4 |
-| engine | 50 | 5 | 0% | 45 | 90.3% | 1.646 | 649.7 |
+| right_shift | 50 | 0 | 60% | 20 | 93.9% | 1.468 | 0.3 |
+| greedy | 50 | 0 | 60% | 20 | 76.2% | 4.456 | 0.3 |
+| engine | 50 | 5 | 0% | 45 | 90.3% | 1.646 | 227.5 |
 | llm_only | 50 | 5 | 91% | 4 | 88.2% | 2.450 | 2332.0 |
 | llm_validated | 50 | 44 | 0% | 6 | 88.3% | 2.284 | 4110.5 |
 
