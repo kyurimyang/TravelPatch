@@ -27,10 +27,11 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
-addopts = "-m 'not live and not slow'"
+addopts = "-m 'not live and not slow and not db'"
 markers = [
     "live: tests that call real external APIs",
     "slow: long property tests, run with pytest -m slow",
+    "db: tests against the dev Supabase project (.env), run with pytest -m db",
 ]
 
 [tool.ruff]
