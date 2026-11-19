@@ -11,7 +11,7 @@
 
 .top-bar__logo {
   display: block;
-  /* wordmark.png is mostly transparent padding (letters span rows 97-281 of 408,
+  /* wordmark.webp is mostly transparent padding (letters span rows 97-281 of 408 in the 1200px source,
      a bit above centre). Size the image so the letters are ~30px tall, and use
      negative margins so the box stays 44px: the bar (and its pinked edge) keeps
      its 56px height and the letters sit vertically centred. */

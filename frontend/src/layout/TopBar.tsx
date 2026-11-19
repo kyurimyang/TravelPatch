@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router'
-import wordmark from '../assets/wordmark.png'
+import wordmark from '../assets/wordmark.webp'
 import { useAuth } from '../store/auth'
 import './TopBar.css'
 import './TopBarAccount.css'
