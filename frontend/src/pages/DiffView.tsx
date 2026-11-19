@@ -17,6 +17,7 @@ import { useFlowTitle } from '../layout/flowTitle'
 import { categoryIcon } from '../lib/category'
 import { inputFor, samplePlan, titlesOf, type RecoveryState } from '../lib/recovery'
 import { strategyLabel } from '../lib/strategy'
+import { withJosa } from '../lib/josa'
 import sample from '../mocks/scenarioAInput.json'
 import './DiffView.css'
 
@@ -143,7 +144,7 @@ export default function DiffView() {
 
   function adopt(cf: Counterfactual) {
     setAdopted((a) => ({ ...a, [candidate.strategy]: cf.result }))
-    setNotice(`${titleOf.get(cf.restored_id) ?? '그 조각'}을(를) 살린 안으로 바꿨어요.`)
+    setNotice(`${withJosa(titleOf.get(cf.restored_id) ?? '그 조각', '을/를')} 살린 안으로 바꿨어요.`)
   }
 
   async function lock(activityId: string) {
@@ -153,7 +154,7 @@ export default function DiffView() {
       const res = await lockActivities({ input: currentInput, activity_ids: [activityId] })
       const name = titleOf.get(activityId) ?? '그 조각'
       if (res.candidates.length === 0) {
-        setNotice(`${name}을(를) 원래대로 두면 맞출 수 있는 일정이 없어요. 지금 안을 그대로 둘게요.`)
+        setNotice(`${withJosa(name, '을/를')} 원래대로 두면 맞출 수 있는 일정이 없어요. 지금 안을 그대로 둘게요.`)
         return
       }
       // Stay on the same strategy if it still exists.
@@ -161,7 +162,7 @@ export default function DiffView() {
       setState({ status: 'done', response: res })
       setPicked(Math.max(0, keep))
       setAdopted({})
-      setNotice(`${name}을(를) 원래대로 고정하고 다시 맞췄어요.`)
+      setNotice(`${withJosa(name, '을/를')} 원래대로 고정하고 다시 맞췄어요.`)
     } catch {
       setNotice('다시 맞추지 못했어요. 잠시 뒤 다시 해 주세요.')
     } finally {
@@ -233,6 +234,7 @@ export default function DiffView() {
             renderDetail={(change) => (
               <WhyPanel
                 change={change}
+                event={event}
                 titleOf={titleOf}
                 onRestore={isAdopted ? undefined : restore}
                 onAdopt={isAdopted ? undefined : adopt}

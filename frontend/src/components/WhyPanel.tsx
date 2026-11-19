@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import type { Counterfactual, RecoveryChange } from '../api/types'
-import { describeReason, NO_SINGLE_REASON } from '../lib/reasons'
+import type { Counterfactual, DisruptionEvent, RecoveryChange } from '../api/types'
+import { canLock, describeReason, NO_SINGLE_REASON } from '../lib/reasons'
 import { OP_LABEL } from './DiffRow'
 import { StitchLoader } from './StitchLoader'
 import './WhyPanel.css'
 
 type Props = {
   change: RecoveryChange
+  /** The confirmed event: a delay's reason names when the user can move again. */
+  event?: DisruptionEvent
   titleOf: ReadonlyMap<string, string>
   /** Absent when the plan on screen cannot be recomputed (e.g. an adopted "what if"). */
   onRestore?: (activityId: string) => Promise<Counterfactual | null>
@@ -24,9 +26,9 @@ type Restore =
 const pct = (x: number) => Math.floor(x * 100)
 
 // The "왜?" content of one changed row: the reason, then what the user can do about it.
-export function WhyPanel({ change, titleOf, onRestore, onAdopt, onLock, busy }: Props) {
+export function WhyPanel({ change, event, titleOf, onRestore, onAdopt, onLock, busy }: Props) {
   const [restore, setRestore] = useState<Restore>({ kind: 'idle' })
-  const reason = describeReason(change) ?? NO_SINGLE_REASON
+  const reason = describeReason(change, event) ?? NO_SINGLE_REASON
   const title = (id: string) => titleOf.get(id) ?? id
 
   async function tryRestore() {
@@ -89,7 +91,8 @@ export function WhyPanel({ change, titleOf, onRestore, onAdopt, onLock, busy }: 
         </div>
       )}
 
-      {change.op !== 'drop' && change.op !== 'keep' && onLock && (
+      {/* Hidden where the original slot breaks a rule of its own: locking would always fail (A4). */}
+      {canLock(change) && onLock && (
         <button type="button" className="why__action why__action--quiet" onClick={() => onLock(change.activity_id)} disabled={busy}>
           이건 원래대로 둘래요 (고정)
         </button>

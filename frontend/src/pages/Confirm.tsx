@@ -7,6 +7,7 @@ import { TimeEditor } from '../components/TimeEditor'
 import { CATEGORY_LABEL, categoryIcon } from '../lib/category'
 import { formatDate, formatTime, parseTime, tripLength } from '../lib/time'
 import { useTrip, type DraftIssue, type TripItem } from '../store/trip'
+import { withJosa } from '../lib/josa'
 import { StateCard } from '../components/StateCard'
 import './Confirm.css'
 
@@ -152,7 +153,7 @@ export default function Confirm() {
         <div className="confirm__choose">
           {match?.status === 'error' && <p className="confirm__hint">검색하지 못했어요. 직접 찾아 주세요</p>}
           {match?.status === 'ok' && options.length === 0 && (
-            <p className="confirm__hint">“{it.title}”(으)로 찾은 곳이 없어요. 직접 찾아 주세요</p>
+            <p className="confirm__hint">{withJosa(`“${it.title}”`, '으로/로')} 찾은 곳이 없어요. 직접 찾아 주세요</p>
           )}
           {options.map((o) => (
             <label className="confirm__option" key={o.place_id}>

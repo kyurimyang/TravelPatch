@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { Op, RecoveryChange } from '../api/types'
 import { formatSlot, formatTime } from '../lib/time'
+import { josaFor } from '../lib/josa'
 import './DiffRow.css'
 
 // The chip always carries text, so color is never the only signal (CLAUDE.md section 8).
@@ -30,7 +31,8 @@ function ChangeLine({ change, substituteTitle }: { change: RecoveryChange; subst
   if (op === 'substitute') {
     return (
       <span className="diff-row__change">
-        <b>{substituteTitle ?? '근처 다른 곳'}</b>(으)로 바꿔요
+        <b>{substituteTitle ?? '근처 다른 곳'}</b>
+        {josaFor(substituteTitle ?? '근처 다른 곳', '으로/로')} 바꿔요
         {after && ` · ${formatSlot(after.start, after.end)}`}
       </span>
     )

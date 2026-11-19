@@ -1,7 +1,8 @@
 // Why each change was made, in Korean, filled ONLY from the engine's own reason data
 // (CLAUDE.md invariant 5: numbers and names never come from an LLM). The LLM polishing step can
 // later rephrase these sentences, but not add facts.
-import type { RecoveryChange } from '../api/types'
+import type { DisruptionEvent, RecoveryChange } from '../api/types'
+import { formatTime } from './time'
 
 // Validator kinds (engine/validator.py) -> what that hard constraint means to a traveller.
 const FORCED: Record<string, string> = {
@@ -19,11 +20,31 @@ const FORCED: Record<string, string> = {
 }
 const TIER_BY_VALUE: Record<number, string> = { 5: '꼭', 3: '좋음', 1: '선택' }
 
-/** One or two sentences, or null when the engine established no single reason (never invented). */
-export function describeReason(change: RecoveryChange): string | null {
+// Broken by the original slot on its own (with the event), whatever else moves: locking the piece
+// back there always fails. travel / deadline / reservation can clear once other pieces move.
+const SELF_BOUND = new Set(['past', 'closure', 'hours', 'weather', 'fatigue'])
+
+/** Whether "이건 원래대로 둘래요 (고정)" can work for this change (A4: it was shown where it never can). */
+export function canLock(change: RecoveryChange): boolean {
+  if (change.op === 'keep' || change.op === 'drop') return false
+  const forced = change.reason_type === 'binding' ? (change.reason_data?.forced_by ?? []) : []
+  return !forced.some((k) => SELF_BOUND.has(k))
+}
+
+function forcedText(kind: string, event: DisruptionEvent | undefined): string {
+  // For a delay "now" is when the user can move again (start_time), not that the time went by.
+  if (kind === 'past' && event?.type === 'DELAY') {
+    return `${formatTime(event.start_time)}까지 움직일 수 없어서 원래 시각에 갈 수 없었어요`
+  }
+  return FORCED[kind] ?? '지켜야 하는 조건 때문이에요'
+}
+
+/** One or two sentences, or null when the engine established no single reason (never invented).
+ * Numbers come from the engine's reason data or the confirmed event, never from an LLM. */
+export function describeReason(change: RecoveryChange, event?: DisruptionEvent): string | null {
   const data = change.reason_data
   if (change.reason_type === 'binding' && data) {
-    const lines = [...new Set(data.forced_by.map((k) => FORCED[k] ?? '지켜야 하는 조건 때문이에요'))]
+    const lines = [...new Set(data.forced_by.map((k) => forcedText(k, event)))]
     return lines.length ? lines.join(' · ') : null
   }
   if (change.reason_type === 'value' && data) {
