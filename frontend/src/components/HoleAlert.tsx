@@ -69,7 +69,9 @@ export function HoleAlert({ dayIndex, next, following, now }: Props) {
       <Link
         className="tp-btn-primary tp-denim"
         to="/recover"
-        state={{ dayIndex, preset: `${late}분쯤 늦어지고 있어요` }}
+        // The late piece, not a sentence: Recover builds the event itself (A2). A "18분 늦어요"
+        // sentence would be read as 18 more minutes on top of now, which already holds them.
+        state={{ dayIndex, hole: next.id }}
       >
         수선하기
       </Link>

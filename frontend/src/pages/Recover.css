@@ -187,6 +187,52 @@
   line-height: 1.55;
 }
 
+.recover__visited {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) 0 0;
+  border: 0;
+  border-top: 1.5px dashed var(--tp-denim-deep);
+}
+
+.recover__visited legend {
+  padding: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.recover__visited label {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 14px;
+}
+
+.recover__visited input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--tp-denim-deep);
+}
+
+.recover__visited label > span {
+  flex: 1;
+}
+
+/* Visited is said in words too, not only by the check mark (CLAUDE.md 8). */
+.recover__visited em {
+  font-size: 12px;
+  font-style: normal;
+  color: var(--color-text-muted);
+}
+
+.recover__visited input:checked ~ span {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
 .recover__hint {
   font-size: 12px;
   color: var(--color-text-muted);

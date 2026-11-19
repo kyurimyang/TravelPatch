@@ -10,7 +10,20 @@ import late from '../assets/patches/hole-late.svg'
 import rain from '../assets/patches/hole-rain.svg'
 import tired from '../assets/patches/hole-tired.svg'
 import { StitchLoader } from '../components/StitchLoader'
-import { planRequestFor, samplePlan, type RecoveryState, type RecoverySource } from '../lib/recovery'
+import {
+  defaultVisited,
+  forEngine,
+  HOTEL_ID,
+  holeEvent,
+  holeLocation,
+  nextActivity,
+  planRequestFor,
+  START_ID,
+  samplePlan,
+  visitLocked,
+  type RecoveryState,
+  type RecoverySource,
+} from '../lib/recovery'
 import { formatTime, parseTime } from '../lib/time'
 import { deviceNow } from '../lib/today'
 import { useTrip } from '../store/trip'
@@ -37,8 +50,6 @@ type DayState =
   | { kind: 'ready'; plan: BuiltPlan; source: RecoverySource }
   | { kind: 'blocked'; message: string }
 
-// Where the day starts when it is not the hotel (arrival airport). Same id as backend START_ID.
-const START_ID = 'start'
 const hasStart = (plan: BuiltPlan) => plan.day.start_lat != null
 
 const WARNING_TEXT: Record<string, string> = {
@@ -60,8 +71,10 @@ function defaultNow(plan: BuiltPlan): number {
 export default function Recover() {
   const navigate = useNavigate()
   const { trip } = useTrip()
-  const navIn = useLocation().state as { dayIndex?: number; preset?: string } | null
+  // `hole`: the id of the piece the hole alert said is late (A2).
+  const navIn = useLocation().state as { dayIndex?: number; hole?: string } | null
   const dayIndex = navIn?.dayIndex ?? 0
+  const hole = navIn?.hole ?? null
 
   // Why the trip day cannot be sent yet (derived, not stored): no trip, or unconfirmed items.
   const req = useMemo(() => (trip ? planRequestFor(trip, dayIndex) : null), [trip, dayIndex])
@@ -71,10 +84,12 @@ export default function Recover() {
   const [now, setNow] = useState<number | null>(null)
   // null = not chosen yet: the day's start (airport on an arrival day, else the hotel).
   const [locationId, setLocationId] = useState<string | null>(null)
-  // HoleAlert hands over a sentence it already knows ("25분쯤 늦어지고 있어요").
-  const [text, setText] = useState(navIn?.preset ?? '')
+  const [text, setText] = useState('')
   const [quick, setQuick] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
+  // Already visited, left out of the recovery (A1): the user's taps over the pre-checked default.
+  // Cleared whenever the event changes, so the default follows the new event.
+  const [visitEdits, setVisitEdits] = useState<Record<string, boolean>>({})
 
   // Build the trip day once on the server (coordinates + hours from Google, kept in memory only).
   useEffect(() => {
@@ -139,10 +154,11 @@ export default function Recover() {
   const { plan, source } = day
   const activities = plan.activities
   const nowMin = now ?? defaultNow(plan)
-  const where = locationId ?? (hasStart(plan) ? START_ID : 'hotel')
+  const where =
+    locationId ?? (hole ? holeLocation(plan, hole) : hasStart(plan) ? START_ID : HOTEL_ID)
   const departureDay =
     source === 'trip' && !!trip?.departure && trip.days[dayIndex]?.date === trip.endDate
-  const next = activities.find((a) => a.planned_start >= nowMin)
+  const next = nextActivity(activities, nowMin)
   const titleOf = (id: string) => activities.find((a) => a.id === id)?.title ?? id
 
   async function understand() {
@@ -155,6 +171,7 @@ export default function Recover() {
         location_id: where,
         activities,
       })
+      setVisitEdits({})
       setPhase({ kind: 'result', response })
     } catch (e) {
       const message =
@@ -165,9 +182,33 @@ export default function Recover() {
     }
   }
 
-  const response = phase.kind === 'result' ? phase.response : null
+  // From the hole alert, with nothing typed: the event is known without the LLM (A2). Typing a
+  // sentence ("30분 더 걸려요") takes the usual interpret path instead.
+  const fromHole: InterpretResponse | null =
+    hole && phase.kind === 'idle' && text.trim() === ''
+      ? {
+          status: 'ok',
+          interpretation: null,
+          event: holeEvent(nowMin, where),
+          chips: [`${formatTime(nowMin)}부터 움직일 수 있어요`],
+          problem: null,
+        }
+      : null
+  const response = phase.kind === 'result' ? phase.response : fromHole
   const ready = response?.status === 'ok' && response.event !== null
-  const reset = () => setPhase({ kind: 'idle' })
+  const reset = () => {
+    setPhase({ kind: 'idle' })
+    setVisitEdits({})
+  }
+  // Only what was planned to start before now can have been visited; the rest is not asked.
+  const event = ready ? response.event! : null
+  const locked = event ? visitLocked(event) : new Set<string>()
+  const preChecked = new Set(event ? defaultVisited(plan, event) : [])
+  const isVisited = (id: string) => !locked.has(id) && (visitEdits[id] ?? preChecked.has(id))
+  const visitable = event
+    ? activities.filter((a) => a.planned_start < event.occurred_at && !locked.has(a.id))
+    : []
+  const toggleVisited = (id: string) => setVisitEdits((e) => ({ ...e, [id]: !isVisited(id) }))
 
   return (
     <div className="recover">
@@ -297,7 +338,30 @@ export default function Recover() {
                     <li key={c}>{c}</li>
                   ))}
                 </ul>
-                <span className="recover__hint">다르게 이해했다면 문장을 고쳐서 다시 확인해 주세요.</span>
+                <span className="recover__hint">
+                  {fromHole
+                    ? '더 늦어질 것 같다면 한 줄로 적어 주세요. 예: 20분 더 걸려요'
+                    : '다르게 이해했다면 문장을 고쳐서 다시 확인해 주세요.'}
+                </span>
+                {visitable.length > 0 && (
+                  <fieldset className="recover__visited">
+                    <legend>이미 다녀온 곳</legend>
+                    <span className="recover__hint">체크한 곳은 그대로 두고, 남은 일정만 고쳐요.</span>
+                    {visitable.map((a) => (
+                      <label key={a.id}>
+                        <input
+                          type="checkbox"
+                          checked={isVisited(a.id)}
+                          onChange={() => toggleVisited(a.id)}
+                        />
+                        <span>
+                          {formatTime(a.planned_start)} {a.title}
+                        </span>
+                        <em>{isVisited(a.id) ? '다녀왔어요' : '아직이에요'}</em>
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
               </>
             ) : (
               <>
@@ -321,7 +385,12 @@ export default function Recover() {
             type="button"
             className="tp-btn-primary tp-denim"
             onClick={() => {
-              const state: RecoveryState = { plan, source, event: response!.event!, chips: response!.chips }
+              const sent = forEngine(
+                plan,
+                response!.event!,
+                activities.filter((a) => isVisited(a.id)).map((a) => a.id),
+              )
+              const state: RecoveryState = { ...sent, source, chips: response!.chips }
               navigate('/recover/patch', { state })
             }}
           >
