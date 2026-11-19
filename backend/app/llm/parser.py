@@ -23,6 +23,10 @@ Split it into days in the order written. For every place or activity give:
 - category: meal, sightseeing, shopping, cafe, transport or other. Use other when unclear.
 - reserved: true only if the text says it is booked or reserved ("예약", "reservation").
 - note: anything else written on that line (price, address, reminder), or null.
+- place_query: only the name of the place to look up on a map, copied from the line as written,
+  without activity words ("오모테산도 산책" -> "오모테산도", "이치란 라멘 점심" -> "이치란 라멘").
+  null when the line names no particular place ("점심 - 스시", "쇼핑"). Never add a name that is
+  not written.
 
 Rules:
 - Do not add, merge, reorder or drop items. One line of the text is at most one item.
@@ -38,6 +42,7 @@ class ParsedItem(BaseModel):
     category: Literal["meal", "sightseeing", "shopping", "cafe", "transport", "other"]
     reserved: bool
     note: str | None
+    place_query: str | None = Field(description="place name as written in the line, or null")
 
 
 class ParsedDay(BaseModel):

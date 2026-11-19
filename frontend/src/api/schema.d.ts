@@ -108,7 +108,7 @@ export interface paths {
         };
         /**
          * Search
-         * @description Step ②: candidates for one itinerary line, for the user to pick (never auto-picked).
+         * @description Step ②: candidates for one itinerary line, nearest to the hotel first when it is known.
          */
         get: operations["search_places_search_get"];
         put?: never;
@@ -344,6 +344,8 @@ export interface components {
             reservation_time?: number | null;
             /** Note */
             note?: string | null;
+            /** Place Query */
+            place_query?: string | null;
         };
         /** DraftItinerary */
         DraftItinerary: {
@@ -581,6 +583,8 @@ export interface components {
             name: string;
             /** Address */
             address: string | null;
+            /** Far */
+            far?: boolean | null;
         };
         /** PlaceSearchResponse */
         PlaceSearchResponse: {
@@ -1101,6 +1105,8 @@ export interface operations {
             query: {
                 q: string;
                 city?: string | null;
+                /** @description hotel place_id */
+                near?: string | null;
             };
             header?: never;
             path?: never;

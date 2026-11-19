@@ -31,6 +31,7 @@ def _item(title: str, **fields) -> ParsedItem:
         "category": "other",
         "reserved": False,
         "note": None,
+        "place_query": None,
     }
     return ParsedItem(**{**base, **fields})
 

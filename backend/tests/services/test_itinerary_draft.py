@@ -10,8 +10,30 @@ def _item(title="x", **fields) -> ParsedItem:
         "category": "sightseeing",
         "reserved": False,
         "note": None,
+        "place_query": None,
     }
     return ParsedItem(**{**base, **fields})
+
+
+def test_place_query_from_the_title_is_kept():
+    item = _day(_item("오모테산도 산책", start="15:00", place_query="오모테산도")).items[0]
+    assert item.place_query == "오모테산도"
+
+
+def test_place_query_may_come_from_the_note_and_ignores_spacing():
+    line = _item("점심", start="12:00", note="이치란 신주쿠점", place_query="이치란신주쿠점")
+    item = _day(line).items[0]
+    assert item.place_query == "이치란신주쿠점"
+
+
+def test_place_query_not_written_in_the_line_is_dropped():
+    # The model may not invent a restaurant for "점심 - 스시" (invariants 4 and 8).
+    item = _day(_item("점심 - 스시", start="12:00", place_query="스시 잔마이")).items[0]
+    assert item.place_query is None
+
+
+def test_blank_place_query_is_none():
+    assert _day(_item("산책", start="15:00", place_query="  ")).items[0].place_query is None
 
 
 def _day(*items: ParsedItem):

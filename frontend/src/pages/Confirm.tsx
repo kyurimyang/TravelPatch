@@ -4,8 +4,6 @@ import { searchPlaces } from '../api/places'
 import type { PlaceOption } from '../api/types'
 import { PlaceSearch } from '../components/PlaceSearch'
 import { TimeEditor } from '../components/TimeEditor'
-import { FlightFields } from '../components/FlightFields'
-import { TravelModePicker } from '../components/TravelModePicker'
 import { CATEGORY_LABEL, categoryIcon } from '../lib/category'
 import { formatDate, formatTime, parseTime, tripLength } from '../lib/time'
 import { useTrip, type DraftIssue, type TripItem } from '../store/trip'
@@ -35,8 +33,8 @@ export default function Confirm() {
   const { trip, setTrip, updateItem } = useTrip()
   const [dayIndex, setDayIndex] = useState(0)
   const [matches, setMatches] = useState<Record<string, Match>>({})
-  // The place shown for each item before the day is confirmed (first candidate, or the user's tap).
-  // Shown is not saved: a place reaches the trip only through "이 날 장소 모두 맞아요".
+  // Google's name for each picked place, for this screen only (names are never saved).
+  // The first candidate is saved at once (decision 2026-11-18): the user only fixes wrong ones.
   const [choice, setChoice] = useState<Record<string, PlaceOption>>({})
   // Item whose candidate list is open ("다른 곳이에요" / "바꾸기").
   const [open, setOpen] = useState<string | null>(null)
@@ -53,15 +51,17 @@ export default function Confirm() {
     for (const it of day.items) {
       if (it.placeId || requested.current.has(it.id)) continue
       requested.current.add(it.id)
-      searchPlaces(it.title, trip.city)
+      searchPlaces(it.placeQuery || it.title, trip.city, trip.hotel?.placeId)
         .then(({ candidates }) => {
           setMatches((m) => ({ ...m, [it.id]: { status: 'ok', options: candidates } }))
           const first = candidates[0]
-          if (first) setChoice((c) => (c[it.id] ? c : { ...c, [it.id]: first }))
+          if (!first) return
+          setChoice((c) => ({ ...c, [it.id]: first }))
+          updateItem(it.id, { placeId: first.place_id })
         })
         .catch(() => setMatches((m) => ({ ...m, [it.id]: { status: 'error' } })))
     }
-  }, [trip, day])
+  }, [trip, day, updateItem])
 
   if (!trip || !day) {
     return (
@@ -79,18 +79,25 @@ export default function Confirm() {
     )
   }
 
-  const unplaced = (items: TripItem[]) => items.filter((it) => !it.placeId).length
   const needs = (items: TripItem[]) => items.filter((it) => !it.placeId || !hasTime(it)).length
   const totalItems = trip.days.reduce((n, d) => n + d.items.length, 0)
   const totalNeeds = trip.days.reduce((n, d) => n + needs(d.items), 0)
   const otherNeeds = totalNeeds - needs(day.items)
-  const dayReady = day.items.every((it) => it.placeId || choice[it.id])
-
   function pick(item: TripItem, place: PlaceOption) {
-    setChoice((c) => ({ ...c, [item.id]: place }))
-    // Changing an already confirmed item saves at once: the user is looking right at it.
-    if (item.placeId) updateItem(item.id, { placeId: place.place_id })
+    // The user chose it themselves: no "far from the hotel" second look.
+    setChoice((c) => ({ ...c, [item.id]: { ...place, far: null } }))
+    updateItem(item.id, { placeId: place.place_id })
     setOpen(null)
+  }
+
+  // Hotel and airport lines were linked at registration (tripFromDraft): name them by the user's words.
+  function knownLabel(it: TripItem): string | null {
+    const t = trip!
+    if (t.hotel && it.placeId === t.hotel.placeId) return `숙소 · ${t.hotel.title}`
+    for (const f of [t.arrival, t.departure]) {
+      if (f && it.placeId === f.airport.placeId) return `공항 · ${f.airport.title}`
+    }
+    return null
   }
 
   function saveTime(item: TripItem, index: number, start: number, end: number) {
@@ -134,19 +141,12 @@ export default function Confirm() {
     )
   }
 
-  function confirmDay() {
-    for (const it of day!.items) {
-      const c = choice[it.id]
-      if (!it.placeId && c) updateItem(it.id, { placeId: c.place_id })
-    }
-  }
-
   function renderPlace(it: TripItem) {
     const match = matches[it.id]
     const shown = choice[it.id]
     const options = match?.status === 'ok' ? match.options : []
 
-    if (open === it.id || (!it.placeId && !shown && match)) {
+    if (open === it.id || (!it.placeId && match)) {
       // Choosing: candidates (if any) + manual search.
       return (
         <div className="confirm__choose">
@@ -182,16 +182,20 @@ export default function Confirm() {
     if (!match && !it.placeId) return <p className="confirm__hint">장소를 찾고 있어요…</p>
 
     return (
-      <div className="confirm__found">
-        <span>
-          {/* After a reload only the place_id is kept (no Google names stored): say so plainly. */}
-          <b>{shown ? shown.name : '장소 확인됨'}</b>
-          {shown?.address && <span>{shown.address}</span>}
-        </span>
-        <button type="button" onClick={() => setOpen(it.id)}>
-          {it.placeId ? '바꾸기' : '다른 곳이에요'}
-        </button>
-      </div>
+      <>
+        {/* Non-blocking: a far hit is often the wrong branch, but a day trip is far on purpose. */}
+        {shown?.far && <p className="confirm__warn">숙소에서 20km 넘게 떨어진 곳이에요. 맞는지 봐 주세요</p>}
+        <div className="confirm__found">
+          <span>
+            {/* After a reload only the place_id is kept (no Google names stored): say so plainly. */}
+            <b>{shown ? shown.name : (knownLabel(it) ?? '장소 확인됨')}</b>
+            {shown?.address && <span>{shown.address}</span>}
+          </span>
+          <button type="button" onClick={() => setOpen(it.id)}>
+            바꾸기
+          </button>
+        </div>
+      </>
     )
   }
 
@@ -208,7 +212,7 @@ export default function Confirm() {
       <div className="confirm__body">
         <div className="confirm__intro">
           <h1>이렇게 재단했어요</h1>
-          <p>붙여넣은 일정마다 장소를 찾아 뒀어요. 다른 곳이면 바꾸고, 맞으면 날마다 한 번 확인해 주세요.</p>
+          <p>장소는 찾아서 채워 뒀어요. 다른 곳만 바꾸고, 표시된 것만 고쳐 주세요.</p>
         </div>
 
         <div className="confirm__summary">
@@ -243,32 +247,6 @@ export default function Confirm() {
               if (m !== null) setTrip({ ...trip, endDeadline: m })
             }}
           />
-        </div>
-
-        <div className="confirm__mode">
-          <b>이동수단</b>
-          <TravelModePicker
-            name="confirm-mode"
-            value={trip.travelMode}
-            onChange={(travelMode) => setTrip({ ...trip, travelMode })}
-          />
-        </div>
-
-        <div className="confirm__mode">
-          <b>항공편</b>
-          <FlightFields
-            direction="arrival"
-            city={trip.city}
-            value={trip.arrival}
-            onChange={(arrival) => setTrip({ ...trip, arrival })}
-          />
-          <FlightFields
-            direction="departure"
-            city={trip.city}
-            value={trip.departure}
-            onChange={(departure) => setTrip({ ...trip, departure })}
-          />
-          {trip.departure && <p className="confirm__hint">마지막 날은 숙소 대신 출발 공항이 하루의 끝이에요.</p>}
         </div>
 
         <nav className="confirm__days" aria-label="여행 날짜">
@@ -309,18 +287,11 @@ export default function Confirm() {
                   </span>
                   <b>{it.title}</b>
                 </div>
-                {it.placeId && <span className="confirm__chip">확인됨</span>}
               </div>
               {renderTime(it, index, day.items[index - 1])}
               {renderPlace(it)}
             </div>
           ))}
-
-          {unplaced(day.items) > 0 && (
-            <button type="button" className="tp-btn-primary tp-denim" disabled={!dayReady} onClick={confirmDay}>
-              이 날 장소 모두 맞아요
-            </button>
-          )}
         </section>
       </div>
 

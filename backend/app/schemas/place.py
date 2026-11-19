@@ -28,9 +28,12 @@ class PlaceOption(BaseModel):
     place_id: str
     name: str
     address: str | None
+    # More than FAR_KM from the hotel: likely the wrong branch or town. None = no hotel to compare.
+    far: bool | None = None
 
 
 class PlaceSearchResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    candidates: tuple[PlaceOption, ...]  # Google's order; the user picks, never auto-selected
+    # Google's order. Confirm takes the first one and lets the user change it (decision 2026-11-18).
+    candidates: tuple[PlaceOption, ...]

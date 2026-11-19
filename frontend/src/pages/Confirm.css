@@ -175,17 +175,6 @@
   font-size: 16px;
 }
 
-.confirm__chip {
-  align-self: flex-start;
-  padding: 2px 8px;
-  border: 1px solid var(--op-extend-edge);
-  border-radius: 6px;
-  background: var(--op-extend-bg);
-  color: var(--op-extend-fg);
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
 
 .confirm__card-row {
   display: flex;
@@ -361,14 +350,4 @@
   background: var(--color-surface);
   font: inherit;
   font-size: 16px;
-}
-
-.confirm__mode {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.confirm__mode b {
-  font-size: 14px;
 }

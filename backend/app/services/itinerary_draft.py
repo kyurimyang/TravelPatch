@@ -35,6 +35,20 @@ def _minutes(text: str | None) -> int | None:
     return int(match.group(1)) * 60 + int(match.group(2))
 
 
+def _squash(text: str) -> str:
+    return "".join(text.split()).casefold()
+
+
+def _place_query(item: ParsedItem) -> str | None:
+    """The model's place name, kept only if it is written in the line (title or note), spaces
+    aside. Anything else is a guess and is dropped (invariants 4 and 8)."""
+    query = (item.place_query or "").strip()
+    if not query:
+        return None
+    written = _squash(item.title) + "\n" + _squash(item.note or "")
+    return query if _squash(query) in written else None
+
+
 def _convert_item(index: int, item: ParsedItem) -> tuple[DraftItem, list[DraftIssue]]:
     issues: list[DraftIssue] = []
 
@@ -74,6 +88,7 @@ def _convert_item(index: int, item: ParsedItem) -> tuple[DraftItem, list[DraftIs
         duration_estimated=estimated,
         reservation_time=reservation,
         note=item.note,
+        place_query=_place_query(item),
     )
     return draft, issues
 

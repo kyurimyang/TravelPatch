@@ -26,6 +26,9 @@ export type TripItem = {
   durationEstimated: boolean
   reservationTime: number | null
   note: string | null
+  /** Place name from the line ("오모테산도 산책" -> "오모테산도"), searched instead of the title.
+   *  Missing on trips saved before 2026-11-18. */
+  placeQuery?: string | null
   /** Google place_id the user picked. null = not picked yet. */
   placeId: string | null
   tier: Tier

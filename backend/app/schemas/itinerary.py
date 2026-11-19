@@ -34,6 +34,8 @@ class DraftItem(_Frozen):
     duration_estimated: bool = False
     reservation_time: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
     note: str | None = None
+    # Place name to search with, written in the line itself. None = search by the title.
+    place_query: str | None = None
 
 
 class DraftDay(_Frozen):

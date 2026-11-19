@@ -19,7 +19,13 @@ class FakeProvider:
 
 
 def _item(title: str, start: str | None, **fields) -> ParsedItem:
-    base = {"end": None, "category": "sightseeing", "reserved": False, "note": None}
+    base = {
+        "end": None,
+        "category": "sightseeing",
+        "reserved": False,
+        "note": None,
+        "place_query": None,
+    }
     return ParsedItem(title=title, start=start, **{**base, **fields})
 
 
