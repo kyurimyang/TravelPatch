@@ -1,10 +1,10 @@
-import { postJson } from './http'
+import { LLM_TIMEOUT_MS, postJson } from './http'
 import type { LockRequest, RecoveryInput, RecoveryResponse, RestoreRequest, RestoreResponse } from './types'
 
 export { ApiError } from './http'
 
 export function createRecovery(input: RecoveryInput): Promise<RecoveryResponse> {
-  return postJson<RecoveryResponse>('/recoveries', input)
+  return postJson<RecoveryResponse>('/recoveries', input, { timeoutMs: LLM_TIMEOUT_MS })
 }
 
 /** "What if I keep X?" The server recomputes the candidate from `input` (never trusts ours). */
