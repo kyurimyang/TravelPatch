@@ -37,3 +37,8 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.black]
+# Same as ruff: black defaulted to 88 and wanted to rewrap 73 files ruff already accepts.
+line-length = 100
+target-version = ["py312"]
