@@ -234,3 +234,28 @@ def test_consents_cannot_be_changed_or_deleted_from_the_app(make_user):
 
     rows = alice.table("consents").select("terms_version").execute().data
     assert rows == [{"terms_version": "2026-11-18"}]
+
+
+# --- sign-up: the trigger of migration 0004 ------------------------------------------------------
+
+
+def test_sign_up_records_the_nickname_and_the_consent(admin, make_user):
+    user_id, me = make_user(
+        {"nickname": "  여행자  ", "terms_version": "2026-11-18", "age14": True, "terms": True, "privacy": True}
+    )
+    assert me.table("profiles").select("nickname").execute().data == [{"nickname": "여행자"}]
+    assert me.table("consents").select("terms_version").execute().data == [{"terms_version": "2026-11-18"}]
+
+
+def test_sign_up_without_all_three_checks_records_no_consent(make_user):
+    _, me = make_user({"nickname": "여행자", "terms_version": "2026-11-18", "age14": True, "terms": True})
+    assert me.table("consents").select("id").execute().data == []
+
+
+def test_odd_sign_up_data_does_not_block_the_sign_up(make_user):
+    # a Google sign-up sends none of it; a broken client could send anything
+    _, google = make_user({"full_name": "Kim"})
+    _, odd = make_user({"nickname": 42, "age14": "yes", "terms": None, "privacy": {"x": 1}})
+    assert google.table("profiles").select("nickname").execute().data == []
+    assert odd.table("profiles").select("nickname").execute().data == [{"nickname": "42"}]
+    assert odd.table("consents").select("id").execute().data == []

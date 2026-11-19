@@ -1,13 +1,29 @@
-// The trip being registered and travelled, kept in the browser (decision 2026-11-17: no login yet,
-// so no DB). One trip at a time for now; the trip list comes later.
+// The trips being registered and travelled. Signed out, they stay on this device (guest). Signed
+// in, they are the account's: a copy on this device (lib/accountTrips) saved to Supabase a moment
+// after each change, refused when another device saved first (decisions 2026-11-18/19).
 //
 // What is kept follows the Google terms decision: the user's own titles and Google place_ids only.
 // No coordinates, no Google names or opening hours: the server fetches those per request.
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { components } from '../api/schema'
 import type { TravelMode } from '../api/types'
+import {
+  emptyCache,
+  keepMine,
+  markDeleted,
+  markSaved,
+  mergeServer,
+  putTrip,
+  removeTrip,
+  takeServer,
+  unsaved,
+  type AccountCache,
+} from '../lib/accountTrips'
 import { applyPatch, undoPatch, type SavedPatch } from '../lib/patches'
+import { supabase } from '../lib/supabase'
 import type { Tier } from '../lib/tier'
+import { failureOf, loadTrips, saveTrip, type RpcClient } from '../lib/tripSync'
+import { useAuth } from './auth'
 
 type Schemas = components['schemas']
 export type Category = Schemas['DraftItem']['category']
@@ -81,10 +97,23 @@ export type Trip = {
 
 export const DEFAULT_END_DEADLINE = 22 * 60
 
+/** Where the trips on screen are kept, and how saving to the account is going. */
+export type SyncState =
+  | { kind: 'guest' } // signed out: trips on this device only
+  | { kind: 'loading' } // signed in, the account is being read
+  | { kind: 'saved' } // everything here is in the account
+  | { kind: 'saving' }
+  | { kind: 'offline' } // waiting for the network; nothing is lost
+  | { kind: 'signed-out' } // the session ended: sign in again to save
+  | { kind: 'error' } // refused for another reason; retried after the next change
+
+/** Another device changed (or deleted) a trip that has unsaved changes here. */
+export type Conflict = { tripId: string; reason: 'stale' | 'gone' }
+
 type TripStore = {
   /** The trip being looked at (Main, Recover, ...). */
   trip: Trip | null
-  /** Every trip kept on this device, in the order they were made. */
+  /** Every trip of the guest on this device, or of the signed-in account, in the order made. */
   trips: Trip[]
   /** Replace the current trip; a trip with a new id is added and becomes current. null removes it. */
   setTrip: (trip: Trip | null) => void
@@ -96,12 +125,23 @@ type TripStore = {
   stitch: (patch: SavedPatch) => void
   /** Take the latest patch of a day back off. */
   unstitch: (patchId: string) => void
+  sync: SyncState
+  conflict: Conflict | null
+  /** "theirs": take the other device's copy. "mine": save this device's copy over it. */
+  resolveConflict: (choice: 'theirs' | 'mine') => Promise<void>
+  /** Guest trips on this device to offer moving into the account after sign-in (0 = do not ask). */
+  guestToMove: number
+  /** true: move them into the account (they are saved like new trips). false: leave them on this
+   *  device as guest trips, and do not ask again until the next sign-in. */
+  moveGuestTrips: (move: boolean) => void
 }
 
 type Saved = { trips: Trip[]; currentId: string | null }
 
 const STORAGE_KEY = 'trippatch.trips.v2'
 const OLD_KEY = 'trippatch.trip.v1' // one trip, before the trip list existed
+const ACCOUNT_KEY = 'trippatch.account.v1' // the signed-in account's copy (lib/accountTrips)
+const SAVE_DELAY_MS = 1500 // wait for a pause in typing before saving
 const TripContext = createContext<TripStore | null>(null)
 
 // Fields added after a trip may have been saved get their old behaviour.
@@ -137,19 +177,197 @@ function save(saved: Saved): void {
   }
 }
 
+function loadAccount(): AccountCache | null {
+  try {
+    const raw = localStorage.getItem(ACCOUNT_KEY)
+    return raw ? (JSON.parse(raw) as AccountCache) : null
+  } catch {
+    return null
+  }
+}
+
+function saveAccount(cache: AccountCache | null): void {
+  try {
+    if (cache) localStorage.setItem(ACCOUNT_KEY, JSON.stringify(cache))
+    else localStorage.removeItem(ACCOUNT_KEY)
+  } catch {
+    // ignore: see load()
+  }
+}
+
+// supabase-js's rpc, narrowed to what lib/tripSync needs.
+const rpcClient: RpcClient | null = supabase
+  ? { rpc: (fn, args) => supabase!.rpc(fn, args) }
+  : null
+
 export function TripProvider({ children }: { children: ReactNode }) {
-  const [saved, setSaved] = useState<Saved>(load)
+  const { ready, user } = useAuth()
+  const [guest, setGuest] = useState<Saved>(load)
+  const [account, setAccount] = useState<AccountCache | null>(loadAccount)
+  const [sync, setSync] = useState<SyncState>({ kind: 'guest' })
+  const [conflict, setConflict] = useState<Conflict | null>(null)
+  const [online, setOnline] = useState(0) // bumped when the network comes back
+  const [loadedFor, setLoadedFor] = useState<string | null>(null) // account read from the server
+  const [moveAnswered, setMoveAnswered] = useState(false)
+  const flushing = useRef(false)
+  // Trips refused for a reason a retry will not fix, with the edit count that was refused.
+  const refused = useRef(new Map<string, number>())
 
-  useEffect(() => save(saved), [saved])
+  const owner = ready && user && rpcClient ? user.id : null
+  const signedIn = owner !== null && account?.owner === owner
 
-  const trip = saved.trips.find((t) => t.id === saved.currentId) ?? null
+  useEffect(() => save(guest), [guest])
+  useEffect(() => saveAccount(account), [account])
 
-  /** Apply f to the current trip. */
-  const editCurrent = (f: (t: Trip) => Trip) =>
-    setSaved((s) => ({ ...s, trips: s.trips.map((t) => (t.id === s.currentId ? f(t) : t)) }))
+  // Sign-in: read the account and merge it with what this device has not saved yet.
+  // Sign-out: forget the account's copy on this device (decision 2026-11-19, shared computers).
+  useEffect(() => {
+    if (!ready) return
+    setLoadedFor(null)
+    setMoveAnswered(false)
+    if (!owner) {
+      setAccount(null)
+      setConflict(null)
+      setSync({ kind: 'guest' })
+      return
+    }
+    let cancelled = false
+    setAccount((prev) => (prev?.owner === owner ? prev : emptyCache(owner)))
+    setSync({ kind: 'loading' })
+    loadTrips(rpcClient!).then((result) => {
+      if (cancelled) return
+      if (result.ok) {
+        setAccount((prev) => mergeServer(owner, result.trips, prev))
+        setLoadedFor(owner)
+        setSync({ kind: 'saved' })
+      } else {
+        setSync({ kind: result.reason === 'offline' ? 'offline' : result.reason === 'signed-out' ? 'signed-out' : 'error' })
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [ready, owner])
 
-  const setTrip: TripStore['setTrip'] = (next) =>
-    setSaved((s) => {
+  useEffect(() => {
+    const back = () => setOnline((n) => n + 1)
+    window.addEventListener('online', back)
+    return () => window.removeEventListener('online', back)
+  }, [])
+
+  /** Send what the server does not have: deletes first, then unsaved trips, one at a time. */
+  const flush = useCallback(async () => {
+    if (!owner || flushing.current || !supabase) return
+    flushing.current = true
+    try {
+      const cache = account
+      if (!cache || cache.owner !== owner) return
+      setSync({ kind: 'saving' })
+      let held = false // something was left for the user (refused): not "saved"
+
+      for (const { id } of cache.deletes) {
+        const { error } = await supabase.from('trips').delete().eq('id', id)
+        if (error) {
+          setSync({ kind: failureOf(error) === 'offline' ? 'offline' : 'error' })
+          return
+        }
+        setAccount((prev) => (prev ? markDeleted(prev, id) : prev))
+      }
+
+      for (const entry of unsaved(cache)) {
+        const id = entry.trip.id
+        if (conflict?.tripId === id) continue
+        if (refused.current.get(id) === entry.edits) {
+          held = true
+          continue
+        }
+        const result = await saveTrip(rpcClient!, entry.trip, entry.revision)
+        if (result.ok) {
+          setAccount((prev) => (prev ? markSaved(prev, id, result.revision, entry.edits) : prev))
+          continue
+        }
+        switch (result.reason) {
+          case 'stale':
+          case 'gone':
+            setConflict({ tripId: id, reason: result.reason })
+            continue
+          case 'offline':
+            setSync({ kind: 'offline' })
+            return
+          case 'signed-out':
+            setSync({ kind: 'signed-out' })
+            return
+          case 'forbidden':
+          case 'too-large':
+          case 'unknown':
+            refused.current.set(id, entry.edits)
+            setSync({ kind: 'error' })
+            return
+        }
+      }
+      setSync({ kind: held ? 'error' : 'saved' })
+    } finally {
+      flushing.current = false
+    }
+  }, [owner, account, conflict])
+
+  // Save a moment after the last change, and again when the network comes back.
+  useEffect(() => {
+    if (!signedIn || !account) return
+    const pending =
+      account.deletes.length > 0 ||
+      unsaved(account).some((e) => e.trip.id !== conflict?.tripId && refused.current.get(e.trip.id) !== e.edits)
+    if (!pending) return
+    const timer = setTimeout(flush, SAVE_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [signedIn, account, conflict, online, flush])
+
+  const resolveConflict: TripStore['resolveConflict'] = async (choice) => {
+    if (!conflict || !owner) return
+    const result = await loadTrips(rpcClient!)
+    if (!result.ok) {
+      setSync({ kind: result.reason === 'offline' ? 'offline' : 'error' })
+      return
+    }
+    const server = result.trips.find((s) => s.trip.id === conflict.tripId) ?? null
+    setAccount((prev) => {
+      if (!prev) return prev
+      return choice === 'theirs'
+        ? takeServer(prev, conflict.tripId, server)
+        : keepMine(prev, conflict.tripId, server?.revision ?? null)
+    })
+    setConflict(null)
+  }
+
+  // Asked only once the account has been read, so the question is not mixed with a failed load.
+  const guestToMove = signedIn && loadedFor === owner && !moveAnswered ? guest.trips.length : 0
+
+  const moveGuestTrips: TripStore['moveGuestTrips'] = (move) => {
+    setMoveAnswered(true)
+    if (!move || !signedIn) return
+    const moving = guest.trips
+    setAccount((c) =>
+      c ? moving.reduce((acc, t) => (acc.entries.some((e) => e.trip.id === t.id) ? acc : putTrip(acc, t)), c) : c,
+    )
+    setGuest({ trips: [], currentId: null })
+  }
+
+  // --- what the screens see and do: the account when signed in, else this device's guest trips ---
+
+  const trips = signedIn ? account!.entries.map((e) => e.trip) : guest.trips
+  const currentId = signedIn ? account!.currentId : guest.currentId
+  const trip = trips.find((t) => t.id === currentId) ?? null
+
+  const setTrip: TripStore['setTrip'] = (next) => {
+    if (signedIn) {
+      setAccount((c) => {
+        if (!c) return c
+        if (next === null) return c.currentId ? removeTrip(c, c.currentId) : c
+        return { ...putTrip(c, next), currentId: next.id }
+      })
+      return
+    }
+    setGuest((s) => {
       if (next === null) {
         return { trips: s.trips.filter((t) => t.id !== s.currentId), currentId: null }
       }
@@ -159,14 +377,32 @@ export function TripProvider({ children }: { children: ReactNode }) {
         currentId: next.id,
       }
     })
+  }
 
-  const selectTrip: TripStore['selectTrip'] = (id) => setSaved((s) => ({ ...s, currentId: id }))
+  const selectTrip: TripStore['selectTrip'] = (id) =>
+    signedIn
+      ? setAccount((c) => (c ? { ...c, currentId: id } : c))
+      : setGuest((s) => ({ ...s, currentId: id }))
 
   const deleteTrip: TripStore['deleteTrip'] = (id) =>
-    setSaved((s) => ({
-      trips: s.trips.filter((t) => t.id !== id),
-      currentId: s.currentId === id ? null : s.currentId,
-    }))
+    signedIn
+      ? setAccount((c) => (c ? removeTrip(c, id) : c))
+      : setGuest((s) => ({
+          trips: s.trips.filter((t) => t.id !== id),
+          currentId: s.currentId === id ? null : s.currentId,
+        }))
+
+  /** Apply f to the current trip. */
+  const editCurrent = (f: (t: Trip) => Trip) => {
+    if (signedIn) {
+      setAccount((c) => {
+        const current = c?.entries.find((e) => e.trip.id === c.currentId)?.trip
+        return c && current ? putTrip(c, f(current)) : c
+      })
+      return
+    }
+    setGuest((s) => ({ ...s, trips: s.trips.map((t) => (t.id === s.currentId ? f(t) : t)) }))
+  }
 
   const updateItem: TripStore['updateItem'] = (itemId, patch) =>
     editCurrent((t) => ({
@@ -182,7 +418,21 @@ export function TripProvider({ children }: { children: ReactNode }) {
 
   return (
     <TripContext.Provider
-      value={{ trip, trips: saved.trips, setTrip, selectTrip, deleteTrip, updateItem, stitch, unstitch }}
+      value={{
+        trip,
+        trips,
+        setTrip,
+        selectTrip,
+        deleteTrip,
+        updateItem,
+        stitch,
+        unstitch,
+        sync: signedIn ? sync : { kind: 'guest' },
+        conflict,
+        resolveConflict,
+        guestToMove,
+        moveGuestTrips,
+      }}
     >
       {children}
     </TripContext.Provider>

@@ -9,6 +9,7 @@ import os
 import uuid
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from dotenv import dotenv_values, load_dotenv
@@ -51,15 +52,23 @@ def anon(supabase_url: str) -> Client:
 
 
 @pytest.fixture
-def make_user(supabase_url: str, admin: Client) -> Iterator[Callable[[], tuple[str, Client]]]:
-    """Factory: a new confirmed user and a client signed in as them. Each test gets fresh users;
-    deleting a user afterwards cascades to their trips, profiles and consents."""
+def make_user(
+    supabase_url: str, admin: Client
+) -> Iterator[Callable[..., tuple[str, Client]]]:
+    """Factory: a new confirmed user and a client signed in as them. `metadata` is what a sign-up
+    screen would send. Each test gets fresh users; deleting a user afterwards cascades to their
+    trips, profiles and consents."""
     created: list[str] = []
 
-    def make() -> tuple[str, Client]:
+    def make(metadata: dict[str, Any] | None = None) -> tuple[str, Client]:
         email = f"test-{uuid.uuid4().hex[:12]}@example.com"
         user = admin.auth.admin.create_user(
-            {"email": email, "password": PASSWORD, "email_confirm": True}
+            {
+                "email": email,
+                "password": PASSWORD,
+                "email_confirm": True,
+                "user_metadata": metadata or {},
+            }
         ).user
         created.append(user.id)
         client = create_client(supabase_url, _env("SUPABASE_ANON_KEY"))
