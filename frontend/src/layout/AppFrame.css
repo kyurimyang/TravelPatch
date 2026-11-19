@@ -1,5 +1,8 @@
 .app-frame {
+  /* dvh follows the visible height as the mobile address bar shows and hides; 100vh is the
+     fallback for browsers without dvh (they ignore the second line). */
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   background: var(--tp-weave);

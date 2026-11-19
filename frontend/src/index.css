@@ -7,7 +7,9 @@ body {
   font-family: var(--font-sans);
   font-size: var(--text-md);
   color: var(--color-text);
-  background: var(--tp-linen);
+  /* Same as the frame column (.app-frame__column): on a phone the column is the whole width, so
+     whatever shows past it (overscroll bounce, address bar collapsing) reads as the same cloth. */
+  background: var(--tp-lace);
 }
 
 /* Visually hidden, still read by screen readers. */
