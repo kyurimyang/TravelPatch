@@ -131,6 +131,10 @@ def solve_fixed_order(
                 for sub in subs_of.get(a.id, [])
             ]
         nxt: _Layer = {}
+        # Loop-invariant work is done once here, not per (state, start, duration): the inner
+        # loop runs ~10^5 times on a hard day. Same arithmetic, same result.
+        cap = constraints.duration_cap(a.id)
+        lengths = [[d for d in opt.durations if cap is None or d <= cap] for opt in options]
 
         for state, (cost, _) in layers[-1].items():
             last, t = state
@@ -147,7 +151,7 @@ def solve_fixed_order(
                 _relax(nxt, state, cost + drop_cost, (state, None))
 
             origin = inp.event.location_id if last is None else last
-            for opt in options:
+            for opt, durations in zip(options, lengths):
                 earliest = t + travel(origin, opt.node) + (min_buffer if last is not None else 0)
                 if opt.open_at is not None:
                     earliest = max(earliest, opt.open_at)
@@ -181,11 +185,10 @@ def solve_fixed_order(
                     if opt.substitute is not None
                     else 0.0
                 )
+                move_cost = weights.w_move * travel(last, opt.node) / 60 if last is not None else 0.0
                 for s in starts:
-                    for d in opt.durations:
-                        cap = constraints.duration_cap(a.id)
-                        if cap is not None and d > cap:
-                            continue  # too tiring
+                    time_cost = weights.w_time * abs(s - a.planned_start) / 60 + move_cost
+                    for d in durations:  # longer than a tiredness cap: already left out
                         end = s + d
                         if end > deadline or (opt.close_at is not None and end > opt.close_at):
                             continue
@@ -202,9 +205,7 @@ def solve_fixed_order(
                                 weights.w_shrink * value * max(0, planned_len - d) / planned_len
                                 + (weights.w_changed if (s, end) != (a.planned_start, a.planned_end) else 0.0)
                             )
-                        step += weights.w_time * abs(s - a.planned_start) / 60 + (
-                            weights.w_move * travel(last, opt.node) / 60 if last is not None else 0.0
-                        )
+                        step += time_cost
                         _relax(nxt, (opt.node, end), cost + step, (state, (s, d, opt.node)))
         layers.append(nxt)
 
