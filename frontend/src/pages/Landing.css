@@ -3,6 +3,10 @@
   flex-direction: column;
 }
 
+.landing--form {
+  padding-top: 16px;
+}
+
 .landing__hero {
   display: flex;
   flex-direction: column;

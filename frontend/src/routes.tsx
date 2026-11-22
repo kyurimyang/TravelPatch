@@ -8,10 +8,10 @@ import Confirm from './pages/Confirm'
 import Consent from './pages/Consent'
 import DiffView from './pages/DiffView'
 import Grade from './pages/Grade'
+import Home from './pages/Home'
 import Landing from './pages/Landing'
 import Legal from './pages/Legal'
 import Login from './pages/Login'
-import Main from './pages/Main'
 import NotFound from './pages/NotFound'
 import NoPatch from './pages/NoPatch'
 import Patchwork from './pages/Patchwork'
@@ -27,16 +27,17 @@ export default function AppRoutes() {
     <Routes>
       {/* Pathless layout routes: they add no URL segment, they only wrap their children. */}
       <Route element={<AppFrame />}>
+        {/* Intro with no trip, Main with one: Home picks its own frame. */}
+        <Route index element={<Home />} />
         <Route element={<TabLayout />}>
-          <Route index element={<Main />} />
           <Route path="trips" element={<TripList />} />
           <Route path="patchwork" element={<Patchwork />} />
         </Route>
         <Route element={<BareLayout />}>
-          <Route path="new" element={<Landing />} />
           <Route path="recover/done" element={<Stitched />} />
         </Route>
         <Route element={<FlowLayout />}>
+          <Route path="new" element={<Landing />} />
           <Route path="new/confirm" element={<Confirm />} />
           <Route path="new/grade" element={<Grade />} />
           <Route path="recover" element={<Recover />} />
