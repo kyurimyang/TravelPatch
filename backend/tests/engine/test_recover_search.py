@@ -1,8 +1,9 @@
 """Local search runs on the first strategy only (decision 2026-11-18, speed option A).
 
 Measured on eval50: order swapping tripled the time and improved the best plan in 1 of 50
-scenarios (i07_delay, the balanced candidate). The other strategies are solved in the original
-order only.
+scenarios (i07_delay, the balanced candidate). Since the meal window (2026-11-19) that gain was
+lunch 145 min late and is gone; the one gain left is i00_delay (83.3% -> 95.1%). The other
+strategies are solved in the original order only.
 """
 
 import json
@@ -23,9 +24,9 @@ def _load(name: str) -> RecoveryInput:
 
 
 def test_the_first_strategy_still_gets_the_better_order() -> None:
-    inp = _load("i07_delay")
+    inp = _load("i00_delay")
     first = next(r for r in recover(inp) if r.strategy == STRATEGIES[0].name)
-    assert round(first.preservation_rate, 4) == 0.9516  # 0.9032 without order swapping
+    assert round(first.preservation_rate, 4) == 0.9514  # 0.8333 without order swapping
 
 
 def test_other_strategies_keep_the_original_order() -> None:

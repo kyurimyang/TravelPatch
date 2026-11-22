@@ -10,8 +10,8 @@ additive and is only evaluated afterwards by cost.compute_cost.
 from typing import NamedTuple
 
 from app.engine.constraint_builder import build_constraints
-from app.engine.presets import DEFAULT_WEIGHTS, Weights
-from app.schemas.enums import Op, Tier
+from app.engine.presets import DEFAULT_WEIGHTS, MEAL_WINDOW_MINUTES, Weights
+from app.schemas.enums import Category, Op, Tier
 from app.schemas.models import HOTEL_ID, Activity, Substitute
 from app.schemas.recovery import RecoveryChange, RecoveryInput, Slot
 
@@ -157,6 +157,10 @@ def solve_fixed_order(
                         # planned start: there, waiting trades D_time against how tight the
                         # following activities become, so every step in between can be optimal.
                         starts = [*range(s0, a.planned_start, STEP), max(s0, a.planned_start)]
+                if a.category == Category.MEAL:
+                    # Hard: a meal (or its substitute) starts near when it was planned (A3).
+                    # None left -> only dropping it remains, never lunch at 17:00.
+                    starts = [s for s in starts if abs(s - a.planned_start) <= MEAL_WINDOW_MINUTES]
 
                 # A substitution is paid by D_sub (not D_shrink) and always counts as a change.
                 sub_cost = (

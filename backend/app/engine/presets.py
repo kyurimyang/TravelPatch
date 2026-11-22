@@ -32,6 +32,11 @@ class Strategy(_Frozen):
 # Initial draft values from CLAUDE.md; to be tuned by experiments.
 DEFAULT_WEIGHTS = Weights()
 
+# Hard constraint for every strategy (review 2026-11-19, A3): a meal starts within this many
+# minutes of its planned start, either way. Not a weight: lunch at 17:00 is wrong, not costly.
+# Shared by the solver and the validator, which each enforce it on their own (invariant 3).
+MEAL_WINDOW_MINUTES = 90
+
 # The only place strategies are defined. Order matters: the first one is the default.
 STRATEGIES: tuple[Strategy, ...] = (
     Strategy(name="balanced", weights=DEFAULT_WEIGHTS),

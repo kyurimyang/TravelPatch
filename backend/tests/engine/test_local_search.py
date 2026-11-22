@@ -33,8 +33,9 @@ def test_keeps_the_original_order_when_no_swap_pays_off() -> None:
 
 
 def test_a_swap_that_cuts_rc_by_ten_percent_is_adopted() -> None:
-    # A 40% cheaper plan exists after swapping two neighbours (measured on this scenario).
-    inp = _load("eval50/i07_delay.json")
+    # A 43% cheaper plan exists after swapping two neighbours (measured on this scenario).
+    # Was i07_delay until the meal window (2026-11-19): its better order put lunch 145 min late.
+    inp = _load("eval50/i00_delay.json")
     base = _base(inp)
     better = improve_order(inp, BALANCED, base, max_tries=99)
     assert better.rc_total <= base.rc_total * 0.9
@@ -62,7 +63,7 @@ def test_changes_stay_in_the_original_order() -> None:
 
 
 def test_recover_can_switch_the_search_off() -> None:
-    inp = _load("eval50/i07_delay.json")
+    inp = _load("eval50/i00_delay.json")
     plain = {r.strategy: r for r in recover(inp, max_tries=0)}
     searched = {r.strategy: r for r in recover(inp, max_tries=99)}
     assert searched["balanced"].rc_total < plain["balanced"].rc_total

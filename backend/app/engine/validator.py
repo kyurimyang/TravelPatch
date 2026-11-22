@@ -10,7 +10,8 @@ from typing import NamedTuple
 
 from pydantic import BaseModel
 
-from app.schemas.enums import Op, Tier
+from app.engine.presets import MEAL_WINDOW_MINUTES
+from app.schemas.enums import Category, Op, Tier
 from app.schemas.events import (
     ClosureEvent,
     DelayEvent,
@@ -104,6 +105,29 @@ def _check_past(inp: RecoveryInput, changes: tuple[RecoveryChange, ...]) -> list
                     kind="past",
                     activity_id=c.activity_id,
                     detail=f"{c.activity_id} starts at {c.after.start}, before now ({now})",
+                )
+            )
+    return out
+
+
+def _check_meal_window(
+    inp: RecoveryInput, changes: tuple[RecoveryChange, ...]
+) -> list[Violation]:
+    # A placed meal starts within MEAL_WINDOW_MINUTES of its planned start (review 2026-11-19).
+    # Read from the input, not the solver. A substitute keeps the activity_id it replaces, so its
+    # window is the original meal's. A MUST_VISIT place is not in inp.activities: no window.
+    planned = {a.id: a.planned_start for a in inp.activities if a.category == Category.MEAL}
+    out: list[Violation] = []
+    for c in sorted(changes, key=lambda c: c.activity_id):
+        if c.after is None or c.activity_id not in planned:
+            continue
+        shift = c.after.start - planned[c.activity_id]
+        if abs(shift) > MEAL_WINDOW_MINUTES:
+            out.append(
+                Violation(
+                    kind="meal_window",
+                    activity_id=c.activity_id,
+                    detail=f"meal moved {shift:+d} min, limit ±{MEAL_WINDOW_MINUTES}",
                 )
             )
     return out
@@ -358,6 +382,7 @@ def validate(
     placed = _placed(changes)
     return [
         *_check_past(inp, changes),
+        *_check_meal_window(inp, changes),
         *_check_must_kept(info, changes),
         *_check_closure(inp, changes),
         *_check_each_activity(inp, info, placed),
