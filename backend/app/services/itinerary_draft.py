@@ -89,6 +89,7 @@ def _convert_item(index: int, item: ParsedItem) -> tuple[DraftItem, list[DraftIs
         reservation_time=reservation,
         note=item.note,
         place_query=_place_query(item),
+        patch=item.patch,
     )
     return draft, issues
 

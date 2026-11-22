@@ -25,6 +25,7 @@ def _item(title: str, start: str | None, **fields) -> ParsedItem:
         "reserved": False,
         "note": None,
         "place_query": None,
+        "patch": None,
     }
     return ParsedItem(title=title, start=start, **{**base, **fields})
 
@@ -44,7 +45,7 @@ def test_parse_returns_draft_in_minutes():
             ParsedDay(
                 day_label="1일차",
                 items=[
-                    _item("하라주쿠", "10:00", end="11:30"),
+                    _item("하라주쿠", "10:00", end="11:30", patch="market"),
                     _item("라멘 점심", "12:00", category="meal"),
                 ],
             )
@@ -60,6 +61,7 @@ def test_parse_returns_draft_in_minutes():
         ("라멘 점심", 720, 780),  # meal default 60 minutes
     ]
     assert items[1]["duration_estimated"] is True
+    assert [i["patch"] for i in items] == ["market", None]
 
 
 def test_issues_come_through_for_the_confirm_screen():

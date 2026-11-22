@@ -2,7 +2,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints
 
-from app.llm.parser import MAX_TEXT_CHARS
+from app.llm.parser import MAX_TEXT_CHARS, PatchKind
 from app.schemas.models import MINUTES_PER_DAY, _Frozen
 
 IssueCode = Literal[
@@ -36,6 +36,8 @@ class DraftItem(_Frozen):
     note: str | None = None
     # Place name to search with, written in the line itself. None = search by the title.
     place_query: str | None = None
+    # Patch picture for the screen (worship, museum, ...). None = the category's picture.
+    patch: PatchKind | None = None
 
 
 class DraftDay(_Frozen):

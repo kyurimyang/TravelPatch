@@ -2,6 +2,7 @@ import pytest
 
 from app.llm.parser import (
     MAX_TEXT_CHARS,
+    PATCH_KINDS,
     SYSTEM_PROMPT,
     ParsedDay,
     ParsedItem,
@@ -32,6 +33,7 @@ def _item(title: str, **fields) -> ParsedItem:
         "reserved": False,
         "note": None,
         "place_query": None,
+        "patch": None,
     }
     return ParsedItem(**{**base, **fields})
 
@@ -64,3 +66,17 @@ def test_text_at_the_limit_is_accepted():
 def test_category_outside_the_list_is_rejected_by_the_schema():
     with pytest.raises(ValueError):
         _item("x", category="museum")
+
+
+def test_patch_kind_from_the_list_is_accepted():
+    assert _item("x", patch="museum").patch == "museum"
+
+
+def test_patch_kind_outside_the_list_is_rejected_by_the_schema():
+    with pytest.raises(ValueError):
+        _item("x", patch="castle")
+
+
+def test_every_patch_kind_is_named_in_the_prompt():
+    for kind in PATCH_KINDS:
+        assert kind in SYSTEM_PROMPT

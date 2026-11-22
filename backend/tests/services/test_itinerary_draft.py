@@ -11,8 +11,18 @@ def _item(title="x", **fields) -> ParsedItem:
         "reserved": False,
         "note": None,
         "place_query": None,
+        "patch": None,
     }
     return ParsedItem(**{**base, **fields})
+
+
+def test_patch_kind_is_passed_through():
+    item = _day(_item("메이지 신궁", start="09:00", patch="worship")).items[0]
+    assert item.patch == "worship"
+
+
+def test_no_patch_kind_stays_none():
+    assert _day(_item("점심", start="12:00")).items[0].patch is None
 
 
 def test_place_query_from_the_title_is_kept():
