@@ -75,14 +75,20 @@ def get_guest_quota() -> GuestQuota:
 
 
 def _client_ip(request: Request) -> str:
-    # Behind Vercel's rewrite and Render's proxy the socket peer is a proxy. Vercel overwrites
-    # X-Forwarded-For with the browser's IP and Render appends its own hop, so the left-most
-    # entry is the user. A caller going to Render directly can forge it: the guests' total
-    # limit is what bounds that case.
-    forwarded = request.headers.get("x-forwarded-for", "")
-    first = forwarded.split(",")[0].strip()
-    if first:
-        return first
+    """The guest's IP, from headers a caller cannot set (measured 2026-11-22, decisions.md).
+
+    Browser -> Vercel (rewrite) -> Cloudflare -> Render. Measured through Vercel, a forged
+    X-Forwarded-For and x-vercel-forwarded-for were sometimes passed on as sent; only
+    x-vercel-proxied-for always held the real IP (not in Vercel's docs: check it again if
+    Vercel changes). On a direct call to Render, cf-connecting-ip is the real peer, written by
+    Cloudflare. Gap: a direct caller can send its own x-vercel-proxied-for; the guests' total
+    limit bounds that. request.client is last and only for local runs: on Render, uvicorn
+    rewrites it from X-Forwarded-For.
+    """
+    for name in ("x-vercel-proxied-for", "cf-connecting-ip"):
+        value = request.headers.get(name, "").split(",")[0].strip()
+        if value:
+            return value
     return request.client.host if request.client else "unknown"
 
 

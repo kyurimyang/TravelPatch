@@ -56,11 +56,26 @@ def test_signed_in_user_is_not_counted() -> None:
     assert _search() == 200  # the guest's one call is still unused
 
 
-def test_forwarded_ip_counts_each_guest_apart() -> None:
+def test_vercel_ip_counts_each_guest_apart() -> None:
     _quota(places=1)
-    a = {"X-Forwarded-For": "203.0.113.1, 10.0.0.1"}  # user, then the proxy hop
-    b = {"X-Forwarded-For": "203.0.113.2, 10.0.0.1"}
-    assert [_search(a), _search(a), _search(b)] == [200, 429, 200]
+    a = {"X-Vercel-Proxied-For": "203.0.113.1", "CF-Connecting-IP": "3.36.69.146"}
+    b = {"X-Vercel-Proxied-For": "203.0.113.2", "CF-Connecting-IP": "3.36.69.146"}
+    assert [_search(a), _search(a), _search(b)] == [200, 429, 200]  # same Vercel egress, apart
+
+
+def test_direct_call_counts_by_cloudflare_peer() -> None:
+    _quota(places=1)
+    assert _search({"CF-Connecting-IP": "203.0.113.9"}) == 200
+    assert _search({"CF-Connecting-IP": "203.0.113.9"}) == 429
+
+
+def test_forged_forwarded_for_does_not_make_a_new_guest() -> None:
+    # Measured 2026-11-22: these two could be passed on as the caller sent them.
+    _quota(places=1)
+    real = {"X-Vercel-Proxied-For": "203.0.113.1"}
+    assert _search(real) == 200
+    forged = {**real, "X-Forwarded-For": "6.6.6.6", "X-Vercel-Forwarded-For": "9.9.9.9"}
+    assert _search(forged) == 429
 
 
 @pytest.mark.parametrize("header", ["Bearer forged", "Basic good", "Bearer "])
