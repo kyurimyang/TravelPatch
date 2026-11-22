@@ -31,6 +31,8 @@ DEFAULT_MINUTES: dict[str, int] = {
 _TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)$")
 # "13:00~16:00", "9:00 - 9:50", "10:00–11:00" anywhere in a line of the pasted text.
 _RANGE_RE = re.compile(r"(?<!\d)(\d{1,2}):(\d{2})\s*[~\-–—]\s*(\d{1,2}):(\d{2})(?!\d)")
+# A line that starts with a single time ("16:20", "- 18:30 출발"): a point, not a range.
+_POINT_LINE_RE = re.compile(r"^[^\w]*(\d{1,2}):(\d{2})(?!\d)")
 # A leading label that only names the category: "점심 식사: Fumotoya" -> "Fumotoya".
 _LABEL_RE = re.compile(r"^[^\W\d][^:：\d]{0,14}[:：]\s*(\S.*)$")
 
@@ -52,12 +54,28 @@ def written_ranges(text: str) -> list[tuple[str, str]]:
     ]
 
 
+def written_times(text: str) -> list[tuple[str, str | None]]:
+    """Every time range in the text, plus every line that is a single time ("16:20"), in order.
+    A single time has no end: "16:20 도착" must not take the "16:20~17:20" written under it."""
+    out: list[tuple[str, str | None]] = []
+    for line in text.splitlines():
+        ranges = written_ranges(line)
+        if ranges:
+            out.extend(ranges)
+        else:
+            point = _POINT_LINE_RE.match(line)
+            if point is not None:
+                out.append((f"{int(point.group(1)):02d}:{point.group(2)}", None))
+    return out
+
+
 def _with_written_ends(
-    days: list[list[ParsedItem]], ranges: list[tuple[str, str]]
+    days: list[list[ParsedItem]], ranges: list[tuple[str, str | None]]
 ) -> list[list[ParsedItem]]:
     """Restore ends the model left out. Blocks come in the order written, so each start is
-    matched with the next range in the text that starts there (a cursor that only moves on):
-    "13:00" on day 2 never takes day 1's "13:00~14:00"."""
+    matched with the next time line in the text that starts there (a cursor that only moves
+    on): "13:00" on day 2 never takes day 1's "13:00~14:00", and a block written as a single
+    time keeps no end."""
     cursor = 0
     out: list[list[ParsedItem]] = []
     for day in days:
@@ -69,7 +87,7 @@ def _with_written_ends(
                 at = next((i for i in range(cursor, len(ranges)) if ranges[i][0] == start), None)
                 if at is not None:
                     cursor = at + 1
-                    if not item.end:
+                    if not item.end and ranges[at][1] is not None:
                         item = item.model_copy(update={"end": ranges[at][1]})
             fixed.append(item)
         out.append(fixed)
@@ -183,7 +201,7 @@ def build_draft(parsed: ParsedItinerary, text: str | None = None) -> DraftItiner
     """`text` is the pasted text the parser read; with it, times are checked against it."""
     days = [list(d.items) for d in parsed.days]
     if text:
-        days = _with_written_ends(days, written_ranges(text))
+        days = _with_written_ends(days, written_times(text))
     hotel = find_hotel_query(days)
     if hotel is not None and text is not None and _squash(hotel) not in _squash(text):
         hotel = None  # not written: a guess (invariant 8)

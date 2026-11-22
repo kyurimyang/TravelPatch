@@ -176,6 +176,88 @@ def test_a_departure_written_as_a_point_in_time_is_taken_as_written():
     )
 
 
+def test_an_origin_take_off_before_the_landing_is_absorbed_not_read_as_the_landing():
+    day = _draft(
+        [
+            _item("인천국제공항 출발", start="10:50", role="airport", place_query="인천국제공항"),
+            _item("프라하 공항 도착", start="16:20", role="airport", place_query="프라하 공항"),
+            _item("입국 심사", start="16:20", end="17:20", role="airport"),
+            _item("a", start="19:00", end="20:00"),
+        ]
+    ).days[0]
+    a = day.arrival
+    assert (a.airport_query, a.time, a.buffer_minutes) == ("프라하 공항", 980, 60)
+    assert len(a.absorbed) == 3 and [i.title for i in day.items] == ["a"]
+
+
+def test_the_landing_back_home_after_the_take_off_is_absorbed():
+    day = _draft(
+        [
+            _item("a", start="09:00", end="10:00"),
+            _item(
+                "프라하 공항 체크인",
+                start="15:30",
+                end="16:30",
+                role="airport",
+                place_query="프라하 공항",
+            ),
+            _item("탑승 대기", start="17:30", end="18:00", role="airport"),
+            _item("프라하 공항 출발", start="18:30", role="airport"),
+            _item("인천국제공항 도착", start="13:10", role="airport", place_query="인천국제공항"),
+        ]
+    ).days[0]
+    d = day.departure
+    assert (d.airport_query, d.time, d.buffer_minutes, d.time_written) == (
+        "프라하 공항",
+        1110,
+        180,
+        True,
+    )
+    assert len(d.absorbed) == 4 and [i.title for i in day.items] == ["a"]
+
+
+def test_a_time_less_landing_back_home_does_not_hide_the_take_off():
+    day = _draft(
+        [
+            _item("a", start="09:00", end="10:00"),
+            _item("공항 체크인", start="15:30", end="16:30", role="airport"),
+            _item("출발", start="18:30", role="airport"),
+            _item("인천 도착", role="airport"),
+        ]
+    ).days[0]
+    assert (day.departure.time, day.departure.time_written) == (1110, True)
+
+
+def test_a_point_time_line_keeps_the_range_below_it_for_the_next_block():
+    text = "16:20\n프라하 도착\n\n16:20~17:20\n입국 심사\n"
+    day = _draft(
+        [
+            _item("프라하 도착", start="16:20", role="airport"),
+            _item("입국 심사", start="16:20", role="airport"),
+        ],
+        text=text,
+    ).days[0]
+    assert (day.arrival.time, day.arrival.buffer_minutes) == (980, 60)
+
+
+def test_transport_to_the_hotel_right_before_check_in_stays_a_leg():
+    day = _draft(
+        [
+            _item(
+                "공항에서 숙소 이동",
+                start="17:20",
+                end="18:20",
+                role="transport",
+                place_query="Hotel Leon D'Oro",
+            ),
+            _item("Hotel Leon D'Oro 체크인", start="18:20", end="18:50", role="lodging"),
+            _item("a", start="19:00", end="20:00"),
+        ]
+    ).days[0]
+    assert [i.title for i in day.items] == ["Hotel Leon D'Oro 체크인", "a"]
+    assert [_leg(x) for x in day.legs] == [(None, 0, 1040, 1100)]
+
+
 def test_airport_blocks_without_a_time_stay_items():
     day = _draft([_item("공항", role="airport"), _item("a", start="12:00")]).days[0]
     assert day.arrival is None and [i.title for i in day.items] == ["공항", "a"]
@@ -271,3 +353,33 @@ def test_recorded_tokyo_paste_splits_like_the_answer(recording):
                 ), label
                 if "v2" not in recording:  # v2 predates the airport name in the prompt
                     assert flight.airport_query == wanted["airport"]["name"], label
+
+
+# --- the recorded Prague paste: a flight that leaves from home and lands back home ------
+
+PRAGUE = ["prague_4days.parsed_v1.json", "prague_4days.parsed_v2.json"]
+
+
+@pytest.mark.parametrize("recording", PRAGUE)
+def test_recorded_prague_paste_reads_both_flights(recording):
+    text = (FIXTURES / "prague_4days.txt").read_text(encoding="utf-8")
+    parsed = ParsedItinerary.model_validate_json((FIXTURES / recording).read_text(encoding="utf-8"))
+    draft = build_draft(parsed, text)
+    day1, day4 = draft.days[0], draft.days[3]
+
+    assert draft.hotel_query == "Hotel Leon D'Oro"
+    a = day1.arrival
+    assert (a.airport_query, _hhmm(a.time), a.buffer_minutes) == (
+        "프라하 바츨라프 하벨 국제공항",
+        "16:20",
+        60,
+    )
+    assert [_leg(x) for x in day1.legs] == [(None, 0, 1040, 1100)]
+    assert day1.items[0].role == "lodging" and day1.items[1].title == "Lokál Dlouhááá"
+
+    d = day4.departure
+    assert (_hhmm(d.time), d.buffer_minutes, d.time_written) == ("18:30", 180, True)
+    assert all(i.role != "airport" for i in day4.items)
+    assert all(not day.issues for day in draft.days)
+    addresses = [i.address for day in draft.days for i in day.items if i.address]
+    assert addresses and not any(x.startswith("주소") for x in addresses)

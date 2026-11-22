@@ -11,6 +11,7 @@ each one is written, then decides from the day's order alone:
 6. otherwise nothing: the user picks. Never a search by the title (invariant 8).
 """
 
+import re
 from dataclasses import dataclass
 
 from app.llm.parser import ParsedDay, ParsedItem
@@ -25,12 +26,16 @@ class PlaceRef:
     address: str | None = None
 
 
+# A leading label word and a colon ("주소:", "Address:", "住所："), never digits or commas.
+_ADDRESS_LABEL_RE = re.compile(r"^[^\W\d][^:：\d,]{0,14}[:：]\s*")
+
 HOTEL = PlaceRef("hotel")
 NONE = PlaceRef("none")
 
 
 def _written_address(block: ParsedItem, text: str | None) -> str | None:
-    address = (block.address or "").strip()
+    # The model sometimes copies the line's label too ("주소: Dlouhá 33"): drop it.
+    address = _ADDRESS_LABEL_RE.sub("", (block.address or "").strip())
     if not address:
         return None
     if text is not None and squash(address) not in squash(text):

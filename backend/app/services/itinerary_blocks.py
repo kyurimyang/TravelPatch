@@ -99,13 +99,22 @@ def _airport_query(blocks: list[ParsedItem], fallback: ParsedItem | None) -> str
     return None
 
 
+def _is_point(block: ParsedItem) -> bool:
+    """A block written as a single time ("16:20 도착", "18:30 출발"): a take-off or landing."""
+    return minutes_or_none(block.start) is not None and minutes_or_none(block.end) is None
+
+
 def _arrival(blocks: list[ParsedItem]) -> DraftFlight | None:
-    landing = minutes_or_none(blocks[0].start)
+    # The landing is the last point in time of the run. Points before it are the take-off at
+    # home ("10:50 인천 출발"): absorbed, but neither its time nor its airport is the arrival.
+    points = [i for i, b in enumerate(blocks) if _is_point(b)]
+    at = points[-1] if points else 0
+    landing = minutes_or_none(blocks[at].start)
     if landing is None:
         return None
     ready = minutes_or_none(blocks[-1].end)
     return DraftFlight(
-        airport_query=_airport_query(blocks, None),
+        airport_query=_airport_query(blocks[at:], None),
         time=landing,
         buffer_minutes=None if ready is None or ready < landing else ready - landing,
         time_written=True,
@@ -115,18 +124,34 @@ def _arrival(blocks: list[ParsedItem]) -> DraftFlight | None:
 
 def _departure(blocks: list[ParsedItem], before: ParsedItem | None) -> DraftFlight | None:
     at_airport = minutes_or_none(blocks[0].start)
-    last = blocks[-1]
-    # A last block with only a start ("14:00 출국편") is the take-off itself. A last block with
-    # a range ("12:00~12:40 탑승 대기") ends before a take-off that is not written.
-    last_end = minutes_or_none(last.end)
-    take_off, written = (
-        (minutes_or_none(last.start), True) if last_end is None else (last_end, False)
-    )
-    if at_airport is None or take_off is None or take_off < at_airport:
+    if at_airport is None:
+        return None
+    # Read the run while its times go forward. A time that goes back ("다음 날 13:10 인천
+    # 도착") is after the flight, in another time zone: absorbed, never the take-off.
+    flown: list[ParsedItem] = []
+    latest = at_airport
+    for block in blocks:
+        start = minutes_or_none(block.start)
+        if start is not None and start < latest:
+            break
+        flown.append(block)
+        end = minutes_or_none(block.end)
+        latest = max(m for m in (latest, start, end) if m is not None)
+    # The last point in time ("18:30 출발") is the take-off itself. With none, the last range
+    # ("12:00~12:40 탑승 대기") ends before a take-off that is not written.
+    points = [b for b in flown if _is_point(b)]
+    ends = [m for m in (minutes_or_none(b.end) for b in flown) if m is not None]
+    if points:
+        take_off, written = minutes_or_none(points[-1].start), True
+    elif ends:
+        take_off, written = ends[-1], False
+    else:
+        return None
+    if take_off is None or take_off < at_airport:
         return None
     hop = before if before is not None and before.role == "transport" else None
     return DraftFlight(
-        airport_query=_airport_query(blocks, hop),
+        airport_query=_airport_query(flown, hop),
         time=take_off,
         buffer_minutes=take_off - at_airport,
         time_written=written,
@@ -165,10 +190,14 @@ def shape_day(blocks: list[ParsedItem], hotel_query: str | None) -> DayShape:
         shape.end_time = max((m for m in ends if m is not None), default=None)
 
     pending: list[ParsedItem] = []  # transport blocks waiting for the next item
-    for block in blocks[lo:hi]:
+    body = blocks[lo:hi]
+    for k, block in enumerate(body):
         role = block.role
-        if role == "transport" and _goes_to_hotel(block, hotel_query):
-            role = "lodging"  # going to the hotel mid-day is a stop there ("짐 보관")
+        then_lodging = k + 1 < len(body) and body[k + 1].role == "lodging"
+        if role == "transport" and not then_lodging and _goes_to_hotel(block, hotel_query):
+            # Going to the hotel mid-day is a stop there ("짐 보관"). Right before a lodging
+            # block ("체크인") it is only the way there: that block is the stop.
+            role = "lodging"
         if role == "transport":
             pending.append(block)
             continue
