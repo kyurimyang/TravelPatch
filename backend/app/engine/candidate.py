@@ -7,10 +7,17 @@ from app.schemas.enums import EventType
 from app.schemas.events import FatigueEvent
 from app.schemas.recovery import RecoveryChange, RecoveryInput, RecoveryResult
 
-# Events the solver and validator actually handle. RESERVATION_CHANGE and MUST_VISIT exist
-# in the schema but are not implemented: they must be refused, not silently ignored.
+# Events the solver and validator actually handle. MUST_VISIT exists in the schema but is not
+# implemented yet: it must be refused, not silently ignored.
 SUPPORTED_EVENTS = frozenset(
-    {EventType.DELAY, EventType.WEATHER, EventType.CLOSURE, EventType.FATIGUE, EventType.EXTEND}
+    {
+        EventType.DELAY,
+        EventType.WEATHER,
+        EventType.CLOSURE,
+        EventType.FATIGUE,
+        EventType.EXTEND,
+        EventType.RESERVATION_CHANGE,
+    }
 )
 
 

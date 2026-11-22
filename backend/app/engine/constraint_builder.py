@@ -7,7 +7,13 @@ its own, so a mistake here cannot hide itself.
 
 from math import ceil
 
-from app.schemas.events import ClosureEvent, ExtendEvent, FatigueEvent, WeatherEvent
+from app.schemas.events import (
+    ClosureEvent,
+    ExtendEvent,
+    FatigueEvent,
+    ReservationChangeEvent,
+    WeatherEvent,
+)
 from app.schemas.models import MINUTES_PER_DAY, _Frozen
 from app.schemas.recovery import RecoveryInput
 
@@ -27,6 +33,23 @@ class Constraints(_Frozen):
 
     def duration_cap(self, activity_id: str) -> int | None:
         return dict(self.duration_caps).get(activity_id)
+
+
+def solver_view(inp: RecoveryInput) -> RecoveryInput:
+    """The input as the solver should see it once the event is applied.
+
+    RESERVATION_CHANGE: the booked activity's reservation_time becomes the new time, so every
+    reader of reservation_time (DP, conflict explanation) follows it. planned_start stays: the
+    original plan is what the change is measured against. The validator never sees this view;
+    it reads the event itself (module docstring)."""
+    ev = inp.event
+    if not isinstance(ev, ReservationChangeEvent):
+        return inp
+    activities = tuple(
+        a.model_copy(update={"reservation_time": ev.new_time}) if a.id == ev.activity_id else a
+        for a in inp.activities
+    )
+    return inp.model_copy(update={"activities": activities})
 
 
 def build_constraints(inp: RecoveryInput) -> Constraints:

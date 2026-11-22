@@ -12,7 +12,14 @@ import pytest
 from app.engine.presets import MEAL_WINDOW_MINUTES
 from app.engine.recover import recover
 from app.engine.validator import validate
-from tests.engine.helpers import load_scenario, load_scenario_a, load_scenario_c, plan, plan_c
+from tests.engine.helpers import (
+    load_scenario,
+    load_scenario_a,
+    load_scenario_c,
+    original_plan,
+    plan,
+    plan_c,
+)
 
 RAMEN_START = 770
 
@@ -74,3 +81,34 @@ def test_engine_keeps_meals_in_their_window(name: str) -> None:
             if c.activity_id in meals and c.after is not None:
                 shift = c.after.start - meals[c.activity_id]
                 assert abs(shift) <= MEAL_WINDOW_MINUTES, (result.strategy, c.activity_id, shift)
+
+
+def test_a_booked_meal_follows_its_booking_not_the_window() -> None:
+    # The user moved the dinner booking 2 hours: the booking wins over the window. The window
+    # stops the engine from dragging meals around; it does not overrule what the user booked.
+    inp = load_scenario("scenario_f.json")
+    later = 1170 + 120
+    ev = inp.event.model_copy(update={"new_time": later})
+    moved = inp.model_copy(update={"event": ev})
+    changes = plan(moved, original_plan(moved), izakaya=(later, later + 90))
+    assert ("meal_window", "izakaya") not in _kinds(validate(moved, changes))
+
+
+def test_a_substitute_for_a_booked_meal_has_the_window_again() -> None:
+    # A replacement place has no booking, so the window applies (test above for the booking).
+    inp = load_scenario_c()
+    late = 1170 + MEAL_WINDOW_MINUTES + 5
+    assert ("meal_window", "izakaya") in _kinds(
+        validate(inp, plan_c(inp, (late, late + 50), sub="izakaya_near"))
+    )
+
+
+def test_a_must_meal_out_of_reach_has_no_plan_and_says_why() -> None:
+    # Overslept until 15:00: lunch (must, 12:50) may start at 14:20 at the latest.
+    from app.engine.conflict_detector import find_blockers
+
+    inp = load_scenario_a()
+    late = inp.model_copy(update={"event": inp.event.model_copy(update={"start_time": 900})})
+    assert recover(late) == []
+    blockers = [(b.kind, b.activity_id, b.blocking_time) for b in find_blockers(late)]
+    assert ("meal_out_of_reach", "ramen", RAMEN_START + MEAL_WINDOW_MINUTES) in blockers

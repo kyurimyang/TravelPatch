@@ -103,7 +103,7 @@ def plan_c(
 
 
 def scenario_a_with_unsupported_event(kind: str) -> RecoveryInput:
-    """Scenario A with an event the engine cannot handle yet (kind: RESERVATION_CHANGE or MUST_VISIT)."""
+    """Scenario A with a RESERVATION_CHANGE (supported since 2026-11-22) or a MUST_VISIT (not yet)."""
     from app.services.travel_estimate import fill_missing_travel
 
     base = load_scenario_a()

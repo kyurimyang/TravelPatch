@@ -61,7 +61,7 @@ def test_a_strategy_with_no_candidate_is_not_found() -> None:
 
 def test_an_unsupported_event_is_still_answered_with_501() -> None:
     body = {
-        "input": scenario_a_with_unsupported_event("RESERVATION_CHANGE").model_dump(mode="json"),
+        "input": scenario_a_with_unsupported_event("MUST_VISIT").model_dump(mode="json"),
         "strategy": "balanced",
         "activity_id": "omotesando",
     }

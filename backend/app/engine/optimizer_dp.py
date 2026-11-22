@@ -9,7 +9,7 @@ additive and is only evaluated afterwards by cost.compute_cost.
 
 from typing import NamedTuple
 
-from app.engine.constraint_builder import build_constraints
+from app.engine.constraint_builder import build_constraints, solver_view
 from app.engine.presets import DEFAULT_WEIGHTS, MEAL_WINDOW_MINUTES, Weights
 from app.schemas.enums import Category, Op, Tier
 from app.schemas.models import HOTEL_ID, Activity, Substitute
@@ -93,6 +93,7 @@ def solve_fixed_order(
 
     `no_drop` lists activities that must survive (counterfactual "what if we keep X?").
     """
+    inp = solver_view(inp)  # the event applied, e.g. a booking moved to its new time
     ev = inp.event
     constraints = build_constraints(inp)
     acts = {a.id: a for a in inp.activities}
@@ -157,9 +158,11 @@ def solve_fixed_order(
                         # planned start: there, waiting trades D_time against how tight the
                         # following activities become, so every step in between can be optimal.
                         starts = [*range(s0, a.planned_start, STEP), max(s0, a.planned_start)]
-                if a.category == Category.MEAL:
+                booked = opt.substitute is None and a.reservation_time is not None
+                if a.category == Category.MEAL and not booked:
                     # Hard: a meal (or its substitute) starts near when it was planned (A3).
-                    # None left -> only dropping it remains, never lunch at 17:00.
+                    # None left -> only dropping it remains, never lunch at 17:00. A booked
+                    # meal is pinned by its booking instead, which the user chose.
                     starts = [s for s in starts if abs(s - a.planned_start) <= MEAL_WINDOW_MINUTES]
 
                 # A substitution is paid by D_sub (not D_shrink) and always counts as a change.

@@ -54,7 +54,7 @@ def test_malformed_input_is_rejected() -> None:
     assert client.post("/recoveries", json=bad).status_code == 422
 
 
-@pytest.mark.parametrize("kind", ["RESERVATION_CHANGE", "MUST_VISIT"])
+@pytest.mark.parametrize("kind", ["MUST_VISIT"])  # RESERVATION_CHANGE: supported (scenario F)
 def test_an_unsupported_event_is_answered_with_501(kind: str) -> None:
     body = scenario_a_with_unsupported_event(kind).model_dump(mode="json")
     res = client.post("/recoveries", json=body)
