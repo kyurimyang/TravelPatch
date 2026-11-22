@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       // Dev only: the browser calls /api/..., Vite forwards it to the FastAPI server
-      // (uvicorn app.main:app) without the /api prefix. Deployment needs real CORS instead.
+      // (uvicorn app.main:app) without the /api prefix. Deployed, frontend/vercel.json does the same.
       proxy: {
         '/api': {
           target: 'http://localhost:8000',
