@@ -1,0 +1,25 @@
+# Render Blueprint for the backend (decision 2026-11-22). The frontend is on Vercel and reaches
+# this service through a rewrite of /api/*, so the browser never calls it directly (no CORS).
+services:
+  - type: web
+    name: trippatch-api
+    runtime: python
+    region: singapore # Render has no Seoul region; closest to the Seoul database
+    plan: free # sleeps after 15 idle minutes: wake it before a demo
+    rootDir: backend
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    startCommand: .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true # every push to main
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10 # same as local (backend/.python-version)
+      # Secrets: `sync: false` = typed into the dashboard once, never in git.
+      - key: OPENAI_KEY
+        sync: false
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
