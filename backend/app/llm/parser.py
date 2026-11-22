@@ -62,7 +62,9 @@ For every item give:
 - reserved: true only if the text says it is booked or reserved ("예약", "reservation").
 - place_query: only the name of the place to look up on a map, copied from the block as
   written, without activity words ("오모테산도 산책" -> "오모테산도", "이치란 라멘 점심" ->
-  "이치란 라멘"). For a transport block, the place it goes to. null when the block names no
+  "이치란 라멘"). For a transport block, the place it goes to. For an airport or lodging
+  block, the airport or hotel ("나리타 국제공항 도착 및 입국 수속" -> "나리타 국제공항").
+  null when the block names no
   particular place ("점심 - 스시", "쇼핑"). Never add a name that is not written.
 - address: the street address written in the block ("주소: ..."), copied exactly, or null.
 - within: the larger place this block happens inside, when the text shows it: copy that place's

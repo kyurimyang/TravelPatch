@@ -16,6 +16,7 @@ from app.llm.parser import ParsedDay, ParsedItem, ParsedItinerary
 from app.schemas.itinerary import DraftDay, DraftIssue, DraftItem, DraftItinerary
 from app.schemas.models import MINUTES_PER_DAY
 from app.services.itinerary_blocks import find_hotel_query, shape_day
+from app.services.itinerary_places import PlaceRef, resolve_places
 
 # Draft values, shown to the user as estimates ("약 60분") and easy to change on the confirm screen.
 DEFAULT_MINUTES: dict[str, int] = {
@@ -84,17 +85,9 @@ def _squash(text: str) -> str:
     return "".join(text.split()).casefold()
 
 
-def _place_query(item: ParsedItem) -> str | None:
-    """The model's place name, kept only if it is written in the line (title or note), spaces
-    aside. Anything else is a guess and is dropped (invariants 4 and 8)."""
-    query = (item.place_query or "").strip()
-    if not query:
-        return None
-    written = _squash(item.title) + "\n" + _squash(item.note or "")
-    return query if _squash(query) in written else None
-
-
-def _convert_item(index: int, item: ParsedItem, role: str) -> tuple[DraftItem, list[DraftIssue]]:
+def _convert_item(
+    index: int, item: ParsedItem, role: str, place: PlaceRef
+) -> tuple[DraftItem, list[DraftIssue]]:
     issues: list[DraftIssue] = []
 
     def read(raw: str | None, which: str) -> int | None:
@@ -134,7 +127,11 @@ def _convert_item(index: int, item: ParsedItem, role: str) -> tuple[DraftItem, l
         duration_estimated=estimated,
         reservation_time=reservation,
         note=item.note,
-        place_query=_place_query(item),
+        place_source=place.source,
+        place_of=place.of,
+        place_query=place.query,
+        address=place.address,
+        spot=(item.spot or "").strip() or None,
         patch=item.patch,
     )
     return draft, issues
@@ -156,12 +153,16 @@ def _check_sequence(items: tuple[DraftItem, ...]) -> list[DraftIssue]:
     return out
 
 
-def _convert_day(blocks: list[ParsedItem], day: ParsedDay, hotel: str | None) -> DraftDay:
+def _convert_day(
+    blocks: list[ParsedItem], day: ParsedDay, hotel: str | None, text: str | None
+) -> DraftDay:
     shape = shape_day(blocks, hotel)
+    places = resolve_places(shape, day, text)
     items: list[DraftItem] = []
     issues: list[DraftIssue] = []
-    for index, (parsed, role) in enumerate(zip(shape.items, shape.roles, strict=True)):
-        draft, found = _convert_item(index, parsed, role)
+    rows = zip(shape.items, shape.roles, places, strict=True)
+    for index, (parsed, role, place) in enumerate(rows):
+        draft, found = _convert_item(index, parsed, role, place)
         items.append(draft)
         issues.extend(found)
     issues.extend(_check_sequence(tuple(items)))
@@ -188,5 +189,5 @@ def build_draft(parsed: ParsedItinerary, text: str | None = None) -> DraftItiner
         hotel = None  # not written: a guess (invariant 8)
     return DraftItinerary(
         hotel_query=hotel,
-        days=tuple(_convert_day(b, d, hotel) for b, d in zip(days, parsed.days, strict=True)),
+        days=tuple(_convert_day(b, d, hotel, text) for b, d in zip(days, parsed.days, strict=True)),
     )

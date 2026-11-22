@@ -3,10 +3,14 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from app.llm.parser import ParsedDay, ParsedItem, ParsedItinerary
 from app.services.itinerary_draft import build_draft, written_ranges
 
 FIXTURES = Path(__file__).parent.parent / "fixtures" / "paste"
+# Real parser answers for the same paste, recorded on different runs (they differ a little).
+RECORDINGS = ["tokyo_4days.parsed_v2.json", "tokyo_4days.parsed_v3.json"]
 
 
 def _item(title="x", **fields) -> ParsedItem:
@@ -110,7 +114,7 @@ def test_leading_airport_blocks_become_the_arrival_flight():
     day = _draft(
         [
             _item(
-                "공항 도착 및 입국 수속",
+                "나리타 국제공항 도착 및 입국 수속",
                 start="10:00",
                 end="11:00",
                 role="airport",
@@ -134,7 +138,7 @@ def test_trailing_airport_blocks_become_the_departure_with_an_unwritten_take_off
         [
             _item("체크아웃", start="07:40", end="08:00", role="lodging"),
             _item(
-                "공항 이동",
+                "나리타 국제공항 이동",
                 start="08:00",
                 end="10:30",
                 role="transport",
@@ -237,11 +241,10 @@ def _end_ref(ref):
     return None if ref in ("start", "end") else ref
 
 
-def test_recorded_tokyo_paste_splits_like_the_answer():
+@pytest.mark.parametrize("recording", RECORDINGS)
+def test_recorded_tokyo_paste_splits_like_the_answer(recording):
     text = (FIXTURES / "tokyo_4days.txt").read_text(encoding="utf-8")
-    parsed = ParsedItinerary.model_validate_json(
-        (FIXTURES / "tokyo_4days.parsed_v2.json").read_text(encoding="utf-8")
-    )
+    parsed = ParsedItinerary.model_validate_json((FIXTURES / recording).read_text(encoding="utf-8"))
     expected = json.loads((FIXTURES / "tokyo_4days.expected.json").read_text(encoding="utf-8"))
     draft = build_draft(parsed, text)
 
@@ -266,3 +269,5 @@ def test_recorded_tokyo_paste_splits_like_the_answer():
                     wanted["time"],
                     wanted["buffer_minutes"],
                 ), label
+                if "v2" not in recording:  # v2 predates the airport name in the prompt
+                    assert flight.airport_query == wanted["airport"]["name"], label

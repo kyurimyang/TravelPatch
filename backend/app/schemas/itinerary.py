@@ -37,8 +37,16 @@ class DraftItem(_Frozen):
     duration_estimated: bool = False
     reservation_time: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
     note: str | None = None
-    # Place name to search with, written in the line itself. None = search by the title.
+    # Where the item is (step 2b). written: search `place_query` (+ `address`); venue: inside
+    # item `place_of`, or, with no such item, search `place_query` (the larger place's name);
+    # previous: same place as item `place_of`; hotel: the trip's hotel; none: the user picks
+    # (never searched by the title).
+    place_source: Literal["written", "venue", "previous", "hotel", "none"] = "none"
+    place_of: int | None = Field(default=None, ge=0)
+    # Place name to search with, written in the block itself.
     place_query: str | None = None
+    address: str | None = None  # street address, as written in the pasted text
+    spot: str | None = None  # the spot inside the larger place, as written ("판타지랜드")
     # Patch picture for the screen (worship, museum, ...). None = the category's picture.
     patch: PatchKind | None = None
 

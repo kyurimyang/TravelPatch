@@ -81,12 +81,21 @@ def _leg(item: ParsedItem, after: int | None, before: int | None) -> DraftLeg:
     )
 
 
+def written_query(block: ParsedItem) -> str | None:
+    """The model's place name, kept only if it is written in the block (title or note), spaces
+    aside. Anything else is a guess and is dropped (invariants 4 and 8)."""
+    query = (block.place_query or "").strip()
+    if not query:
+        return None
+    written = squash(block.title) + "\n" + squash(block.note or "")
+    return query if squash(query) in written else None
+
+
 def _airport_query(blocks: list[ParsedItem], fallback: ParsedItem | None) -> str | None:
-    for block in blocks:
-        if (block.place_query or "").strip():
-            return block.place_query.strip()
-    if fallback is not None and (fallback.place_query or "").strip():
-        return fallback.place_query.strip()
+    for block in [*blocks, *([fallback] if fallback else [])]:
+        query = written_query(block)
+        if query:
+            return query
     return None
 
 
