@@ -51,7 +51,7 @@ export default function DiffView() {
   const source = nav?.source ?? 'sample'
   const event = nav?.event ?? (sample as unknown as RecoveryInput).event
   const chips = nav?.chips ?? []
-  const baseInput = inputFor(plan, event)
+  const baseInput = inputFor(plan, event, nav?.visited ?? [])
 
   const [state, setState] = useState<State>({ status: 'loading' })
   const [picked, setPicked] = useState(0)
@@ -133,7 +133,8 @@ export default function DiffView() {
   const result = adopted[candidate.strategy] ?? candidate
   const isAdopted = result !== candidate
   // The input the server really used (with searched substitutes and earlier locks).
-  const currentInput = state.response.used_input ?? baseInput
+  // Restore / lock take the input the server really used (visited already out), never the request.
+  const currentInput = state.response.used_input ?? inputFor(plan, event)
   const titleOf = titlesOf(currentInput)
   const iconOf = new Map(currentInput.activities.map((a) => [a.id, categoryIcon(a.category)]))
 

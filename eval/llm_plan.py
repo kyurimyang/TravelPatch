@@ -20,7 +20,7 @@ from app.schemas.events import (
     FatigueEvent,
     WeatherEvent,
 )
-from app.schemas.models import HOTEL_ID, MINUTES_PER_DAY
+from app.schemas.models import HOTEL_ID, MINUTES_PER_DAY, START_ID
 from app.schemas.recovery import RecoveryChange, RecoveryInput, Slot
 
 SYSTEM_PROMPT = """\
@@ -109,12 +109,21 @@ def _describe_event(inp: RecoveryInput) -> str:
             raise PlanFormatError(f"event type not supported in the LLM experiment: {ev.type}")
 
 
+def _place(node: str) -> str:
+    if node == HOTEL_ID:
+        return "the hotel"
+    if node == START_ID:
+        # Mid-day (2026-11-22): a place already visited, kept only as where the day goes on from.
+        return "start (a place already visited; not an activity, travel times are given from it)"
+    return node
+
+
 def build_prompt(inp: RecoveryInput) -> str:
     tier = {p.activity_id: p.tier for p in inp.preferences}
     here = inp.event.location_id
     lines = [
         f"Current time (when moving is possible): {hhmm(inp.now)}",
-        f"Traveler is at: {'the hotel' if here == HOTEL_ID else here}",
+        f"Traveler is at: {_place(here)}",
         f"Back at the hotel by: {hhmm(inp.day.end_deadline)}",
         f"What happened: {_describe_event(inp)}",
         "",

@@ -1,7 +1,7 @@
 // The day being recovered, shared by Recover -> DiffView -> NoPatch / Stitched through router state.
 // It is built by the server from the trip (POST /plans/build) and kept in memory only: it holds
 // Google coordinates, which the browser must not store (decision 2026-11-16).
-import type { BuiltPlan, DisruptionEvent, PlanRequest, RecoveryInput } from '../api/types'
+import type { BuiltPlan, DisruptionEvent, PlanRequest, RecoveryInput, RecoveryRequest } from '../api/types'
 import sample from '../mocks/scenarioAInput.json'
 import type { Trip, TripFlight } from '../store/trip'
 
@@ -12,6 +12,8 @@ export type RecoveryState = {
   source: RecoverySource
   event?: DisruptionEvent
   chips?: string[]
+  /** Ticked as already visited on Recover; the server takes them out (decision 2026-11-22). */
+  visited?: string[]
 }
 
 /** Scenario A (Tokyo), with coordinates and travel times inside: works offline, for demos. */
@@ -20,9 +22,11 @@ export function samplePlan(): BuiltPlan {
   return { day, activities, preferences, travel, warnings: [] }
 }
 
-export function inputFor(plan: BuiltPlan, event: DisruptionEvent): RecoveryInput {
-  // No substitutes: for a closure the server searches them itself (POST /recoveries).
+export function inputFor(plan: BuiltPlan, event: DisruptionEvent, visited: string[] = []): RecoveryRequest & RecoveryInput {
+  // No substitutes: for a closure the server searches them itself (POST /recoveries). The visited
+  // places stay in: the server removes them (services/visited.py, one rule for app and eval).
   return {
+    visited,
     day: plan.day,
     activities: plan.activities,
     preferences: plan.preferences,
@@ -58,7 +62,7 @@ export function holeEvent(now: number, locationId: string): DisruptionEvent {
 }
 
 /** Activities that cannot be marked visited: the one the event is about (the event refers to it).
- * Where the user is can be: `forEngine` keeps its place as the start node. */
+ * Where the user is can be: the server keeps its place as the start node. */
 export function visitLocked(event: DisruptionEvent): Set<string> {
   const target = 'activity_id' in event ? event.activity_id : null
   return new Set(target ? [target] : [])
@@ -74,46 +78,6 @@ export function defaultVisited(plan: BuiltPlan, event: DisruptionEvent): string[
   return plan.activities
     .filter((a) => a.planned_end <= event.occurred_at && !locked.has(a.id))
     .map((a) => a.id)
-}
-
-/** The plan without the visited activities: they are not at stake, so the engine never sees them
- * (and they leave the preservation rate's denominator). Travel pairs go too, since the engine
- * wants a complete table over exactly its nodes. */
-export function withoutVisited(plan: BuiltPlan, visited: Iterable<string>): BuiltPlan {
-  const gone = new Set(visited)
-  if (gone.size === 0) return plan
-  return {
-    ...plan,
-    activities: plan.activities.filter((a) => !gone.has(a.id)),
-    preferences: plan.preferences.filter((p) => !gone.has(p.activity_id)),
-    travel: plan.travel.filter((t) => !gone.has(t.a) && !gone.has(t.b)),
-    warnings: plan.warnings.filter((w) => !gone.has(w.activity_id)),
-  }
-}
-
-/** The plan and event the engine gets once visited activities are out (decision 2026-11-19).
- *
- * The engine reads "the user is at activity X" as "X is under way" and holds X past now, so a
- * visited X the user is still standing at would be dropped. Its place becomes the start node
- * instead: the engine uses `start` only as a node of the travel table, so nothing else changes
- * (an arrival airport start is replaced; by then the day no longer starts there). */
-export function forEngine(
-  plan: BuiltPlan,
-  event: DisruptionEvent,
-  visited: Iterable<string>,
-): { plan: BuiltPlan; event: DisruptionEvent } {
-  const gone = new Set(visited)
-  const here = plan.activities.find((a) => a.id === event.location_id)
-  if (!here || !gone.has(here.id)) return { plan: withoutVisited(plan, gone), event }
-  const rename = (n: string) => (n === here.id ? START_ID : n)
-  const moved: BuiltPlan = {
-    ...plan,
-    day: { ...plan.day, start_lat: here.lat, start_lng: here.lng },
-    travel: plan.travel
-      .filter((t) => t.a !== START_ID && t.b !== START_ID)
-      .map((t) => ({ ...t, a: rename(t.a), b: rename(t.b) })),
-  }
-  return { plan: withoutVisited(moved, gone), event: { ...event, location_id: START_ID } }
 }
 
 /** Names by id for activities and (when the server added them) substitutes. */

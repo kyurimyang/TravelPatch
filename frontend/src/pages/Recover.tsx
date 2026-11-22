@@ -12,7 +12,6 @@ import tired from '../assets/patches/hole-tired.svg'
 import { StitchLoader } from '../components/StitchLoader'
 import {
   defaultVisited,
-  forEngine,
   HOTEL_ID,
   holeEvent,
   holeLocation,
@@ -385,12 +384,14 @@ export default function Recover() {
             type="button"
             className="tp-btn-primary tp-denim"
             onClick={() => {
-              const sent = forEngine(
+              // The whole day goes on; the server takes the ticked places out (2026-11-22).
+              const state: RecoveryState = {
                 plan,
-                response!.event!,
-                activities.filter((a) => isVisited(a.id)).map((a) => a.id),
-              )
-              const state: RecoveryState = { ...sent, source, chips: response!.chips }
+                source,
+                event: response!.event!,
+                chips: response!.chips,
+                visited: activities.filter((a) => isVisited(a.id)).map((a) => a.id),
+              }
               navigate('/recover/patch', { state })
             }}
           >

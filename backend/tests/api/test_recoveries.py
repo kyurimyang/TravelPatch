@@ -60,3 +60,30 @@ def test_an_unsupported_event_is_answered_with_501(kind: str) -> None:
     res = client.post("/recoveries", json=body)
     assert res.status_code == 501
     assert kind in res.json()["detail"]
+
+
+def _noon_rain() -> dict:
+    body = load_scenario_a().model_dump(mode="json")
+    body["event"] = {"type": "WEATHER", "occurred_at": 720, "start_time": 720, "location_id": "omotesando"}
+    return body
+
+
+def test_visited_places_are_taken_out_on_the_server() -> None:
+    # Limit 8 (2026-11-22): the app sends the ticked ids; the server removes them before the
+    # engine, and used_input (what restore / lock send back) no longer has them.
+    res = client.post("/recoveries", json={**_noon_rain(), "visited": ["meiji", "harajuku"]})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["candidates"]
+    assert {a["id"] for a in body["used_input"]["activities"]} & {"meiji", "harajuku"} == set()
+
+
+def test_without_visited_the_request_is_as_before() -> None:
+    res = client.post("/recoveries", json=_noon_rain())
+    assert res.status_code == 200
+    assert res.json()["candidates"] == []  # the morning left in: no plan (A1)
+
+
+def test_an_unknown_visited_id_is_rejected() -> None:
+    res = client.post("/recoveries", json={**_noon_rain(), "visited": ["nowhere"]})
+    assert res.status_code == 422

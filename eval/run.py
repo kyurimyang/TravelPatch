@@ -22,6 +22,7 @@ from app.engine.presets import DEFAULT_WEIGHTS
 from app.engine.recover import recover
 from app.schemas.enums import Op
 from app.schemas.recovery import RecoveryInput, RecoveryResult
+from app.services.visited import apply_visited
 from eval.llm_baselines import CachedProvider, NoPlan, make_llm_only, make_llm_validated
 
 
@@ -49,9 +50,12 @@ FIELDS = [
 
 
 def _load(path: Path) -> RecoveryInput:
+    """The remaining day every method gets: a mid-day scenario's "visited" places are taken out
+    first, exactly as the app's server does (services/visited.py)."""
     raw = json.loads(path.read_text(encoding="utf-8"))
     raw.pop("expected", None)
-    return RecoveryInput.model_validate(raw)
+    visited = raw.pop("visited", [])
+    return apply_visited(RecoveryInput.model_validate(raw), visited)
 
 
 def run(scenario_dir: Path, methods: dict[str, Callable] | None = None) -> list[dict]:

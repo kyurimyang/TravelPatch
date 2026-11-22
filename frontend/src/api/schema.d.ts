@@ -749,6 +749,33 @@ export interface components {
             substitutes: components["schemas"]["Substitute"][];
         };
         /**
+         * RecoveryRequest
+         * @description POST /recoveries: the day as planned, plus the activities already visited (decision
+         *     2026-11-22). The server takes those out before the engine (services/visited.py); the
+         *     response's used_input is what remains. Without `visited` it is a plain RecoveryInput.
+         */
+        RecoveryRequest: {
+            day: components["schemas"]["Day"];
+            /** Activities */
+            activities: components["schemas"]["Activity"][];
+            /** Preferences */
+            preferences: components["schemas"]["Preference"][];
+            /** Travel */
+            travel: components["schemas"]["TravelTime"][];
+            /** Event */
+            event: components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"];
+            /**
+             * Substitutes
+             * @default []
+             */
+            substitutes: components["schemas"]["Substitute"][];
+            /**
+             * Visited
+             * @default []
+             */
+            visited: string[];
+        };
+        /**
          * RecoveryResponse
          * @description What the API returns: the candidates, or, when none exists, the blockers explaining why.
          */
@@ -944,7 +971,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RecoveryInput"];
+                "application/json": components["schemas"]["RecoveryRequest"];
             };
         };
         responses: {

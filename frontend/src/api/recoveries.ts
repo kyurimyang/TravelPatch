@@ -1,9 +1,10 @@
 import { LLM_TIMEOUT_MS, postJson } from './http'
-import type { LockRequest, RecoveryInput, RecoveryResponse, RestoreRequest, RestoreResponse } from './types'
+import type { LockRequest, RecoveryRequest, RecoveryResponse, RestoreRequest, RestoreResponse } from './types'
 
 export { ApiError } from './http'
 
-export function createRecovery(input: RecoveryInput): Promise<RecoveryResponse> {
+/** `visited`: ids already done today; the server takes them out before the engine. */
+export function createRecovery(input: RecoveryRequest): Promise<RecoveryResponse> {
   return postJson<RecoveryResponse>('/recoveries', input, { timeoutMs: LLM_TIMEOUT_MS })
 }
 

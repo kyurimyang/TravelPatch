@@ -5,14 +5,12 @@ import { describe, expect, it } from 'vitest'
 import type { DisruptionEvent } from '../api/types'
 import {
   defaultVisited,
-  forEngine,
   holeEvent,
   holeLocation,
   inputFor,
   nextActivity,
   samplePlan,
   visitLocked,
-  withoutVisited,
 } from './recovery'
 
 const NOON = 12 * 60
@@ -51,63 +49,7 @@ describe('visitLocked', () => {
   })
 })
 
-// Visited and still standing there: over, but the place is where the rest of the day starts from.
-// Kept as an activity, the engine reads it as under way and drops it (it ended before now).
-describe('forEngine', () => {
-  const atHarajuku: DisruptionEvent = { type: 'DELAY', occurred_at: NOON + 8, start_time: NOON + 8, location_id: 'harajuku' }
-
-  it('turns a visited current place into the start node', () => {
-    const plan = samplePlan()
-    const harajuku = plan.activities.find((a) => a.id === 'harajuku')!
-    const out = forEngine(plan, atHarajuku, ['meiji', 'harajuku'])
-    expect(out.event.location_id).toBe('start')
-    expect(out.plan.activities.map((a) => a.id)).not.toContain('harajuku')
-    expect([out.plan.day.start_lat, out.plan.day.start_lng]).toEqual([harajuku.lat, harajuku.lng])
-    const minutes = (a: string, b: string, travel = plan.travel) =>
-      travel.find((t) => (t.a === a && t.b === b) || (t.a === b && t.b === a))?.minutes
-    expect(minutes('start', 'omotesando', out.plan.travel)).toBe(minutes('harajuku', 'omotesando'))
-    expect(minutes('start', 'hotel', out.plan.travel)).toBe(minutes('harajuku', 'hotel'))
-    // 6 activities + hotel + start = 8 nodes = 28 pairs.
-    expect(out.plan.travel).toHaveLength(28)
-  })
-
-  it('replaces an arrival airport start: by now the day starts from where the user is', () => {
-    const base = samplePlan()
-    const nodes = ['hotel', ...base.activities.map((a) => a.id)]
-    const plan = {
-      ...base,
-      day: { ...base.day, start_lat: 35.55, start_lng: 139.78 },
-      travel: [...base.travel, ...nodes.map((n) => ({ a: 'start', b: n, minutes: 99, source: 'estimate' as const }))],
-    }
-    const out = forEngine(plan, atHarajuku, ['meiji', 'harajuku'])
-    expect(out.plan.travel.some((t) => t.minutes === 99)).toBe(false)
-    expect(out.plan.travel).toHaveLength(28)
-  })
-
-  it('leaves the event alone when the current place is not checked (still under way)', () => {
-    const out = forEngine(samplePlan(), atHarajuku, ['meiji'])
-    expect(out.event).toEqual(atHarajuku)
-    expect(out.plan.activities.map((a) => a.id)).toContain('harajuku')
-    expect(out.plan.day.start_lat ?? null).toBeNull()
-  })
-})
-
-describe('withoutVisited', () => {
-  it('removes visited places from activities, preferences and every travel pair', () => {
-    const plan = withoutVisited(samplePlan(), ['meiji', 'harajuku'])
-    const gone = new Set(['meiji', 'harajuku'])
-    expect(plan.activities.map((a) => a.id)).not.toContain('meiji')
-    expect(plan.activities.map((a) => a.id)).not.toContain('harajuku')
-    expect(plan.preferences.some((p) => gone.has(p.activity_id))).toBe(false)
-    expect(plan.travel.some((t) => gone.has(t.a) || gone.has(t.b))).toBe(false)
-    // 8 activities + hotel = 36 pairs; 6 + hotel = 21 pairs (the engine checks the table is complete).
-    expect(plan.travel).toHaveLength(21)
-  })
-
-  it('keeps the plan as it was when nothing is checked', () => {
-    expect(withoutVisited(samplePlan(), [])).toEqual(samplePlan())
-  })
-})
+// withoutVisited / forEngine moved to the server: backend/tests/services/test_visited.py.
 
 // A2 (review 2026-11-19): the alert said "18 minutes late" and Recover added 18 minutes on top of
 // a "now" that already contained them; it also showed lunch, not the late piece, as "next".
@@ -135,17 +77,12 @@ describe('nextActivity', () => {
   })
 })
 
-describe('noon recovery input', () => {
-  it('does not send the morning places to the engine', () => {
+
+describe('inputFor', () => {
+  it('sends the whole day with the ticked ids: the server takes them out', () => {
     const plan = samplePlan()
-    const inp = inputFor(withoutVisited(plan, defaultVisited(plan, rainAtNoon)), rainAtNoon)
-    expect(inp.activities.map((a) => a.id)).toEqual([
-      'omotesando',
-      'ramen',
-      'shibuya_shop',
-      'cafe',
-      'sky',
-      'izakaya',
-    ])
+    const inp = inputFor(plan, rainAtNoon, ['meiji', 'harajuku'])
+    expect(inp.visited).toEqual(['meiji', 'harajuku'])
+    expect(inp.activities).toHaveLength(plan.activities.length)
   })
 })

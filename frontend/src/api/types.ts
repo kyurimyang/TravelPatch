@@ -6,6 +6,7 @@ type Schemas = components['schemas']
 
 export type Op = Schemas['Op']
 export type RecoveryInput = Schemas['RecoveryInput']
+export type RecoveryRequest = Schemas['RecoveryRequest']
 export type RecoveryResponse = Schemas['RecoveryResponse']
 export type RecoveryResult = Schemas['RecoveryResult']
 export type RecoveryChange = Schemas['RecoveryChange']
