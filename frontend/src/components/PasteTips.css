@@ -1,0 +1,230 @@
+/* "How to write it" tips under the paste box (register screen). Closed by default. */
+.paste-tips {
+  display: flex;
+  flex-direction: column;
+  border: 1.5px dashed var(--tp-hemp);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.paste-tips summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--tp-indigo);
+  cursor: pointer;
+  list-style: none;
+}
+
+.paste-tips summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A small copper "+" thread knot that turns into "−" when open. */
+.paste-tips summary::before {
+  content: '+';
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--tp-indigo);
+  color: var(--tp-lace);
+  font-size: var(--text-base);
+  line-height: 1;
+}
+
+.paste-tips[open] summary::before {
+  content: '−';
+}
+
+.paste-tips[open] {
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+}
+
+.paste-tips[open] > :not(summary) {
+  margin-left: var(--space-4);
+  margin-right: var(--space-4);
+}
+
+.paste-tips .paste-tips__lead {
+  margin-top: calc(var(--space-2) * -1);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.paste-tips .paste-tips__tips {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 560px) {
+  .paste-tips__tips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.paste-tips .paste-tips__tips li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  background-color: var(--tp-linen);
+}
+
+.paste-tips .paste-tips__tips b {
+  font-size: var(--text-md);
+}
+
+.paste-tips .paste-tips__compare {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.paste-tips .paste-tips__line {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid;
+}
+
+.paste-tips .paste-tips__line em {
+  flex: none;
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.paste-tips .paste-tips__line code {
+  min-width: 0;
+  font-family: inherit;
+  font-size: var(--text-base);
+  overflow-wrap: anywhere;
+}
+
+.paste-tips .paste-tips__line--bad {
+  border-color: var(--tp-hemp);
+  color: var(--color-text-muted);
+}
+
+.paste-tips .paste-tips__line--bad code {
+  text-decoration: line-through;
+  text-decoration-color: var(--tp-tan);
+}
+
+.paste-tips .paste-tips__line--good {
+  background: color-mix(in srgb, var(--tp-denim) 22%, var(--tp-lace));
+  border-color: var(--tp-indigo);
+  color: var(--tp-indigo);
+}
+
+.paste-tips .paste-tips__line--good code {
+  font-weight: 700;
+}
+
+.paste-tips .paste-tips__why {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* Sample: a ruled memo with each part marked. Every mark has its own underline style too. */
+.paste-tips .paste-tips__sample {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: var(--space-2) 0 0;
+}
+
+.paste-tips .paste-tips__sample figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.paste-tips .paste-tips__sample figcaption b {
+  font-size: var(--text-md);
+}
+
+.paste-tips .paste-tips__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.paste-tips .paste-tips__note {
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-6);
+  border-radius: var(--radius-sm);
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 31px,
+      color-mix(in srgb, var(--tp-denim-deep) 14%, transparent) 31px 32px
+    ),
+    var(--color-surface);
+  border-left: 3px double var(--tp-rust);
+  box-shadow:
+    0 1px 0 rgba(36, 49, 77, 0.06),
+    0 6px 12px -8px rgba(36, 49, 77, 0.45);
+  transform: rotate(-0.6deg);
+}
+
+.paste-tips .paste-tips__note p {
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: 32px;
+  overflow-wrap: anywhere;
+}
+
+.paste-tips .paste-tips__mark {
+  padding: 0 var(--space-hair);
+  border-radius: var(--radius-xs);
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.paste-tips .paste-tips__mark--day {
+  font-weight: 700;
+  text-decoration-style: double;
+  text-decoration-color: var(--tp-plaid-brown);
+}
+
+.paste-tips .paste-tips__mark--time {
+  background: var(--tp-butter);
+  text-decoration-style: solid;
+  text-decoration-color: var(--tp-mustard);
+}
+
+.paste-tips .paste-tips__mark--place {
+  background: color-mix(in srgb, var(--tp-denim) 35%, transparent);
+  text-decoration-style: wavy;
+  text-decoration-color: var(--tp-denim-deep);
+  text-decoration-thickness: 1.5px;
+}
+
+.paste-tips .paste-tips__mark--flag {
+  background: color-mix(in srgb, var(--tp-pink) 40%, transparent);
+  font-weight: 700;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--tp-rust);
+}

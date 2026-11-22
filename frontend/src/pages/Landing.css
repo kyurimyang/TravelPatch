@@ -4,14 +4,14 @@
 }
 
 .landing--form {
-  padding-top: 16px;
+  padding-top: var(--space-4);
 }
 
 .landing__hero {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 24px 20px 30px;
+  gap: var(--space-4);
+  padding: var(--page-top) var(--page-x) var(--page-bottom);
   background: var(--tp-tex-linen), var(--tp-linen);
   border-bottom: 2px dashed var(--tp-hemp);
 }
@@ -32,13 +32,13 @@
 .landing__tag {
   align-self: center;
   margin: 0;
-  padding: 10px 22px;
+  padding: var(--space-3) var(--space-6);
   background: var(--tp-indigo);
   color: #ffffff;
   font-family: var(--font-label);
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 700;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   outline: 1.5px dashed var(--tp-copper);
   outline-offset: -5px;
   transform: rotate(-1.5deg);
@@ -47,7 +47,7 @@
 
 .landing__lead {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--text-md);
   line-height: 1.65;
   color: #3d4148;
   text-align: center;
@@ -56,21 +56,21 @@
 .landing__features {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 28px 20px;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--page-x);
 }
 
 .landing__features h2,
 .landing__form h2 {
-  margin: 0 0 4px;
+  margin: 0 0 var(--space-1);
   font-family: var(--font-display);
-  font-size: 21px;
+  font-size: var(--text-xl);
   font-weight: 700;
 }
 
 .landing__feature {
   display: flex;
-  gap: 14px;
+  gap: var(--space-4);
   align-items: flex-start;
 }
 
@@ -83,15 +83,101 @@
 .landing__feature div {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-hair);
 }
 
 .landing__feature b {
-  font-size: 16px;
+  font-size: var(--text-md);
 }
 
 .landing__feature span {
-  font-size: 14px;
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.landing__guide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 0 var(--space-5) var(--space-8);
+}
+
+.landing__guide h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+/* Steps: patches sewn onto one seam. The dashed copper thread runs behind the icons. */
+.landing__steps {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing__steps::before {
+  content: '';
+  position: absolute;
+  left: 25px;
+  top: 26px;
+  bottom: 26px;
+  border-left: 2px dashed var(--tp-thread-stitch);
+}
+
+.landing__steps li {
+  position: relative;
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.landing__steps img {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 2px 1px rgba(36, 49, 77, 0.22));
+}
+
+.landing__steps li:nth-child(odd) img {
+  transform: rotate(-4deg);
+}
+
+.landing__steps li:nth-child(even) img {
+  transform: rotate(3deg);
+}
+
+.landing__steps li > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-hair);
+  min-width: 0;
+  padding-top: var(--space-hair);
+}
+
+.landing__steps small {
+  align-self: flex-start;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-xs);
+  background: var(--tp-indigo);
+  color: var(--tp-lace);
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.landing__steps b {
+  font-size: var(--text-md);
+}
+
+.landing__steps span {
+  font-size: var(--text-base);
   line-height: 1.55;
   color: var(--color-text-muted);
 }
@@ -99,17 +185,17 @@
 .landing__form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin: 0 12px 28px;
-  padding: 22px 16px;
+  gap: var(--space-4);
+  margin: 0 var(--space-3) var(--space-8);
+  padding: var(--space-6) var(--space-4);
   border: 2px dashed var(--tp-indigo);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--tp-tex-linen), var(--tp-linen);
 }
 
 .landing__form p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.55;
   color: var(--color-text-muted);
 }
@@ -117,13 +203,13 @@
 .landing__field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
   min-width: 0;
 }
 
 .landing__field label,
 .landing__field .landing__label {
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 600;
   color: inherit;
 }
@@ -132,12 +218,12 @@
 .landing__field textarea {
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1.5px solid var(--tp-denim-deep);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: #ffffff;
   font: inherit;
-  font-size: 16px;
+  font-size: var(--text-md);
   color: inherit;
 }
 
@@ -151,7 +237,7 @@
 }
 
 .landing__field span {
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.5;
   color: var(--color-text-muted);
 }
@@ -159,12 +245,12 @@
 .landing__dates {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .landing__footer {
-  padding: 16px 20px 24px;
-  font-size: 12px;
+  padding: var(--space-4) var(--page-x) var(--space-6);
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
   text-align: center;
   border-top: 1.5px dashed var(--tp-hemp);
@@ -172,17 +258,17 @@
 
 .landing__problem {
   margin: 0;
-  padding: 10px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1.5px dashed var(--tp-thread-loose);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--tp-rust);
 }
 
 .landing__account {
-  margin: 0 12px 20px;
-  font-size: 14px;
+  margin: 0 var(--space-3) var(--space-5);
+  font-size: var(--text-base);
   text-align: center;
   color: var(--color-text-muted);
 }

@@ -3,6 +3,9 @@ import wordmark from '../assets/wordmark.webp'
 import mend from '../assets/patches/patch-mend.svg'
 import stay from '../assets/patches/place-stay.svg'
 import rain from '../assets/patches/hole-rain.svg'
+import sight from '../assets/patches/place-sight.svg'
+import booking from '../assets/patches/hole-booking.svg'
+import delay from '../assets/patches/hole-delay.svg'
 import { useAuth } from '../store/auth'
 import './Landing.css'
 
@@ -10,6 +13,15 @@ const FEATURES = [
   { icon: stay, title: '재단하기', text: '일정을 붙여넣으면 장소와 시간을 읽어 하루하루를 원단으로 정리해요.' },
   { icon: rain, title: '구멍 찾기', text: '여행 중 열차 지연, 휴무, 날씨로 구멍이 나면 영향 받는 일정까지 바로 알려 드려요.' },
   { icon: mend, title: '패치하기', text: '바뀌는 조각만 보여 드리고, 고르기 전까지 원래 일정은 그대로 남겨 둬요.' },
+]
+
+// How to use: the order of screens the user walks through, each tied to a patch icon.
+const STEPS = [
+  { icon: stay, title: '일정 붙여넣기', text: '여행지·날짜·숙소를 고르고, 짜 둔 일정을 메모장이나 카톡에서 그대로 복사해 넣어요.' },
+  { icon: sight, title: '재단 확인', text: '찾아 둔 장소가 맞는지, 숙소로 돌아올 시각이 맞는지만 확인해요.' },
+  { icon: booking, title: '중요도 고르기', text: '조각마다 꼭 · 좋음 · 선택 중 하나를 탭해요. 꼭은 일정이 깨져도 빠지지 않아요.' },
+  { icon: delay, title: '구멍 알리기', text: '여행 중 일이 생기면 지금 시각과 있는 곳을 고르고, 빠른 버튼이나 한 줄로 상황을 알려 주세요.' },
+  { icon: mend, title: '패치 고르기', text: '후보를 비교하고 "왜?"를 펼쳐 이유를 확인해요. 고르기 전까지 원래 일정은 그대로예요.' },
 ]
 
 // First screen while there is no trip yet. The register form itself is its own screen (/new).
@@ -41,6 +53,22 @@ export default function Intro() {
             </div>
           </div>
         ))}
+      </section>
+
+      <section className="landing__guide" aria-label="이렇게 써요">
+        <h2>이렇게 써요</h2>
+        <ol className="landing__steps">
+          {STEPS.map((s, i) => (
+            <li key={s.title}>
+              <img src={s.icon} alt="" aria-hidden="true" />
+              <div>
+                <small>STEP {i + 1}</small>
+                <b>{s.title}</b>
+                <span>{s.text}</span>
+              </div>
+            </li>
+          ))}
+        </ol>
       </section>
 
       <p className="landing__account">

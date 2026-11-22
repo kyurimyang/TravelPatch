@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { accessMessage } from '../api/http'
 import { parseItinerary } from '../api/itineraries'
 import type { PlaceOption, TravelMode } from '../api/types'
+import { PasteTips } from '../components/PasteTips'
 import { PlaceSearch } from '../components/PlaceSearch'
 import { StitchLoader } from '../components/StitchLoader'
 import { FlightFields } from '../components/FlightFields'
@@ -125,6 +126,8 @@ export default function Landing() {
             메모장, 카톡, 엑셀 어디서 복사해도 괜찮아요. 정리한 뒤 장소가 맞는지 한 번 확인해 드릴게요.
           </span>
         </div>
+
+        <PasteTips />
 
         {busy && (
           <StitchLoader
