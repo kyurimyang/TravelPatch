@@ -76,6 +76,8 @@ class Blocker(_Frozen):
         "reserved_in_rain",
         "extension_blocked",
         "closed_no_substitute",  # a must is closed and no substitute place was found
+        "reservations_clash",  # two fixed bookings cannot both be kept (travel included)
+        "meal_out_of_reach",  # a must meal cannot start inside its window (blocking_time = end)
     ]
     activity_id: str
     blocking_time: int | None = None  # the time that cannot move (a reservation)

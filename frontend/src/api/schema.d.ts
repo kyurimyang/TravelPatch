@@ -190,7 +190,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "reserved_in_past" | "reserved_in_rain" | "extension_blocked" | "closed_no_substitute";
+            kind: "reserved_in_past" | "reserved_in_rain" | "extension_blocked" | "closed_no_substitute" | "reservations_clash" | "meal_out_of_reach";
             /** Activity Id */
             activity_id: string;
             /** Blocking Time */
