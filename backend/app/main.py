@@ -25,4 +25,11 @@ def debug_ip(request: Request) -> dict[str, str | None]:
         "seen": _client_ip(request),
         "x_forwarded_for": request.headers.get("x-forwarded-for"),
         "peer": request.client.host if request.client else None,
+        "header_names": ",".join(sorted(request.headers.keys())),
+        **{
+            k: v
+            for k, v in request.headers.items()
+            if any(w in k for w in ("ip", "forwarded", "vercel", "cf-", "true-client"))
+            and "signature" not in k
+        },
     }
