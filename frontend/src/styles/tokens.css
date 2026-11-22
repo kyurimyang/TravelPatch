@@ -79,8 +79,8 @@
   /* layout */
   --layout-app-max: 480px;
 
-  /* display (headings) and label (hand-lettered tags) fonts, self-hosted via @fontsource */
-  --font-display: 'Gowun Batang', serif;
+  /* display (headings) = the body font, Pretendard. label (hand-lettered tags) = Gaegu, self-hosted via @fontsource */
+  --font-display: var(--font-sans);
   --font-label: 'Gaegu', var(--font-sans);
 
   /* type */
