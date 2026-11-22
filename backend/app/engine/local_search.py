@@ -64,14 +64,16 @@ def improve_order(
     inp: RecoveryInput,
     strategy: Strategy,
     base: RecoveryResult,
-    max_tries: int = 2,
-    max_relocates: int = 2,
+    max_tries: int | None = None,
+    max_relocates: int | None = None,
     min_gain: float = 0.10,
 ) -> RecoveryResult:
     """`base` must come from the original order. Returns base unless a reorder cuts RC enough.
-    `max_tries` caps the swaps, `max_relocates` the relocations."""
+    `max_tries` caps the swaps, `max_relocates` the relocations (None: the strategy's budget)."""
+    swaps = strategy.swaps if max_tries is None else max_tries
+    relocates = strategy.relocates if max_relocates is None else max_relocates
     order = original_order(inp)
-    tries = _ranked_swaps(inp, order)[:max_tries] + _ranked_relocates(inp, order)[:max_relocates]
+    tries = _ranked_swaps(inp, order)[:swaps] + _ranked_relocates(inp, order)[:relocates]
     best = base
     for move in tries:
         result = solve_candidate(inp, strategy, _apply(order, move))

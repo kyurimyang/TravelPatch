@@ -11,7 +11,7 @@ __all__ = ["Discard", "original_order", "recover", "solve_candidate"]  # re-expo
 def recover(
     inp: RecoveryInput,
     strategies: tuple[Strategy, ...] = STRATEGIES,
-    max_tries: int = 2,
+    max_tries: int | None = None,
     discards: list[Discard] | None = None,
     limit: int | None = SHOWN_CANDIDATES,
 ) -> list[RecoveryResult]:
@@ -20,13 +20,13 @@ def recover(
     Empty list = no valid plan. A strategy that yields the same plan as an earlier one adds
     nothing and is skipped. rc_total uses each strategy's own weights, so it is not
     comparable across candidates; the preservation rate is. solver_ms is left 0: the engine
-    never reads the clock, the service layer fills it in. `max_tries` caps the reorder
-    attempts of each kind, swaps and relocations (0 = keep the original order); a count, not
-    a time, so it stays deterministic.
+    never reads the clock, the service layer fills it in.
 
-    The order is searched only for strategies with `search_order` (balanced and low_travel,
-    decisions 2026-11-18 and 2026-11-22): it is the slow part. The others keep the original
-    order.
+    The order is searched only for strategies with a search budget (`swaps`/`relocates`:
+    balanced and low_travel, decisions 2026-11-18 and 2026-11-22), since it is the slow part;
+    the others keep the original order. `max_tries`, when given, replaces both budgets of
+    those strategies (0 = keep the original order, 99 = try everything). Budgets are counts,
+    not times, so the result stays deterministic.
 
     `discards`, when given, collects the candidates the validator rejected (for the log).
     `limit` keeps the first candidate and then the ones most unlike those kept (None: all).
@@ -38,7 +38,7 @@ def recover(
         if _same_as_earlier(inp, strategy, strategies[:i]):
             continue  # its rules have nothing to act on today: an earlier strategy is identical
         result = solve_candidate(inp, strategy, order, discards=discards)
-        if result is not None and strategy.search_order:
+        if result is not None and strategy.searches_order:
             result = improve_order(inp, strategy, result, max_tries, max_tries)
         if result is None or result.changes in seen:
             continue
@@ -59,8 +59,9 @@ def _effective(inp: RecoveryInput, strategy: Strategy) -> Strategy:
     return strategy.model_copy(
         update={
             "name": "",
-            # Same rules but no order search is still a copy (as before search_order existed).
-            "search_order": False,
+            # Same rules but no order search is still a copy (as before search budgets existed).
+            "swaps": 0,
+            "relocates": 0,
             "reservation_buffer": strategy.reservation_buffer if booked else 0,
             "no_drop_categories": tuple(c for c in strategy.no_drop_categories if c in present),
         }

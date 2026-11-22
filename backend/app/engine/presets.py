@@ -31,8 +31,14 @@ class Strategy(_Frozen):
     reservation_buffer: int = Field(default=0, ge=0)
     # Hard constraint: activities of these categories are never dropped.
     no_drop_categories: tuple[Category, ...] = ()
-    # Search: also try a few reordered plans (local_search). Off by default for speed.
-    search_order: bool = False
+    # Search budget: how many reordered plans local_search tries, per kind (adjacent swaps,
+    # relocations). Both 0 = original order only; off by default since this is the slow part.
+    swaps: int = Field(default=0, ge=0)
+    relocates: int = Field(default=0, ge=0)
+
+    @property
+    def searches_order(self) -> bool:
+        return self.swaps > 0 or self.relocates > 0
 
 
 # Initial draft values from CLAUDE.md; to be tuned by experiments.
@@ -48,13 +54,19 @@ RESERVATION_BUFFER = 15
 
 # The only place strategies are defined. Order matters: the first one is the default.
 STRATEGIES: tuple[Strategy, ...] = (
-    Strategy(name="balanced", weights=DEFAULT_WEIGHTS, search_order=True),
+    # Budgets measured on eval50 (2026-11-22): 2+1 and 1+1 find the same reorders as 2+2, faster.
+    Strategy(name="balanced", weights=DEFAULT_WEIGHTS, swaps=2, relocates=1),
     Strategy(
         name="sightseeing",
         weights=Weights(category_drop_factor=((Category.SIGHTSEEING, 2.0),)),
     ),
-    # Its cheap w_order only matters if the order can change, hence search_order.
-    Strategy(name="low_travel", weights=Weights(w_move=0.2 * 4, w_order=0.1), search_order=True),
+    # Its cheap w_order only matters if the order can change, hence a search budget.
+    Strategy(
+        name="low_travel",
+        weights=Weights(w_move=0.2 * 4, w_order=0.1),
+        swaps=1,
+        relocates=1,
+    ),
     Strategy(name="relaxed", weights=Weights(w_drop=0.7), min_buffer=20),
     # CLAUDE.md 6, added 2026-11-22. Rules, not weights: a hard "no", checked by the validator.
     Strategy(name="food", weights=DEFAULT_WEIGHTS, no_drop_categories=(Category.MEAL,)),

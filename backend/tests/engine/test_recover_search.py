@@ -1,4 +1,4 @@
-"""Order search runs only for strategies with `search_order` (balanced, low_travel).
+"""Order search runs only for strategies with a search budget (balanced, low_travel).
 
 History: on 2026-11-18 it ran for the first strategy only (speed option A): adjacent swaps
 tripled the time and improved one plan in 50. On 2026-11-22 relocations were added and
@@ -15,7 +15,7 @@ from app.schemas.recovery import RecoveryInput
 from tests.engine.helpers import load_scenario_a
 
 EVAL = Path(__file__).parents[1] / "scenarios" / "eval50"
-SEARCHED = [s.name for s in STRATEGIES if s.search_order]
+SEARCHED = [s.name for s in STRATEGIES if s.searches_order]
 
 
 def _load(name: str) -> RecoveryInput:
