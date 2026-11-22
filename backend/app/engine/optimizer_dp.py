@@ -88,10 +88,13 @@ def solve_fixed_order(
     min_buffer: int = 0,
     dense_starts: bool = False,
     no_drop: frozenset[str] = frozenset(),
+    reservation_buffer: int = 0,
+    no_drop_categories: tuple[Category, ...] = (),
 ) -> Solution | None:
     """`dense_starts` tries every 5-minute start (slow): used by tests to check the pruning.
 
     `no_drop` lists activities that must survive (counterfactual "what if we keep X?").
+    `reservation_buffer` / `no_drop_categories` are a strategy's own hard rules (presets).
     """
     inp = solver_view(inp)  # the event applied, e.g. a booking moved to its new time
     ev = inp.event
@@ -131,7 +134,12 @@ def solve_fixed_order(
 
         for state, (cost, _) in layers[-1].items():
             last, t = state
-            droppable = tier != Tier.MUST and extend == 0 and act_id not in no_drop
+            droppable = (
+                tier != Tier.MUST
+                and extend == 0
+                and act_id not in no_drop
+                and a.category not in no_drop_categories
+            )
             if droppable:  # asked-for extensions are never dropped
                 drop_cost = (
                     weights.w_drop * weights.drop_factor(a.category) * value + weights.w_changed
@@ -148,7 +156,9 @@ def solve_fixed_order(
                     # Already started: the start cannot move.
                     starts = [a.planned_start] if last is None or a.planned_start >= earliest else []
                 elif opt.substitute is None and a.reservation_time is not None:
-                    starts = [a.reservation_time] if a.reservation_time >= earliest else []
+                    # A strategy may want the traveller there early (the validator re-checks).
+                    ready = max(earliest, t + travel(origin, opt.node) + reservation_buffer)
+                    starts = [a.reservation_time] if a.reservation_time >= ready else []
                 else:
                     s0 = _round_up(earliest)
                     if dense_starts:

@@ -376,9 +376,59 @@ def _check_deadline(inp: RecoveryInput, placed: list[RecoveryChange]) -> list[Vi
     ]
 
 
-def validate(
-    inp: RecoveryInput, changes: tuple[RecoveryChange, ...], min_buffer: int = 0
+def _check_no_drop_categories(
+    inp: RecoveryInput, changes: tuple[RecoveryChange, ...], categories: tuple[Category, ...]
 ) -> list[Violation]:
+    # A strategy's hard rule ("food": meals are never dropped).
+    category = {a.id: a.category for a in inp.activities}
+    return [
+        Violation(kind="no_drop", activity_id=c.activity_id, detail=f"{category[c.activity_id]} kept")
+        for c in sorted(changes, key=lambda c: c.activity_id)
+        if c.op == Op.DROP and category.get(c.activity_id) in categories
+    ]
+
+
+def _check_reservation_buffer(
+    inp: RecoveryInput, info: dict[str, _Info], placed: list[RecoveryChange], buffer: int
+) -> list[Violation]:
+    # A strategy's hard rule ("reservation"): be at a booking `buffer` minutes early. The booking
+    # time comes from _info (a moved booking read from the event); a substitute has no booking.
+    if buffer == 0:
+        return []
+    travel = _travel_table(inp)
+    now, here = _now(inp), inp.event.location_id
+    out: list[Violation] = []
+    prev: RecoveryChange | None = None
+    for c in placed:
+        booked = c.substitute_id is None and info[c.activity_id].reservation_time is not None
+        if booked and c.activity_id != here and c.after.start >= now:
+            if prev is None or prev.after.end <= now:
+                origin, ready = here, now
+            else:
+                origin, ready = _node(prev), prev.after.end
+            need = 0 if origin == _node(c) else travel[frozenset((origin, _node(c)))]
+            if ready + need + buffer > c.after.start:
+                out.append(
+                    Violation(
+                        kind="reservation_buffer",
+                        activity_id=c.activity_id,
+                        detail=f"arrives at {ready + need}, wants {buffer} min before {c.after.start}",
+                    )
+                )
+        prev = c
+    return out
+
+
+def validate(
+    inp: RecoveryInput,
+    changes: tuple[RecoveryChange, ...],
+    min_buffer: int = 0,
+    *,
+    reservation_buffer: int = 0,
+    no_drop_categories: tuple[Category, ...] = (),
+) -> list[Violation]:
+    """Every hard constraint, re-simulated from the input. The keyword rules are a strategy's
+    own (presets.Strategy); without them only the constraints shared by every plan apply."""
     info = _info(inp)
     coverage = _check_coverage(info, changes)
     if coverage:
@@ -401,4 +451,6 @@ def validate(
         *_check_origin(inp, placed),
         *_check_travel(inp, placed, min_buffer),
         *_check_deadline(inp, placed),
+        *_check_no_drop_categories(inp, changes, no_drop_categories),
+        *_check_reservation_buffer(inp, info, placed, reservation_buffer),
     ]

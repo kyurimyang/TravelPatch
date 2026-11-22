@@ -9,6 +9,14 @@ from app.schemas.models import _Frozen
 from app.schemas.recovery import RecoveryChange, RecoveryInput, RecoveryResult
 
 
+def strategy_rules(strategy: Strategy) -> dict:
+    """A strategy's own hard rules as validate() keywords (min_buffer is passed on its own)."""
+    return {
+        "reservation_buffer": strategy.reservation_buffer,
+        "no_drop_categories": strategy.no_drop_categories,
+    }
+
+
 class Discard(_Frozen):
     """A candidate the validator rejected (CLAUDE.md 6: discard + log). Handed back as a value
     so the engine stays pure; the service layer writes the log. Normally never happens: one
@@ -82,10 +90,18 @@ def solve_candidate(
     A rejected plan is appended to `discards` when the caller passes a list."""
     if inp.event.type not in SUPPORTED_EVENTS:
         raise UnsupportedEventError(f"event type not supported yet: {inp.event.type}")
-    solution = solve_fixed_order(inp, order, strategy.weights, strategy.min_buffer, no_drop=no_drop)
+    solution = solve_fixed_order(
+        inp,
+        order,
+        strategy.weights,
+        strategy.min_buffer,
+        no_drop=no_drop,
+        reservation_buffer=strategy.reservation_buffer,
+        no_drop_categories=strategy.no_drop_categories,
+    )
     if solution is None:
         return None
-    violations = validate(inp, solution.changes, strategy.min_buffer)
+    violations = validate(inp, solution.changes, strategy.min_buffer, **strategy_rules(strategy))
     if violations:
         if discards is not None:
             discards.append(Discard(strategy=strategy.name, violations=tuple(violations)))

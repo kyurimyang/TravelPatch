@@ -21,11 +21,12 @@ from app.schemas.recovery import ReasonData, RecoveryChange, RecoveryInput
 
 
 def explain_changes(
-    inp: RecoveryInput, changes: tuple[RecoveryChange, ...], min_buffer: int
+    inp: RecoveryInput, changes: tuple[RecoveryChange, ...], min_buffer: int, **rules
 ) -> tuple[RecoveryChange, ...]:
     """The same changes, in the same order, with reason_type and reason_data filled in."""
     weight = {p.activity_id: p.tier.weight for p in inp.preferences}
-    return tuple(_explain(inp, changes, c, weight, min_buffer) for c in changes)
+    # `rules`: the strategy's own hard rules (candidate.strategy_rules), as validate() takes them.
+    return tuple(_explain(inp, changes, c, weight, min_buffer, rules) for c in changes)
 
 
 def _explain(
@@ -34,10 +35,11 @@ def _explain(
     change: RecoveryChange,
     weight: dict[str, int],
     min_buffer: int,
+    rules: dict,
 ) -> RecoveryChange:
     if change.op in (Op.KEEP, Op.ADD):
         return change
-    own = _own_violations(inp, changes, change, min_buffer)
+    own = _own_violations(inp, changes, change, min_buffer, rules)
     forced = tuple(k for k in own if k != "travel")
     if forced:
         data = ReasonData(forced_by=forced)
@@ -57,13 +59,14 @@ def _own_violations(
     changes: tuple[RecoveryChange, ...],
     change: RecoveryChange,
     min_buffer: int,
+    rules: dict,
 ) -> tuple[str, ...]:
     """Kinds of violation that land on this activity once it is put back in its original slot."""
     restored = RecoveryChange(
         activity_id=change.activity_id, op=Op.KEEP, before=change.before, after=change.before
     )
     plan = tuple(restored if c.activity_id == change.activity_id else c for c in changes)
-    kinds = {v.kind for v in validate(inp, plan, min_buffer) if v.activity_id == change.activity_id}
+    kinds = {v.kind for v in validate(inp, plan, min_buffer, **rules) if v.activity_id == change.activity_id}
     return tuple(sorted(kinds))
 
 

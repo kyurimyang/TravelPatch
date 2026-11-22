@@ -9,6 +9,7 @@ import logging
 
 from app.engine import candidate
 from app.engine.optimizer_dp import Solution
+from app.engine.presets import STRATEGIES
 from app.engine.recover import recover
 from app.schemas.enums import Op
 from app.schemas.recovery import RecoveryChange, Slot
@@ -16,7 +17,7 @@ from app.services.recovery_service import run_recovery
 from tests.engine.helpers import load_scenario_a
 
 
-def _broken_solver(inp, order, weights, min_buffer, no_drop=frozenset()):
+def _broken_solver(inp, order, weights, min_buffer, **_rules):
     """Keeps everything as planned: in scenario A (2 h late) the morning is then in the past."""
     changes = tuple(
         RecoveryChange(
@@ -34,7 +35,7 @@ def test_rejected_candidates_are_handed_back_with_their_violations(monkeypatch) 
     monkeypatch.setattr(candidate, "solve_fixed_order", _broken_solver)
     discards: list = []
     assert recover(load_scenario_a(), max_tries=0, discards=discards) == []
-    assert [d.strategy for d in discards] == ["balanced", "sightseeing", "low_travel", "relaxed"]
+    assert [d.strategy for d in discards] == [s.name for s in STRATEGIES]
     assert all(any(v.kind == "past" for v in d.violations) for d in discards)
 
 
@@ -50,5 +51,5 @@ def test_the_service_logs_each_rejected_candidate(monkeypatch, caplog) -> None:
         response = run_recovery(load_scenario_a())
     assert response.candidates == ()
     logged = [r for r in caplog.records if "validator rejected" in r.getMessage()]
-    assert len(logged) == 4
+    assert len(logged) == len(STRATEGIES)
     assert "balanced" in logged[0].getMessage() and "past" in logged[0].getMessage()

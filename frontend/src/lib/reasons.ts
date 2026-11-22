@@ -8,6 +8,8 @@ import { formatTime } from './time'
 const FORCED: Record<string, string> = {
   past: '원래 시각이 이미 지나서 그대로 둘 수 없었어요',
   meal_window: '식사는 원래 시각 앞뒤 1시간 반 안에서만 옮겨요',
+  reservation_buffer: '예약 시각보다 여유 있게 도착하도록 맞췄어요',
+  no_drop: '이 전략에선 빼지 않는 일정이에요',
   closure: '문을 닫아서 그대로 갈 수 없었어요',
   reservation: '예약 시각을 지키려면 원래 자리에 둘 수 없었어요',
   hours: '원래 시각은 영업시간과 맞지 않았어요',

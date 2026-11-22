@@ -27,6 +27,10 @@ class Strategy(_Frozen):
     weights: Weights
     # Hard constraint: extra slack between activities, on top of travel time.
     min_buffer: int = Field(default=0, ge=0)
+    # Hard constraint: arrive this many minutes before every booking (on top of travel time).
+    reservation_buffer: int = Field(default=0, ge=0)
+    # Hard constraint: activities of these categories are never dropped.
+    no_drop_categories: tuple[Category, ...] = ()
 
 
 # Initial draft values from CLAUDE.md; to be tuned by experiments.
@@ -37,6 +41,9 @@ DEFAULT_WEIGHTS = Weights()
 # Shared by the solver and the validator, which each enforce it on their own (invariant 3).
 MEAL_WINDOW_MINUTES = 90
 
+# Draft value for the "reservation" strategy: minutes early at every booking.
+RESERVATION_BUFFER = 15
+
 # The only place strategies are defined. Order matters: the first one is the default.
 STRATEGIES: tuple[Strategy, ...] = (
     Strategy(name="balanced", weights=DEFAULT_WEIGHTS),
@@ -46,4 +53,10 @@ STRATEGIES: tuple[Strategy, ...] = (
     ),
     Strategy(name="low_travel", weights=Weights(w_move=0.2 * 4, w_order=0.1)),
     Strategy(name="relaxed", weights=Weights(w_drop=0.7), min_buffer=20),
+    # CLAUDE.md 6, added 2026-11-22. Rules, not weights: a hard "no", checked by the validator.
+    Strategy(name="food", weights=DEFAULT_WEIGHTS, no_drop_categories=(Category.MEAL,)),
+    Strategy(name="reservation", weights=DEFAULT_WEIGHTS, reservation_buffer=RESERVATION_BUFFER),
 )
+
+# How many distinct candidates the user is shown (CLAUDE.md 6: 2-3), balanced first.
+SHOWN_CANDIDATES = 3

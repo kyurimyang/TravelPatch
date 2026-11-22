@@ -6,6 +6,7 @@ candidate. Pure: no I/O, no clock. The numbers in the user-facing sentence must 
 result (reason_data), never from a language model.
 """
 
+from app.engine.candidate import strategy_rules
 from app.engine.presets import STRATEGIES, Strategy
 from app.engine.reasons import explain_changes
 from app.engine.recover import original_order, solve_candidate
@@ -37,7 +38,9 @@ def restore(
     if result is None:
         return None
     result = result.model_copy(
-        update={"changes": explain_changes(inp, result.changes, strategy.min_buffer)}
+        update={"changes": explain_changes(
+            inp, result.changes, strategy.min_buffer, **strategy_rules(strategy)
+        )}
     )
     new = {c.activity_id: c for c in result.changes}
     effects = tuple(
