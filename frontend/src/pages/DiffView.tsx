@@ -14,11 +14,12 @@ import { WhyPanel } from '../components/WhyPanel'
 import { StateCard } from '../components/StateCard'
 import { StitchLoader } from '../components/StitchLoader'
 import { useFlowTitle } from '../layout/flowTitle'
-import { categoryIcon } from '../lib/category'
+import { iconsById } from '../lib/placeIcons'
 import { inputFor, samplePlan, titlesOf, type RecoveryState } from '../lib/recovery'
 import { strategyLabel } from '../lib/strategy'
 import { withJosa } from '../lib/josa'
 import sample from '../mocks/scenarioAInput.json'
+import { useTrip } from '../store/trip'
 import './DiffView.css'
 
 // The hole patch that shows what kind of thing broke the day.
@@ -46,6 +47,7 @@ type State =
 
 export default function DiffView() {
   const nav = useLocation().state as RecoveryState | null
+  const { trip } = useTrip()
   // Opening this URL directly falls back to the sample day and its own event (scenario A).
   const plan = nav?.plan ?? samplePlan()
   const source = nav?.source ?? 'sample'
@@ -136,7 +138,7 @@ export default function DiffView() {
   // Restore / lock take the input the server really used (visited already out), never the request.
   const currentInput = state.response.used_input ?? inputFor(plan, event)
   const titleOf = titlesOf(currentInput)
-  const iconOf = new Map(currentInput.activities.map((a) => [a.id, categoryIcon(a.category)]))
+  const iconOf = iconsById(source === 'trip' ? trip : null, currentInput.activities)
 
   async function restore(activityId: string): Promise<Counterfactual | null> {
     const res = await restoreActivity({ input: currentInput, strategy: candidate.strategy, activity_id: activityId })

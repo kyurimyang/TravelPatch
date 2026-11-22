@@ -56,6 +56,7 @@ export function tripFromDraft(draft: DraftItinerary, meta: TripMeta): Trip {
         reservationTime: it.reservation_time ?? null,
         note: it.note ?? null,
         placeQuery: it.place_query ?? null,
+        patch: it.patch ?? null,
         placeId: knownPlace(it.title, di, dayCount, meta),
         tier: defaultTier({ reservationTime: it.reservation_time ?? null }),
       })),

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { TierPicker } from '../components/TierPicker'
-import { CATEGORY_LABEL, categoryIcon, defaultTier } from '../lib/category'
+import { CATEGORY_LABEL, defaultTier } from '../lib/category'
+import { itemIcon } from '../lib/placeIcons'
 import { formatDate, formatTime } from '../lib/time'
 import { useTrip } from '../store/trip'
 import { StateCard } from '../components/StateCard'
@@ -87,7 +88,7 @@ export default function Grade() {
                   <fieldset key={it.id} className={`grade__item tp-fabric${edited ? ' grade__item--edited' : ''}`}>
                     <legend className="sr-only">{it.title} 중요도</legend>
                     <div className="grade__item-head">
-                      <img src={categoryIcon(it.category)} alt="" aria-hidden="true" />
+                      <img src={itemIcon(it)} alt="" aria-hidden="true" />
                       <span>
                         <b>{it.title}</b>
                         <span>

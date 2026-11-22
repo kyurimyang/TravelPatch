@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import type { BuiltPlan, DisruptionEvent, RecoveryResult } from '../api/types'
 import delayPatch from '../assets/patches/hole-delay.svg'
 import { OP_LABEL } from '../components/DiffRow'
-import { CATEGORY_ICON, DEFAULT_ICON } from '../lib/placeIcons'
+import { DEFAULT_ICON, iconsById } from '../lib/placeIcons'
 import { strategyLabel } from '../lib/strategy'
 import { patchFrom } from '../lib/patches'
 import type { RecoverySource } from '../lib/recovery'
@@ -22,7 +22,7 @@ export default function Stitched() {
     patchId?: string
     titles?: Record<string, string>
   } | null
-  const { stitch, unstitch } = useTrip()
+  const { trip, stitch, unstitch } = useTrip()
   const result = navState?.result
   const date = navState?.plan?.day.date ?? null
   // Only a registered trip is saved; the example trip is a demo and leaves nothing behind.
@@ -41,6 +41,7 @@ export default function Stitched() {
   }
   const titles = navState?.titles ?? {}
   const activities = new Map((navState?.plan?.activities ?? []).map((a) => [a.id, a]))
+  const iconOf = iconsById(navState?.source === 'trip' ? trip : null, navState?.plan?.activities ?? [])
 
   // Opened without a chosen patch (e.g. typed URL): nothing to show.
   if (!result) {
@@ -99,7 +100,7 @@ export default function Stitched() {
               return (
                 <li key={c.activity_id} className={patched ? 'stitched__row--patched' : undefined}>
                   <span className="stitched__time">{formatTime(c.after!.start)}</span>
-                  <img src={(a && CATEGORY_ICON[a.category]) ?? DEFAULT_ICON} alt="" aria-hidden="true" />
+                  <img src={iconOf.get(c.activity_id) ?? DEFAULT_ICON} alt="" aria-hidden="true" />
                   <span className="stitched__text">
                     <b>
                       {c.substitute_id

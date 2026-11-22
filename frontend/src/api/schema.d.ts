@@ -346,6 +346,8 @@ export interface components {
             note?: string | null;
             /** Place Query */
             place_query?: string | null;
+            /** Patch */
+            patch?: ("worship" | "museum" | "viewpoint" | "bar" | "market" | "nature" | "spa" | "beach" | "lodging" | "theme_park" | "venue" | "mall") | null;
         };
         /** DraftItinerary */
         DraftItinerary: {
@@ -965,7 +967,9 @@ export interface operations {
     create_recovery_recoveries_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1064,7 +1068,9 @@ export interface operations {
     interpret_disruptions_interpret_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1097,7 +1103,9 @@ export interface operations {
     parse_itineraries_parse_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1135,7 +1143,9 @@ export interface operations {
                 /** @description hotel place_id */
                 near?: string | null;
             };
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1164,7 +1174,9 @@ export interface operations {
     build_plans_build_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };

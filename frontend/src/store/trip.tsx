@@ -27,6 +27,8 @@ import { useAuth } from './auth'
 
 type Schemas = components['schemas']
 export type Category = Schemas['DraftItem']['category']
+/** Place kind for the patch picture (worship, museum, ...), chosen by the parser. */
+export type PatchKind = NonNullable<Schemas['DraftItem']['patch']>
 export type DraftIssue = Schemas['DraftIssue']
 
 export type TripItem = {
@@ -45,6 +47,8 @@ export type TripItem = {
   /** Place name from the line ("오모테산도 산책" -> "오모테산도"), searched instead of the title.
    *  Missing on trips saved before 2026-11-18. */
   placeQuery?: string | null
+  /** Patch picture kind. null = the category's picture. Missing on trips saved before 2026-11-22. */
+  patch?: PatchKind | null
   /** Google place_id the user picked. null = not picked yet. */
   placeId: string | null
   tier: Tier

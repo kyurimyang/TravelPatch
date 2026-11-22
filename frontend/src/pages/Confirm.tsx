@@ -4,7 +4,8 @@ import { searchPlaces } from '../api/places'
 import type { PlaceOption } from '../api/types'
 import { PlaceSearch } from '../components/PlaceSearch'
 import { TimeEditor } from '../components/TimeEditor'
-import { CATEGORY_LABEL, categoryIcon } from '../lib/category'
+import { CATEGORY_LABEL } from '../lib/category'
+import { itemIcon } from '../lib/placeIcons'
 import { formatDate, formatTime, parseTime, tripLength } from '../lib/time'
 import { useTrip, type DraftIssue, type TripItem } from '../store/trip'
 import { withJosa } from '../lib/josa'
@@ -279,7 +280,7 @@ export default function Confirm() {
           {day.items.map((it, index) => (
             <div className="confirm__card tp-fabric" key={it.id}>
               <div className="confirm__card-row">
-                <img src={categoryIcon(it.category)} alt="" aria-hidden="true" />
+                <img src={itemIcon(it)} alt="" aria-hidden="true" />
                 <div className="confirm__card-text">
                   <span>
                     {hasTime(it) ? `${formatTime(it.start!)}–${formatTime(it.end!)}` : '시각 없음'} ·{' '}

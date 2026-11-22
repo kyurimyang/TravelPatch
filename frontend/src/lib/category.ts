@@ -1,6 +1,6 @@
 import type { Category, TripItem } from '../store/trip'
 import type { Tier } from './tier'
-import { CATEGORY_ICON, DEFAULT_ICON } from './placeIcons'
+import { itemIcon } from './placeIcons'
 
 export const CATEGORY_LABEL: Record<Category, string> = {
   meal: '식사',
@@ -11,8 +11,9 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   other: '기타',
 }
 
+/** The category's patch picture, for places without an item (e.g. a category summary). */
 export function categoryIcon(category: string): string {
-  return CATEGORY_ICON[category] ?? DEFAULT_ICON
+  return itemIcon({ category })
 }
 
 /** The tier a new item starts with until the LLM step exists: reserved -> must, else nice

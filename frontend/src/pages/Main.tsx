@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { HoleAlert, isLate } from '../components/HoleAlert'
-import { CATEGORY_LABEL, categoryIcon } from '../lib/category'
+import { CATEGORY_LABEL } from '../lib/category'
+import { itemIcon } from '../lib/placeIcons'
 import type { Tier } from '../lib/tier'
 import { formatDate, formatTime, tripLength } from '../lib/time'
 import { deviceNow, nextItem } from '../lib/today'
@@ -110,7 +111,7 @@ export default function Main() {
                 {it.start != null && formatTime(it.start)} {it.title}
                 {it.id === next?.id && ' · 다음'}
               </span>
-              <img src={categoryIcon(it.category)} alt="" aria-hidden="true" />
+              <img src={itemIcon(it)} alt="" aria-hidden="true" />
             </div>
           )
         })}
@@ -129,7 +130,7 @@ export default function Main() {
 
       {next ? (
         <section className="main-screen__next tp-fabric" aria-label="다음 일정">
-          <img src={categoryIcon(next.category)} alt="" aria-hidden="true" />
+          <img src={itemIcon(next)} alt="" aria-hidden="true" />
           <div>
             <span>
               {isToday ? '다음 일정' : '첫 일정'} · <b>{formatTime(next.start!)} 시작</b>
@@ -166,7 +167,7 @@ export default function Main() {
                 <span className={isNext ? 'main-screen__time main-screen__time--next' : 'main-screen__time'}>
                   {it.start != null ? formatTime(it.start) : '--:--'}
                 </span>
-                <img src={categoryIcon(it.category)} alt="" aria-hidden="true" />
+                <img src={itemIcon(it)} alt="" aria-hidden="true" />
                 <span className="main-screen__piece-text">
                   <b>{it.dropped ? <s>{it.title}</s> : it.title}</b>
                   <span>
