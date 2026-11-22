@@ -12,6 +12,10 @@ def _item(title="x", **fields) -> ParsedItem:
         "note": None,
         "place_query": None,
         "patch": None,
+        "role": "activity",
+        "address": None,
+        "within": None,
+        "spot": None,
     }
     return ParsedItem(**{**base, **fields})
 
@@ -47,7 +51,7 @@ def test_blank_place_query_is_none():
 
 
 def _day(*items: ParsedItem):
-    return build_draft(ParsedItinerary(days=[ParsedDay(day_label="1일차", items=list(items))])).days[0]
+    return build_draft(ParsedItinerary(days=[ParsedDay(day_label="1일차", theme=None, items=list(items))])).days[0]
 
 
 def _codes(day) -> list[str]:
@@ -119,5 +123,5 @@ def test_untimed_item_between_timed_ones_does_not_hide_an_overlap():
 
 
 def test_same_input_gives_the_same_draft():
-    parsed = ParsedItinerary(days=[ParsedDay(day_label=None, items=[_item(start="08:00")])])
+    parsed = ParsedItinerary(days=[ParsedDay(day_label=None, theme=None, items=[_item(start="08:00")])])
     assert build_draft(parsed) == build_draft(parsed)

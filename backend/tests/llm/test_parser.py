@@ -1,3 +1,5 @@
+from typing import get_args
+
 import pytest
 
 from app.llm.parser import (
@@ -7,6 +9,7 @@ from app.llm.parser import (
     ParsedDay,
     ParsedItem,
     ParsedItinerary,
+    Role,
     TextTooLongError,
     parse_itinerary,
 )
@@ -34,13 +37,17 @@ def _item(title: str, **fields) -> ParsedItem:
         "note": None,
         "place_query": None,
         "patch": None,
+        "role": "activity",
+        "address": None,
+        "within": None,
+        "spot": None,
     }
     return ParsedItem(**{**base, **fields})
 
 
 def test_passes_trimmed_text_and_schema_to_provider():
     answer = ParsedItinerary(
-        days=[ParsedDay(day_label="1일차", items=[_item("센소지", start="09:00")])]
+        days=[ParsedDay(day_label="1일차", theme=None, items=[_item("센소지", start="09:00")])]
     )
     provider = FakeProvider(answer)
     result = parse_itinerary(provider, "  1일차\n09:00 센소지  ")
@@ -80,3 +87,13 @@ def test_patch_kind_outside_the_list_is_rejected_by_the_schema():
 def test_every_patch_kind_is_named_in_the_prompt():
     for kind in PATCH_KINDS:
         assert kind in SYSTEM_PROMPT
+
+
+def test_role_outside_the_list_is_rejected_by_the_schema():
+    with pytest.raises(ValueError):
+        _item("x", role="meal")
+
+
+def test_every_role_is_named_in_the_prompt():
+    for role in get_args(Role):
+        assert role in SYSTEM_PROMPT
