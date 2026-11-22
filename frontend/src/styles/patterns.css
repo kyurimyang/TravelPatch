@@ -24,8 +24,10 @@
 --tp-plaid:repeating-linear-gradient(0deg,rgba(60,30,15,.55) 0 3px,transparent 3px 12px,rgba(60,30,15,.3) 12px 14px,transparent 14px 24px),repeating-linear-gradient(90deg,rgba(60,30,15,.55) 0 3px,transparent 3px 12px,rgba(60,30,15,.3) 12px 14px,transparent 14px 24px),var(--tp-tan);
 /* red floral: 장식 원단 */
 --tp-redfloral:radial-gradient(circle,var(--tp-lace) 2.2px,transparent 2.8px) 0 0/18px 18px,radial-gradient(circle,var(--tp-lace) 1.4px,transparent 2px) 9px 9px/18px 18px,var(--tp-rust);
-/* ground: indigo denim twill + weft specks and faded warp streaks */
---tp-weave:var(--tp-tex-denim),repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 1px,transparent 1px 3px),repeating-linear-gradient(45deg,rgba(0,0,0,.2) 0 1px,transparent 1px 4px),var(--tp-indigo);
+/* ground grain: fine specks only, no warp streaks (those read as a loud barcode and band at the tile seams on a big area) */
+--tp-tex-denim-soft:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.8 0 0 0 -0.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)' opacity='.3'/%3E%3C/svg%3E");
+/* ground: indigo denim twill + faint specks */
+--tp-weave:var(--tp-tex-denim-soft),repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 1px,transparent 1px 3px),repeating-linear-gradient(45deg,rgba(0,0,0,.2) 0 1px,transparent 1px 4px),var(--tp-indigo);
 /* 다음 조각: butter floral */
 --tp-butterfloral:radial-gradient(circle,var(--tp-pink) 2.4px,transparent 3px) 0 0/16px 16px,radial-gradient(circle,var(--tp-denim-deep) 1.6px,transparent 2.2px) 8px 8px/16px 16px,var(--tp-butter);
 }
