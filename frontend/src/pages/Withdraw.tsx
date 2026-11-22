@@ -57,7 +57,7 @@ export default function Withdraw() {
           <li>패치워크와 배지</li>
           <li>연결된 Google 로그인</li>
         </ul>
-        <p className="account__hint">법령에 따라 보관해야 하는 정보는 [작성 필요: 보관 기간] 동안 따로 보관한 뒤 지워요.</p>
+        <p className="account__hint">법령에 따라 따로 보관하는 정보는 없어요. 계정과 서버 기록까지 지우려면 kyurim1006@gmail.com으로 요청해 주세요.</p>
       </section>
 
       <fieldset className="settings__group withdraw__reasons">
