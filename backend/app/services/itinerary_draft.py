@@ -2,8 +2,12 @@
 
 Pure and deterministic. It converts "HH:MM" to minutes since midnight, fills a missing end
 time from a per-category default length (marked `duration_estimated`), and lists what the user
-must check. It never reorders, drops or invents items, and it never guesses a missing start
-time: that becomes an issue (invariant 8).
+must check. It never reorders or invents items, and it never guesses a missing start time: that
+becomes an issue (invariant 8). Transport, hotel and airport blocks are turned into legs, the
+day's end and the flights by `itinerary_blocks` (step 2a), not dropped.
+
+Given the pasted text, it also checks the model's times against it: an end the model left out
+is restored when the text writes that start as a range ("13:00~16:00").
 """
 
 import re
@@ -11,6 +15,7 @@ import re
 from app.llm.parser import ParsedDay, ParsedItem, ParsedItinerary
 from app.schemas.itinerary import DraftDay, DraftIssue, DraftItem, DraftItinerary
 from app.schemas.models import MINUTES_PER_DAY
+from app.services.itinerary_blocks import find_hotel_query, shape_day
 
 # Draft values, shown to the user as estimates ("약 60분") and easy to change on the confirm screen.
 DEFAULT_MINUTES: dict[str, int] = {
@@ -23,6 +28,10 @@ DEFAULT_MINUTES: dict[str, int] = {
 }
 
 _TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)$")
+# "13:00~16:00", "9:00 - 9:50", "10:00–11:00" anywhere in a line of the pasted text.
+_RANGE_RE = re.compile(r"(?<!\d)(\d{1,2}):(\d{2})\s*[~\-–—]\s*(\d{1,2}):(\d{2})(?!\d)")
+# A leading label that only names the category: "점심 식사: Fumotoya" -> "Fumotoya".
+_LABEL_RE = re.compile(r"^[^\W\d][^:：\d]{0,14}[:：]\s*(\S.*)$")
 
 
 def _minutes(text: str | None) -> int | None:
@@ -33,6 +42,42 @@ def _minutes(text: str | None) -> int | None:
     if match is None:
         raise ValueError(text)
     return int(match.group(1)) * 60 + int(match.group(2))
+
+
+def written_ranges(text: str) -> list[tuple[str, str]]:
+    """Every time range written in the text, in order, as zero-padded ("HH:MM", "HH:MM")."""
+    return [
+        (f"{int(h1):02d}:{m1}", f"{int(h2):02d}:{m2}") for h1, m1, h2, m2 in _RANGE_RE.findall(text)
+    ]
+
+
+def _with_written_ends(
+    days: list[list[ParsedItem]], ranges: list[tuple[str, str]]
+) -> list[list[ParsedItem]]:
+    """Restore ends the model left out. Blocks come in the order written, so each start is
+    matched with the next range in the text that starts there (a cursor that only moves on):
+    "13:00" on day 2 never takes day 1's "13:00~14:00"."""
+    cursor = 0
+    out: list[list[ParsedItem]] = []
+    for day in days:
+        fixed: list[ParsedItem] = []
+        for item in day:
+            match = _TIME_RE.match((item.start or "").strip())
+            if match is not None:
+                start = f"{int(match.group(1)):02d}:{match.group(2)}"
+                at = next((i for i in range(cursor, len(ranges)) if ranges[i][0] == start), None)
+                if at is not None:
+                    cursor = at + 1
+                    if not item.end:
+                        item = item.model_copy(update={"end": ranges[at][1]})
+            fixed.append(item)
+        out.append(fixed)
+    return out
+
+
+def _title(raw: str) -> str:
+    match = _LABEL_RE.match(raw.strip())
+    return match.group(1).strip() if match else raw
 
 
 def _squash(text: str) -> str:
@@ -49,7 +94,7 @@ def _place_query(item: ParsedItem) -> str | None:
     return query if _squash(query) in written else None
 
 
-def _convert_item(index: int, item: ParsedItem) -> tuple[DraftItem, list[DraftIssue]]:
+def _convert_item(index: int, item: ParsedItem, role: str) -> tuple[DraftItem, list[DraftIssue]]:
     issues: list[DraftIssue] = []
 
     def read(raw: str | None, which: str) -> int | None:
@@ -81,8 +126,9 @@ def _convert_item(index: int, item: ParsedItem) -> tuple[DraftItem, list[DraftIs
         else:
             reservation = start
     draft = DraftItem(
-        title=item.title,
+        title=_title(item.title),
         category=item.category,
+        role=role,
         start=start,
         end=end,
         duration_estimated=estimated,
@@ -110,17 +156,37 @@ def _check_sequence(items: tuple[DraftItem, ...]) -> list[DraftIssue]:
     return out
 
 
-def _convert_day(day: ParsedDay) -> DraftDay:
+def _convert_day(blocks: list[ParsedItem], day: ParsedDay, hotel: str | None) -> DraftDay:
+    shape = shape_day(blocks, hotel)
     items: list[DraftItem] = []
     issues: list[DraftIssue] = []
-    for index, parsed in enumerate(day.items):
-        draft, found = _convert_item(index, parsed)
+    for index, (parsed, role) in enumerate(zip(shape.items, shape.roles, strict=True)):
+        draft, found = _convert_item(index, parsed, role)
         items.append(draft)
         issues.extend(found)
     issues.extend(_check_sequence(tuple(items)))
     issues.sort(key=lambda i: (i.item, i.code))  # deterministic order for the UI and tests
-    return DraftDay(day_label=day.day_label, items=tuple(items), issues=tuple(issues))
+    return DraftDay(
+        day_label=day.day_label,
+        theme=day.theme,
+        items=tuple(items),
+        legs=tuple(shape.legs),
+        arrival=shape.arrival,
+        departure=shape.departure,
+        end_time=shape.end_time,
+        issues=tuple(issues),
+    )
 
 
-def build_draft(parsed: ParsedItinerary) -> DraftItinerary:
-    return DraftItinerary(days=tuple(_convert_day(d) for d in parsed.days))
+def build_draft(parsed: ParsedItinerary, text: str | None = None) -> DraftItinerary:
+    """`text` is the pasted text the parser read; with it, times are checked against it."""
+    days = [list(d.items) for d in parsed.days]
+    if text:
+        days = _with_written_ends(days, written_ranges(text))
+    hotel = find_hotel_query(days)
+    if hotel is not None and text is not None and _squash(hotel) not in _squash(text):
+        hotel = None  # not written: a guess (invariant 8)
+    return DraftItinerary(
+        hotel_query=hotel,
+        days=tuple(_convert_day(b, d, hotel) for b, d in zip(days, parsed.days, strict=True)),
+    )

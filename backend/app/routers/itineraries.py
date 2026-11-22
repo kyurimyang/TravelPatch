@@ -33,4 +33,4 @@ def parse(
             draft=None,
             problem=ParseProblem(code="NOTHING_FOUND", detail="no item in the text"),
         )
-    return ParseResponse(status="ok", draft=build_draft(parsed))
+    return ParseResponse(status="ok", draft=build_draft(parsed, req.text))

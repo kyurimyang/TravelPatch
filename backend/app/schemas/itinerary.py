@@ -28,6 +28,9 @@ class DraftIssue(_Frozen):
 class DraftItem(_Frozen):
     title: str
     category: Literal["meal", "sightseeing", "shopping", "cafe", "transport", "other"]
+    # lodging = something done at the traveler's own hotel; airport = an airport block that is
+    # not the day's arrival or departure. Transport blocks never become items (see DraftLeg).
+    role: Literal["activity", "lodging", "airport"] = "activity"
     start: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
     end: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
     # True when `end` was filled from the category default, not written by the user.
@@ -40,13 +43,46 @@ class DraftItem(_Frozen):
     patch: PatchKind | None = None
 
 
+class DraftLeg(_Frozen):
+    """A transport block, kept as the way between two items, not as an item. `after` / `before`
+    are item indexes; None = the day's start (hotel or arrival airport) / end."""
+
+    after: int | None = Field(ge=0)
+    before: int | None = Field(ge=0)
+    start: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
+    end: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
+    title: str
+    note: str | None = None
+
+
+class DraftFlight(_Frozen):
+    """Airport blocks at the start / end of a day, read as the arrival / departure flight.
+    `time` is landing / take-off. `time_written` is False when the text gives no take-off and
+    the last airport block's end stands in: the screen asks the user to check it."""
+
+    airport_query: str | None
+    time: int = Field(ge=0, le=MINUTES_PER_DAY)
+    buffer_minutes: int | None = Field(ge=0, le=MINUTES_PER_DAY)
+    time_written: bool
+    absorbed: tuple[str, ...] = ()  # titles of the blocks this flight stands for
+
+
 class DraftDay(_Frozen):
     day_label: str | None
+    theme: str | None = None
     items: tuple[DraftItem, ...]
+    legs: tuple[DraftLeg, ...] = ()
+    arrival: DraftFlight | None = None
+    departure: DraftFlight | None = None
+    # When the text has the day end at the hotel (its trailing transport / lodging blocks end).
+    # None = not written: the trip's default deadline applies.
+    end_time: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
     issues: tuple[DraftIssue, ...] = ()
 
 
 class DraftItinerary(_Frozen):
+    # The traveler's hotel as written (the name lodging blocks use most). None = not written.
+    hotel_query: str | None = None
     days: tuple[DraftDay, ...]
 
 

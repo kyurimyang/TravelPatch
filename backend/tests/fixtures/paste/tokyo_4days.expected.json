@@ -1,0 +1,597 @@
+{
+  "source": "tokyo_4days.txt",
+  "status": "draft: all days, under review",
+  "trip": {
+    "hotel": {
+      "source": "written",
+      "name": "신주쿠 워싱턴 호텔"
+    }
+  },
+  "days": [
+    {
+      "day_label": "DAY 1",
+      "theme": "나리타 도착 → 신주쿠 관광 → 재즈바",
+      "arrival": {
+        "airport": {
+          "source": "written",
+          "name": "나리타 국제공항"
+        },
+        "time": "10:00",
+        "buffer_minutes": 60,
+        "absorbed": [
+          "10:00~11:00 나리타 국제공항 제1·2·3터미널 도착 및 입국 수속"
+        ]
+      },
+      "start": {
+        "time": "11:00",
+        "place": "arrival_airport"
+      },
+      "end": {
+        "deadline": "22:00",
+        "place": "hotel",
+        "absorbed": [
+          "21:30~22:00 호텔 복귀 및 휴식"
+        ]
+      },
+      "items": [
+        {
+          "start": "12:30",
+          "end": "13:00",
+          "role": "lodging",
+          "category": "other",
+          "title": "신주쿠역에서 신주쿠 워싱턴 호텔까지 도보 이동 및 짐 보관",
+          "place": {
+            "source": "hotel",
+            "name": null,
+            "address": null
+          },
+          "spot": null,
+          "note": null
+        },
+        {
+          "start": "13:00",
+          "end": "14:00",
+          "role": "activity",
+          "category": "meal",
+          "title": "Fumotoya (麓屋)",
+          "place": {
+            "source": "written",
+            "name": "Fumotoya",
+            "address": "2-2-1 Nishi-Shinjuku, Shinjuku City, Tokyo, Keio Plaza Hotel 1F, Japan"
+          },
+          "spot": null,
+          "note": "메뉴: 일본식 소바, 튀김, 샤브샤브"
+        },
+        {
+          "start": "14:00",
+          "end": "15:30",
+          "role": "activity",
+          "category": "sightseeing",
+          "title": "Shinjuku Gyoen National Garden (신주쿠 교엔)",
+          "place": {
+            "source": "written",
+            "name": "Shinjuku Gyoen National Garden",
+            "address": "11 Naitomachi, Shinjuku City, Tokyo 160-0014, Japan"
+          },
+          "spot": null,
+          "note": "활동: 일본식 정원 산책, 연못 및 정원 풍경 감상, 사진 촬영"
+        },
+        {
+          "start": "15:30",
+          "end": "16:15",
+          "role": "activity",
+          "category": "cafe",
+          "title": "All Seasons Coffee",
+          "place": {
+            "source": "written",
+            "name": "All Seasons Coffee",
+            "address": "2-7-7 Shinjuku, Shinjuku City, Tokyo 160-0022, Japan"
+          },
+          "spot": null,
+          "note": "활동: 핸드드립 커피 및 푸딩 즐기기"
+        },
+        {
+          "start": "16:15",
+          "end": "16:45",
+          "role": "lodging",
+          "category": "other",
+          "title": "신주쿠 워싱턴 호텔 이동 및 체크인",
+          "place": {
+            "source": "hotel",
+            "name": null,
+            "address": null
+          },
+          "spot": null,
+          "note": null
+        },
+        {
+          "start": "16:45",
+          "end": "17:30",
+          "role": "activity",
+          "category": "sightseeing",
+          "title": "Tokyo Metropolitan Government Building Observatory (도쿄도청 전망대)",
+          "place": {
+            "source": "written",
+            "name": "Tokyo Metropolitan Government Building Observatory",
+            "address": "2-8-1 Nishi-Shinjuku, Shinjuku City, Tokyo 163-8001, Japan"
+          },
+          "spot": null,
+          "note": "활동: 무료 전망대 관람 및 도쿄 시내 전망 감상"
+        },
+        {
+          "start": "18:00",
+          "end": "19:00",
+          "role": "activity",
+          "category": "meal",
+          "title": "Omoide Yokocho (오모이데 요코초)",
+          "place": {
+            "source": "written",
+            "name": "Omoide Yokocho",
+            "address": "1-2-2 Nishishinjuku, Shinjuku City, Tokyo 160-0023, Japan"
+          },
+          "spot": null,
+          "note": "활동: 골목 구경, 야키토리 및 일본식 선술집 음식 체험"
+        },
+        {
+          "start": "19:30",
+          "end": "21:30",
+          "role": "activity",
+          "category": "other",
+          "title": "Shinjuku Pit Inn (新宿ピットイン)",
+          "place": {
+            "source": "written",
+            "name": "Shinjuku Pit Inn",
+            "address": "Accord Shinjuku Building B1F, 2-12-4 Shinjuku, Shinjuku City, Tokyo 160-0022, Japan"
+          },
+          "spot": null,
+          "note": "활동: 일본 현지 재즈 라이브 공연 감상\n※ 당일 공연 시간과 출연진은 추후 공식 공연 일정 확인 필요"
+        }
+      ],
+      "legs": [
+        {
+          "after": "start",
+          "before": 0,
+          "start": "11:00",
+          "end": "12:30",
+          "note": "나리타 공항에서 JR 나리타 익스프레스(N'EX)를 이용해 신주쿠역으로 이동"
+        },
+        {
+          "after": 5,
+          "before": 6,
+          "start": "17:30",
+          "end": "18:00",
+          "note": "신주쿠 오모이데 요코초 이동"
+        },
+        {
+          "after": 6,
+          "before": 7,
+          "start": "19:00",
+          "end": "19:30",
+          "note": "신주쿠 산초메 이동"
+        }
+      ],
+      "needs_check": [],
+      "expected_user_fixes": 0
+    },
+    {
+      "day_label": "DAY 2",
+      "theme": "도쿄 디즈니랜드 종일 관광",
+      "start": {
+        "time": "07:00",
+        "place": "hotel"
+      },
+      "end": {
+        "deadline": "22:00",
+        "place": "hotel"
+      },
+      "items": [
+        {
+          "start": "07:00",
+          "end": "08:00",
+          "role": "lodging",
+          "category": "meal",
+          "title": "기상 및 호텔 조식",
+          "place": {
+            "source": "hotel",
+            "name": null,
+            "address": null
+          },
+          "spot": null,
+          "note": null
+        },
+        {
+          "start": "09:00",
+          "end": "12:00",
+          "role": "activity",
+          "category": "sightseeing",
+          "title": "Tokyo Disneyland (도쿄 디즈니랜드)",
+          "place": {
+            "source": "written",
+            "name": "Tokyo Disneyland",
+            "address": "1-1 Maihama, Urayasu, Chiba 279-0031, Japan"
+          },
+          "spot": null,
+          "note": "활동: 입장, 월드 바자, 어트랙션 이용\n주요 방문 구역: 월드 바자, 어드벤처랜드, 웨스턴랜드, 판타지랜드"
+        },
+        {
+          "start": "12:00",
+          "end": "13:00",
+          "role": "activity",
+          "category": "meal",
+          "title": "Queen of Hearts Banquet Hall",
+          "place": {
+            "source": "venue",
+            "name": "Tokyo Disneyland",
+            "address": null
+          },
+          "spot": "Queen of Hearts Banquet Hall · Tokyo Disneyland Fantasyland",
+          "note": "활동: 디즈니 테마 레스토랑에서 점심 식사"
+        },
+        {
+          "start": "13:00",
+          "end": "16:00",
+          "role": "activity",
+          "category": "sightseeing",
+          "title": "어트랙션 이용",
+          "place": {
+            "source": "venue",
+            "name": "Tokyo Disneyland",
+            "address": null
+          },
+          "spot": null,
+          "note": "Enchanted Tale of Beauty and the Beast\nPooh's Hunny Hunt\nMonsters, Inc. Ride & Go Seek!\nHaunted Mansion"
+        },
+        {
+          "start": "16:00",
+          "end": "17:00",
+          "role": "activity",
+          "category": "cafe",
+          "title": "간식 및 휴식",
+          "place": {
+            "source": "venue",
+            "name": "Tokyo Disneyland",
+            "address": null
+          },
+          "spot": "Sweetheart Cafe 또는 The Gazebo",
+          "note": null
+        },
+        {
+          "start": "17:00",
+          "end": "18:00",
+          "role": "activity",
+          "category": "sightseeing",
+          "title": "퍼레이드 및 디즈니랜드 구경",
+          "place": {
+            "source": "venue",
+            "name": "Tokyo Disneyland",
+            "address": null
+          },
+          "spot": "Cinderella Castle 주변 및 Parade Route",
+          "note": null
+        },
+        {
+          "start": "18:00",
+          "end": "19:00",
+          "role": "activity",
+          "category": "meal",
+          "title": "Hungry Bear Restaurant",
+          "place": {
+            "source": "venue",
+            "name": "Tokyo Disneyland",
+            "address": null
+          },
+          "spot": "Hungry Bear Restaurant · Tokyo Disneyland Westernland",
+          "note": "활동: 카레 메뉴 및 저녁 식사"
+        },
+        {
+          "start": "19:00",
+          "end": "20:30",
+          "role": "activity",
+          "category": "sightseeing",
+          "title": "야간 퍼레이드 및 야간 조명 감상",
+          "place": {
+            "source": "venue",
+            "name": "Tokyo Disneyland",
+            "address": null
+          },
+          "spot": "Cinderella Castle 및 World Bazaar 주변",
+          "note": null
+        },
+        {
+          "start": "20:30",
+          "end": "21:00",
+          "role": "activity",
+          "category": "shopping",
+          "title": "기념품 쇼핑",
+          "place": {
+            "source": "venue",
+            "name": "Tokyo Disneyland",
+            "address": null
+          },
+          "spot": "Grand Emporium (World Bazaar)",
+          "note": null
+        }
+      ],
+      "legs": [
+        {
+          "after": 0,
+          "before": 1,
+          "start": "08:00",
+          "end": "09:00",
+          "note": "이동 경로: 호텔 → JR 신주쿠역 → JR 주오선 → 도쿄역 → JR 게이요선 → 마이하마역 → 도보 → 도쿄 디즈니랜드"
+        },
+        {
+          "after": 8,
+          "before": "end",
+          "start": "21:00",
+          "end": "22:00",
+          "note": "마이하마역에서 JR 게이요선 및 주오선 환승을 통해 신주쿠 호텔 복귀"
+        }
+      ],
+      "needs_check": [],
+      "expected_user_fixes": 0
+    },
+    {
+      "day_label": "DAY 3",
+      "theme": "아사쿠사 관광 → 긴자 쇼핑 → 이자카야",
+      "start": {
+        "time": "08:00",
+        "place": "hotel"
+      },
+      "end": {
+        "deadline": "22:00",
+        "place": "hotel",
+        "absorbed": [
+          "21:20~22:00 호텔 도착 및 휴식"
+        ]
+      },
+      "items": [
+        {
+          "start": "08:00",
+          "end": "09:00",
+          "role": "lodging",
+          "category": "meal",
+          "title": "기상 및 조식",
+          "place": {
+            "source": "hotel",
+            "name": null,
+            "address": null
+          },
+          "spot": null,
+          "note": null
+        },
+        {
+          "start": "09:50",
+          "end": "10:20",
+          "role": "activity",
+          "category": "sightseeing",
+          "title": "Kaminarimon (가미나리몬, 센소지 입구)",
+          "place": {
+            "source": "written",
+            "name": "Kaminarimon",
+            "address": "2-3-1 Asakusa, Taito City, Tokyo 111-0032, Japan"
+          },
+          "spot": null,
+          "note": "활동: 대형 붉은 등 사진 촬영 및 관광"
+        },
+        {
+          "start": "10:20",
+          "end": "11:15",
+          "role": "activity",
+          "category": "sightseeing",
+          "title": "Nakamise Shopping Street (나카미세 거리)",
+          "place": {
+            "source": "written",
+            "name": "Nakamise Shopping Street",
+            "address": "1-36-3 Asakusa, Taito City, Tokyo 111-0032, Japan"
+          },
+          "spot": null,
+          "note": "활동: 일본 전통 간식, 기념품, 길거리 먹거리 구경"
+        },
+        {
+          "start": "11:15",
+          "end": "12:00",
+          "role": "activity",
+          "category": "sightseeing",
+          "title": "Senso-ji Temple (센소지)",
+          "place": {
+            "source": "written",
+            "name": "Senso-ji Temple",
+            "address": "2-3-1 Asakusa, Taito City, Tokyo 111-0032, Japan"
+          },
+          "spot": null,
+          "note": "활동: 호조몬, 본당, 오미쿠지 체험 및 사찰 관람"
+        },
+        {
+          "start": "12:00",
+          "end": "13:00",
+          "role": "activity",
+          "category": "meal",
+          "title": "Tempura Asakusa SAKURA",
+          "place": {
+            "source": "written",
+            "name": "Tempura Asakusa SAKURA",
+            "address": "THE CITY Asakusa Kaminarimon 7F, 2-18-16 Kaminarimon, Taito City, Tokyo 111-0032, Japan"
+          },
+          "spot": null,
+          "note": "메뉴: 일본식 튀김 정식 및 텐동"
+        },
+        {
+          "start": "13:40",
+          "end": "15:00",
+          "role": "activity",
+          "category": "shopping",
+          "title": "GINZA SIX",
+          "place": {
+            "source": "written",
+            "name": "GINZA SIX",
+            "address": "6-10-1 Ginza, Chuo City, Tokyo 104-0061, Japan"
+          },
+          "spot": null,
+          "note": "활동: 브랜드 매장 쇼핑, 백화점 구경, 루프탑 가든 관람"
+        },
+        {
+          "start": "15:00",
+          "end": "16:00",
+          "role": "activity",
+          "category": "cafe",
+          "title": "Nakamura Tokichi Ginza Store (中村藤吉 銀座店)",
+          "place": {
+            "source": "written",
+            "name": "Nakamura Tokichi Ginza Store",
+            "address": "GINZA SIX 4F, 6-10-1 Ginza, Chuo City, Tokyo 104-0061, Japan"
+          },
+          "spot": null,
+          "note": "활동: 우지 말차 파르페, 일본식 디저트 및 차 즐기기"
+        },
+        {
+          "start": "16:00",
+          "end": "17:30",
+          "role": "activity",
+          "category": "shopping",
+          "title": "Ginza Itoya (銀座 伊東屋)",
+          "place": {
+            "source": "written",
+            "name": "Ginza Itoya",
+            "address": "2-7-15 Ginza, Chuo City, Tokyo 104-0061, Japan"
+          },
+          "spot": null,
+          "note": "활동: 일본 문구류, 다이어리, 디자인 소품 및 기념품 쇼핑"
+        },
+        {
+          "start": "18:00",
+          "end": "19:30",
+          "role": "activity",
+          "category": "meal",
+          "title": "Kushiyaki Bistro Fukumimi Ginza 5 (串焼BISTRO 福みみ 銀座5)",
+          "place": {
+            "source": "written",
+            "name": "Kushiyaki Bistro Fukumimi Ginza 5",
+            "address": "Ginza YK Building B1F, 5-10-9 Ginza, Chuo City, Tokyo 104-0061, Japan"
+          },
+          "spot": null,
+          "note": "메뉴: 일본식 야키토리, 숯불 꼬치구이, 이자카야 안주\n활동: 일본 현지 이자카야 분위기 체험"
+        },
+        {
+          "start": "19:30",
+          "end": "20:30",
+          "role": "activity",
+          "category": "shopping",
+          "title": "긴자 거리 야간 산책 및 쇼핑",
+          "place": {
+            "source": "previous",
+            "name": null,
+            "address": null
+          },
+          "spot": null,
+          "note": null
+        }
+      ],
+      "legs": [
+        {
+          "after": 0,
+          "before": 1,
+          "start": "09:00",
+          "end": "09:50",
+          "note": "이동 경로: JR 신주쿠역 → JR 주오선 → 간다역 → 도쿄 메트로 긴자선 → 아사쿠사역"
+        },
+        {
+          "after": 4,
+          "before": 5,
+          "start": "13:00",
+          "end": "13:40",
+          "note": "이동 경로: 도쿄 메트로 긴자선 아사쿠사역 → 긴자역"
+        },
+        {
+          "after": 7,
+          "before": 8,
+          "start": "17:30",
+          "end": "18:00",
+          "note": "긴자 거리 산책 및 저녁 식사 장소 이동"
+        },
+        {
+          "after": 9,
+          "before": "end",
+          "start": "20:30",
+          "end": "21:20",
+          "note": "이동 경로: 도쿄 메트로 마루노우치선 긴자역 → 신주쿠역 → 호텔 도보 이동"
+        }
+      ],
+      "needs_check": [],
+      "expected_user_fixes": 0
+    },
+    {
+      "day_label": "DAY 4",
+      "theme": "호텔 체크아웃 → 나리타 국제공항 → 귀국",
+      "departure": {
+        "airport": {
+          "source": "written",
+          "name": "나리타 국제공항"
+        },
+        "time": "12:40",
+        "time_source": "last_airport_block",
+        "buffer_minutes": 130,
+        "absorbed": [
+          "10:30~11:30 나리타 국제공항 도착 및 항공사 체크인, 수하물 위탁",
+          "11:30~12:00 출국 심사 및 면세점 쇼핑",
+          "12:00~12:40 탑승구 이동 및 탑승 대기"
+        ]
+      },
+      "start": {
+        "time": "07:00",
+        "place": "hotel"
+      },
+      "end": {
+        "deadline": "10:30",
+        "place": "departure_airport"
+      },
+      "items": [
+        {
+          "start": "07:00",
+          "end": "07:40",
+          "role": "lodging",
+          "category": "meal",
+          "title": "기상 및 조식",
+          "place": {
+            "source": "hotel",
+            "name": null,
+            "address": null
+          },
+          "spot": null,
+          "note": null
+        },
+        {
+          "start": "07:40",
+          "end": "08:00",
+          "role": "lodging",
+          "category": "other",
+          "title": "짐 정리 및 체크아웃",
+          "place": {
+            "source": "hotel",
+            "name": null,
+            "address": null
+          },
+          "spot": null,
+          "note": null
+        }
+      ],
+      "legs": [
+        {
+          "after": 1,
+          "before": "end",
+          "start": "08:00",
+          "end": "10:30",
+          "note": "이동 방법: 신주쿠 워싱턴 호텔 정문 앞 공항 리무진버스 탑승\n목적지: Narita International Airport\n※ 항공편 출발 시간에 맞춰 08:00 전후 운행편을 확인하고 사전 예약"
+        }
+      ],
+      "needs_check": [
+        {
+          "what": "departure.time",
+          "why": "NOT_WRITTEN",
+          "detail": "출발 시각이 적혀 있지 않아 탑승 대기 끝(12:40)으로 뒀어요"
+        }
+      ],
+      "expected_user_fixes": 1
+    }
+  ]
+}
