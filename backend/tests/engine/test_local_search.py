@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from app.engine.local_search import improve_order
+from app.engine.local_search import _ranked_relocates, improve_order
 from app.engine.presets import STRATEGIES
 from app.engine.recover import original_order, recover, solve_candidate
 from app.engine.validator import validate
@@ -44,6 +44,30 @@ def test_a_swap_that_cuts_rc_by_ten_percent_is_adopted() -> None:
     assert validate(inp, better.changes, BALANCED.min_buffer) == []
 
 
+def test_a_relocation_no_swap_can_reach_is_adopted() -> None:
+    # Moving the 2nd activity to the 5th position cuts RC by 45% (preservation 90.3% -> 100%);
+    # no adjacent swap helps here (measured on eval50, 2026-11-22).
+    inp = _load("eval50/i07_delay.json")
+    base = _base(inp)
+    assert improve_order(inp, BALANCED, base, max_tries=99, max_relocates=0) == base
+    better = improve_order(inp, BALANCED, base)  # default budgets
+    assert better.rc_total <= base.rc_total * 0.9
+    assert better.preservation_rate == 1.0
+    assert better.violations == 0
+    assert validate(inp, better.changes, BALANCED.min_buffer) == []
+
+
+def test_relocations_skip_adjacent_swaps_and_rank_deterministically() -> None:
+    inp = _load("eval50/i07_delay.json")
+    order = original_order(inp)
+    moves = _ranked_relocates(inp, order)
+    n = len(order)
+    assert len(moves) == (n - 1) ** 2 - (n - 1)  # all i -> j, minus the n-1 adjacent swaps
+    assert all(j not in (i - 1, i, i + 1) for i, j in moves)
+    assert moves[0] == (1, 4)  # largest travel saving (55 min), shortest move among ties
+    assert moves == _ranked_relocates(inp, order)
+
+
 def test_threshold_blocks_small_gains() -> None:
     inp = _load("eval50/i07_delay.json")
     base = _base(inp)
@@ -53,7 +77,7 @@ def test_threshold_blocks_small_gains() -> None:
 def test_zero_tries_does_nothing() -> None:
     inp = _load("eval50/i07_delay.json")
     base = _base(inp)
-    assert improve_order(inp, BALANCED, base, max_tries=0) == base
+    assert improve_order(inp, BALANCED, base, max_tries=0, max_relocates=0) == base
 
 
 def test_changes_stay_in_the_original_order() -> None:

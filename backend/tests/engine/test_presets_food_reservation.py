@@ -89,18 +89,20 @@ def test_shown_candidates_are_deterministic() -> None:
 
 
 def test_the_extra_one_left_out_is_the_most_alike() -> None:
-    # i07_delay: balanced, relaxed, food, reservation are all distinct; the one not shown must be
-    # the closest to those shown (fewest activities that differ).
+    # i07_delay: balanced, low_travel, relaxed, food, reservation are all distinct (5 since the
+    # relocation search, 2026-11-22; 4 before); those not shown must be the closest to those
+    # shown (fewest activities that differ).
     from app.engine.recover import shown_distance
 
     inp = load_scenario("eval50/i07_delay.json")
     shown = recover(inp)
     everything = recover(inp, limit=None)
-    assert len(everything) == 4 and len(shown) == 3
-    (left_out,) = [r for r in everything if r not in shown]
-    worst = min(min(shown_distance(left_out, s) for s in shown[:k]) for k in (1, 2))
-    for r in shown[1:]:
-        assert min(shown_distance(r, s) for s in shown[: shown.index(r)]) >= worst
+    assert len(everything) == 5 and len(shown) == 3
+    left_out = [r for r in everything if r not in shown]
+    for lo in left_out:
+        worst = min(min(shown_distance(lo, s) for s in shown[:k]) for k in (1, 2))
+        for r in shown[1:]:
+            assert min(shown_distance(r, s) for s in shown[: shown.index(r)]) >= worst
 
 
 def test_a_rule_with_nothing_to_act_on_is_not_solved_again(monkeypatch) -> None:

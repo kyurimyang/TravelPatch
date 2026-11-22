@@ -31,6 +31,8 @@ class Strategy(_Frozen):
     reservation_buffer: int = Field(default=0, ge=0)
     # Hard constraint: activities of these categories are never dropped.
     no_drop_categories: tuple[Category, ...] = ()
+    # Search: also try a few reordered plans (local_search). Off by default for speed.
+    search_order: bool = False
 
 
 # Initial draft values from CLAUDE.md; to be tuned by experiments.
@@ -46,12 +48,13 @@ RESERVATION_BUFFER = 15
 
 # The only place strategies are defined. Order matters: the first one is the default.
 STRATEGIES: tuple[Strategy, ...] = (
-    Strategy(name="balanced", weights=DEFAULT_WEIGHTS),
+    Strategy(name="balanced", weights=DEFAULT_WEIGHTS, search_order=True),
     Strategy(
         name="sightseeing",
         weights=Weights(category_drop_factor=((Category.SIGHTSEEING, 2.0),)),
     ),
-    Strategy(name="low_travel", weights=Weights(w_move=0.2 * 4, w_order=0.1)),
+    # Its cheap w_order only matters if the order can change, hence search_order.
+    Strategy(name="low_travel", weights=Weights(w_move=0.2 * 4, w_order=0.1), search_order=True),
     Strategy(name="relaxed", weights=Weights(w_drop=0.7), min_buffer=20),
     # CLAUDE.md 6, added 2026-11-22. Rules, not weights: a hard "no", checked by the validator.
     Strategy(name="food", weights=DEFAULT_WEIGHTS, no_drop_categories=(Category.MEAL,)),
