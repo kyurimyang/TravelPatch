@@ -12,36 +12,36 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 20px 16px 28px;
+  gap: var(--space-5);
+  padding: var(--page-top) var(--page-x) var(--page-bottom);
 }
 
 .diff-view__hole {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px;
+  gap: var(--space-3);
+  padding: var(--space-4);
   border: 2px dashed var(--tp-thread-loose);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
 }
 
 .diff-view__hole-tag {
   align-self: flex-start;
-  padding: 0 10px;
-  border-radius: 999px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
   background: var(--tp-thread-loose);
   color: #ffffff;
   font-family: var(--font-label);
-  font-size: 15px;
+  font-size: var(--text-md);
 }
 
 .diff-view__hole h1 {
   margin: 0;
   padding-right: 76px; /* room for the hole patch */
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: var(--text-xl);
   font-weight: 700;
   line-height: 1.35;
 }
@@ -60,42 +60,42 @@
 .diff-view__hole ul {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-hair);
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--color-text-muted);
 }
 
 .diff-view__stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .diff-view__stats > div {
   display: flex;
   flex-direction: column;
-  padding: 10px 12px;
+  padding: var(--space-3) var(--space-3);
   border: 1px solid var(--tp-hemp);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--tp-lace);
 }
 
 .diff-view__stats span {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
 .diff-view__stats b {
-  font-size: 22px;
+  font-size: var(--text-xl);
 }
 
 .diff-view__tabs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .diff-view__tabs button {
@@ -103,11 +103,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: var(--space-hair);
   min-height: 60px;
-  padding: 6px 4px;
+  padding: var(--space-2) var(--space-1);
   border: 1.5px solid var(--tp-hemp);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
   color: #1f2328;
   font: inherit;
@@ -116,11 +116,11 @@
 
 .diff-view__tabs button span:first-child {
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .diff-view__tabs button span:last-child {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
@@ -138,10 +138,10 @@
 .diff-view__preview {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px;
+  gap: var(--space-1);
+  padding: var(--space-3);
   border: 2px dashed var(--tp-denim-deep);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
 }
 
@@ -149,25 +149,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 2px 4px;
-  font-size: 13px;
+  gap: var(--space-2);
+  padding: var(--space-hair) var(--space-1);
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
 .diff-view__preview-head .tp-tagstitch {
-  padding: 0 10px;
-  border-radius: 999px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
   background: var(--tp-denim-deep);
   color: #ffffff;
   font-family: var(--font-label);
-  font-size: 15px;
+  font-size: var(--text-md);
   white-space: nowrap;
 }
 
 .diff-view__note {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--text-sm);
   text-align: center;
   color: var(--color-text-muted);
 }
@@ -177,17 +177,17 @@
   bottom: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 16px 16px;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4) var(--space-4);
   background: var(--tp-linen);
   border-top: 2px dashed var(--tp-hemp);
 }
 
 .diff-view__notice {
   margin: 0;
-  padding: 8px 12px;
-  border-radius: 10px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
   background: var(--tp-lace);
   border: 1px dashed var(--tp-denim-deep);
-  font-size: 14px;
+  font-size: var(--text-base);
 }

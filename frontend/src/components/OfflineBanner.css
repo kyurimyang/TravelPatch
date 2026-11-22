@@ -2,10 +2,10 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  padding: 8px 14px;
+  padding: var(--space-2) var(--space-4);
   border-bottom: 2px dashed var(--tp-copper);
   background: var(--tp-indigo);
   color: #ffffff;
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.5;
 }

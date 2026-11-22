@@ -8,41 +8,41 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 24px 16px 28px;
+  gap: var(--space-6);
+  padding: var(--page-top) var(--page-x) var(--page-bottom);
 }
 
 .recover__meta {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
 .recover__intro {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: -14px;
+  gap: var(--space-2);
+  margin-top: calc(var(--space-4) * -1);
 }
 
 .recover__intro h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: var(--text-2xl);
   line-height: 1.35;
 }
 
 .recover__intro p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.55;
   color: var(--color-text-muted);
 }
 
 .recover__next {
   display: flex;
-  padding: 12px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--tp-hemp);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
 }
 
@@ -52,7 +52,7 @@
 }
 
 .recover__next span span {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
@@ -64,29 +64,29 @@
 
 .recover__quick legend {
   padding: 0;
-  margin-bottom: 10px;
+  margin-bottom: var(--space-3);
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 18px;
+  font-size: var(--text-lg);
 }
 
 .recover__quick > div {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .recover__quick button {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   min-height: 52px;
-  padding: 8px 12px;
+  padding: var(--space-2) var(--space-3);
   border: 1.5px solid var(--tp-hemp);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--text-md);
   font-weight: 600;
   text-align: left;
   cursor: pointer;
@@ -113,33 +113,33 @@
 .recover__field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .recover__field label {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 18px;
+  font-size: var(--text-lg);
 }
 
 .recover__field input {
   width: 100%;
   box-sizing: border-box;
   min-height: 52px;
-  padding: 12px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 2px solid var(--tp-denim-deep);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: #ffffff;
   font: inherit;
-  font-size: 16px;
+  font-size: var(--text-md);
 }
 
 .recover__error {
   margin: 0;
-  padding: 12px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1.5px dashed var(--tp-thread-loose);
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
   line-height: 1.5;
   color: #a12a22;
 }
@@ -147,23 +147,23 @@
 .recover__chips {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  gap: var(--space-3);
+  padding: var(--space-4);
   border: 2px dashed var(--tp-denim-deep);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
 }
 
 .recover__chips h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: var(--text-lg);
 }
 
 .recover__chips ul {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -173,17 +173,17 @@
   min-height: 36px;
   display: flex;
   align-items: center;
-  padding: 4px 12px;
+  padding: var(--space-1) var(--space-3);
   border: 1.5px solid var(--tp-denim-deep);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--tp-lace);
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 600;
 }
 
 .recover__chips p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.55;
 }
 
@@ -199,7 +199,7 @@
 
 .recover__visited legend {
   padding: 0;
-  font-size: 15px;
+  font-size: var(--text-md);
   font-weight: 700;
 }
 
@@ -208,7 +208,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .recover__visited input {
@@ -223,7 +223,7 @@
 
 /* Visited is said in words too, not only by the check mark (CLAUDE.md 8). */
 .recover__visited em {
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-style: normal;
   color: var(--color-text-muted);
 }
@@ -234,13 +234,13 @@
 }
 
 .recover__hint {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
 .recover__note {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--text-sm);
   text-align: center;
   color: var(--color-text-muted);
 }
@@ -250,8 +250,8 @@
   bottom: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 16px 16px;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4) var(--space-4);
   background: var(--tp-linen);
   border-top: 2px dashed var(--tp-hemp);
 }
@@ -259,26 +259,26 @@
 .recover__blocked {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  gap: var(--space-3);
+  padding: var(--space-4);
   border: 2px dashed var(--tp-thread-loose);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
 }
 
 .recover__blocked p {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--text-md);
   line-height: 1.55;
 }
 
 .recover__warn {
-  padding: 10px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1.5px dashed var(--tp-mustard);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--op-shrink-bg);
   color: var(--op-shrink-fg);
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .recover__warn p {
@@ -288,26 +288,26 @@
 .recover__where {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
-  gap: 10px;
+  gap: var(--space-3);
   margin: 0;
-  padding: 12px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--tp-hemp);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
 }
 
 .recover__where legend {
-  padding: 0 6px;
-  font-size: 13px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
 .recover__where label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
@@ -316,11 +316,11 @@
   min-height: 44px;
   min-width: 0;
   box-sizing: border-box;
-  padding: 6px 8px;
+  padding: var(--space-2) var(--space-2);
   border: 1.5px solid var(--tp-denim-deep);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--text-md);
   color: var(--color-text);
 }

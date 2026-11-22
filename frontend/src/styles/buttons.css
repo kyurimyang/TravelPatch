@@ -6,10 +6,10 @@
   justify-content: center;
   min-height: 56px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-indigo);
   color: #ffffff;
-  font-size: 17px;
+  font-size: var(--text-md);
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
@@ -32,7 +32,7 @@
   border: 0;
   background: none;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: var(--text-base);
   text-decoration: underline dashed;
   cursor: pointer;
 }

@@ -2,7 +2,7 @@ import type { TravelMode } from '../api/types'
 import './TravelModePicker.css'
 
 const MODES: { value: TravelMode; label: string; hint: string }[] = [
-  { value: 'transit', label: '대중교통', hint: '지하철·버스 + 걷기' },
+  { value: 'transit', label: '대중교통', hint: '지하철·버스' },
   { value: 'walk', label: '도보', hint: '걸어서만' },
   { value: 'car', label: '자동차', hint: '택시·렌터카' },
 ]

@@ -2,11 +2,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  margin: 24px 16px;
-  padding: 24px 18px;
+  gap: var(--space-3);
+  margin: var(--space-6) var(--space-4);
+  padding: var(--space-6) var(--space-5);
   border: 2px dashed var(--tp-hemp);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
   text-align: center;
 }
@@ -25,13 +25,13 @@
 .state-card h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 21px;
+  font-size: var(--text-xl);
   font-weight: 700;
   line-height: 1.35;
 }
 
 .state-card__text {
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.6;
   color: var(--color-text-muted);
 }
@@ -44,6 +44,6 @@
   display: flex;
   flex-direction: column;
   align-self: stretch;
-  gap: 6px;
-  margin-top: 6px;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }

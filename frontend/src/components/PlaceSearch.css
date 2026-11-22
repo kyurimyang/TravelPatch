@@ -1,12 +1,12 @@
 .place-search {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .place-search__row {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .place-search__row input {
@@ -14,12 +14,12 @@
   min-width: 0;
   min-height: 52px;
   box-sizing: border-box;
-  padding: 12px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1.5px solid var(--tp-denim-deep);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--text-md);
   color: inherit;
 }
 
@@ -27,7 +27,7 @@
 .place-search__picked button {
   flex: none;
   min-height: 44px;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   border: 1.5px solid var(--tp-denim-deep);
   border-radius: var(--radius-md);
   background: var(--tp-lace);
@@ -55,7 +55,7 @@
 .place-search__list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -65,7 +65,7 @@
 .place-search__picked > span {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-hair);
   min-width: 0;
   text-align: left;
 }
@@ -73,7 +73,7 @@
 .place-search__list button {
   width: 100%;
   min-height: 52px;
-  padding: 10px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--tp-hemp);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -92,8 +92,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border: 1.5px dashed var(--tp-denim-deep);
   border-radius: var(--radius-md);
   background: var(--color-surface);

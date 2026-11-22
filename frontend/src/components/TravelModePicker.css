@@ -1,7 +1,7 @@
 .travel-mode {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .travel-mode__option {
@@ -9,10 +9,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
+  justify-content: flex-start; /* titles stay on one line across the three, even if a hint wraps */
+  gap: var(--space-hair);
   min-height: 60px;
-  padding: 8px 4px;
+  padding: var(--space-2) var(--space-1);
   border: 1.5px solid var(--tp-hemp);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -28,11 +28,11 @@
 }
 
 .travel-mode__option b {
-  font-size: 15px;
+  font-size: var(--text-md);
 }
 
 .travel-mode__option span {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 

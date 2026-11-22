@@ -9,26 +9,26 @@
   align-items: center;
   justify-content: center;
   min-height: 64px;
-  padding: 10px 16px;
+  padding: var(--space-3) var(--space-4);
   background: var(--tp-linen);
   border-bottom: 2px dashed var(--tp-hemp);
   font-weight: 600;
-  font-size: 15px;
+  font-size: var(--text-md);
 }
 
 .stitched__body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  padding: 28px 16px;
+  gap: var(--space-6);
+  padding: var(--page-top) var(--page-x) var(--page-bottom);
 }
 
 .stitched__hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
   text-align: center;
 }
 
@@ -39,52 +39,52 @@
 }
 
 .stitched__hero h1 {
-  margin: 8px 0 0;
+  margin: var(--space-2) 0 0;
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: var(--text-2xl);
   line-height: 1.35;
 }
 
 .stitched__hero p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--color-text-muted);
 }
 
 .stitched__stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .stitched__stats > div {
-  padding: 10px 12px;
+  padding: var(--space-3) var(--space-3);
   border: 1px solid var(--tp-hemp);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--tp-linen);
 }
 
 .stitched__stats span {
   display: block;
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
 .stitched__stats b {
-  font-size: 20px;
+  font-size: var(--text-xl);
 }
 
 .stitched__day {
-  padding: 16px;
+  padding: var(--space-4);
   border: 1px solid var(--tp-hemp);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
 }
 
 .stitched__day h2 {
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-2);
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: var(--text-lg);
 }
 
 .stitched__day ul {
@@ -96,11 +96,11 @@
 .stitched__day li {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   min-height: 60px;
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  border-radius: 6px;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-sm);
 }
 
 /* Stitch border only on changed rows (CLAUDE.md 8절); kept rows stay flat. */
@@ -112,7 +112,7 @@
 .stitched__time {
   flex: none;
   width: 44px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
@@ -134,26 +134,26 @@
 }
 
 .stitched__text b {
-  font-size: 15px;
+  font-size: var(--text-md);
 }
 
 .stitched__text span {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
 .stitched__chip {
-  padding: 0 10px;
-  border-radius: 999px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
   background: var(--tp-thread-stitch);
   color: #1f2328;
   font-family: var(--font-label);
-  font-size: 15px;
+  font-size: var(--text-md);
 }
 
 .stitched__note {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.5;
   text-align: center;
   color: var(--color-text-muted);
@@ -164,8 +164,8 @@
   bottom: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 12px 16px 16px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
   background: var(--tp-linen);
   border-top: 2px dashed var(--tp-hemp);
 }
@@ -173,11 +173,11 @@
 .stitched__undo {
   min-height: 56px;
   border: 2px solid var(--tp-indigo);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-lace);
   color: var(--color-text);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--text-md);
   font-weight: 700;
   cursor: pointer;
 }

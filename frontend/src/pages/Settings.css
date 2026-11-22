@@ -1,24 +1,24 @@
 .settings__group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
+  gap: var(--space-3);
+  padding: var(--space-4);
   border: 1px solid var(--tp-hemp);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
 }
 
 .settings__group h2 {
   margin: 0;
   font-family: var(--font-label);
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 700;
   color: var(--tp-denim-deep);
 }
 
 .settings__email {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--color-text-muted);
 }
 
@@ -26,31 +26,31 @@
   display: grid;
   grid-template-columns: 76px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: var(--space-2);
+  font-size: var(--text-base);
 }
 
 .settings__row input {
   min-width: 0;
   min-height: 44px;
   box-sizing: border-box;
-  padding: 6px 10px;
+  padding: var(--space-2) var(--space-3);
   border: 1.5px solid var(--tp-denim-deep);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--text-md);
 }
 
 .settings__row button {
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 var(--space-3);
   border: 1.5px solid var(--tp-denim-deep);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--tp-indigo);
   color: #ffffff;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 700;
   cursor: pointer;
 }
@@ -73,7 +73,7 @@
   display: flex;
   align-items: center;
   min-height: 40px;
-  font-size: 15px;
+  font-size: var(--text-md);
   color: var(--color-text);
   text-decoration: none;
   border-bottom: 1px dashed var(--tp-hemp);
@@ -83,26 +83,26 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .settings__withdraw {
   min-height: 40px;
   display: flex;
   align-items: center;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
 .settings__version {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
 .withdraw__list {
   margin: 0;
-  padding-left: 20px;
-  font-size: 14px;
+  padding-left: var(--space-5);
+  font-size: var(--text-base);
   line-height: 1.7;
 }
 
@@ -111,8 +111,8 @@
 }
 
 .withdraw__reasons legend {
-  padding: 0 6px;
-  font-size: 14px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-base);
   font-weight: 700;
 }
 
@@ -120,9 +120,9 @@
 .withdraw__agree {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   min-height: 40px;
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .withdraw__reasons input,
@@ -136,7 +136,7 @@
 .withdraw__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .withdraw__go {

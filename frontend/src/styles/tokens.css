@@ -46,13 +46,25 @@
   --patch-stitch-style: dashed;
 
   /* shape and spacing */
+  /* Every size in the CSS comes from these scales (2026-11-23): a 4px grid for space, seven
+     steps for type, four radii. 2px (--space-hair) is the one sub-grid step, for stacked lines. */
+  --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 12px;
+  --radius-pill: 999px;
+  --space-hair: 2px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
+  --space-8: 32px;
+
+  /* page frame: every screen starts its content at the same place */
+  --page-top: var(--space-6);
+  --page-x: var(--space-4);
+  --page-bottom: var(--space-8);
 
   /* brand palette (TravelPatch logo, 2026-11-15): denim indigo ground, copper topstitch */
   --tp-indigo: #24314d;
@@ -85,7 +97,12 @@
 
   /* type */
   --font-sans: 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Segoe UI', 'Noto Sans KR', sans-serif;
-  --text-sm: 13px;
-  --text-md: 15px;
-  --text-lg: 18px;
+  /* 16px and up for anything typed into: smaller inputs make iOS zoom the page on focus */
+  --text-xs: 12px; /* fine print, badges */
+  --text-sm: 13px; /* hints, chips, secondary lines */
+  --text-base: 14px; /* body text */
+  --text-md: 16px; /* inputs, buttons, emphasized body */
+  --text-lg: 18px; /* card titles, section headings */
+  --text-xl: 22px; /* sub-page headings */
+  --text-2xl: 26px; /* page headings */
 }

@@ -1,9 +1,9 @@
 .top-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   min-height: 56px;
-  padding: 6px 16px;
+  padding: var(--space-2) var(--space-4);
   box-sizing: border-box;
   background: var(--tp-tex-linen), var(--tp-linen);
   border-bottom: 2px dashed var(--tp-hemp);
@@ -17,7 +17,7 @@
      its 56px height and the letters sit vertically centred. */
   height: 66px;
   width: auto;
-  margin: -9px 0 -13px;
+  margin: calc(var(--space-2) * -1) 0 calc(var(--space-3) * -1);
 }
 
 .top-bar__back {
@@ -26,9 +26,9 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  margin-left: -10px;
+  margin-left: calc(var(--space-3) * -1);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
@@ -37,6 +37,6 @@
 .top-bar__title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 700;
 }

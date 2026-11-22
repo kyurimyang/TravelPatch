@@ -1,19 +1,19 @@
 .tier-picker {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .tier-picker__opt {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--space-1);
   min-height: 44px;
   border: 1.5px solid var(--tp-hemp);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--tp-lace);
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 600;
   cursor: pointer;
 }
@@ -34,7 +34,7 @@
 
 .tier-picker__rec {
   font-family: var(--font-label);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 400;
 }
 

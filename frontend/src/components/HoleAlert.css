@@ -1,36 +1,36 @@
 .hole-alert {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin: 0 16px;
-  padding: 16px;
+  gap: var(--space-3);
+  margin: 0 var(--space-4);
+  padding: var(--space-4);
   border: 2px dashed var(--tp-thread-loose);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--tp-linen);
   box-shadow: 0 3px 0 rgba(161, 42, 34, 0.15);
 }
 
 .hole-alert__tag {
   align-self: flex-start;
-  padding: 0 10px;
-  border-radius: 999px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
   background: var(--tp-thread-loose);
   color: #ffffff;
   font-family: var(--font-label);
-  font-size: 15px;
+  font-size: var(--text-md);
 }
 
 .hole-alert h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: var(--text-xl);
   font-weight: 700;
   line-height: 1.35;
 }
 
 .hole-alert p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.6;
   color: var(--color-text);
 }
@@ -38,31 +38,31 @@
 .hole-alert__stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .hole-alert__stats div {
   display: flex;
   flex-direction: column;
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
   background: var(--tp-lace);
 }
 
 .hole-alert__stats span {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
 .hole-alert__stats b {
-  font-size: 17px;
+  font-size: var(--text-md);
   color: #a12a22;
 }
 
 .hole-alert__more {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .hole-alert__more a,
@@ -70,11 +70,11 @@
   min-height: 44px;
   display: flex;
   align-items: center;
-  padding: 0 4px;
+  padding: 0 var(--space-1);
   border: 0;
   background: none;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--tp-denim-deep);
   text-decoration: underline dashed;
   cursor: pointer;

@@ -8,8 +8,8 @@
   list-style: none;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 4px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-1);
   border-bottom: 1px dashed var(--tp-hemp);
   color: var(--color-text);
 }
@@ -51,10 +51,10 @@
 
 /* the patch: a piece of linen stitched on with thread in the op colour */
 .diff-row:not([data-op='keep']) {
-  margin: 6px 0;
-  padding: 12px 10px;
+  margin: var(--space-2) 0;
+  padding: var(--space-3) var(--space-3);
   border: var(--patch-stitch-width) var(--patch-stitch-style) var(--row-edge);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--tp-lace);
   box-shadow: 0 2px 0 rgba(36, 49, 77, 0.08);
 }
@@ -66,8 +66,8 @@
 .diff-row__time {
   flex: none;
   width: 42px;
-  padding-top: 2px;
-  font-size: 13px;
+  padding-top: var(--space-hair);
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -91,7 +91,7 @@
 .diff-row__main {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--space-1);
   flex-grow: 1;
   min-width: 0;
 }
@@ -111,13 +111,13 @@
 /* hand-written label, like the "다음" tag on the main screen */
 .diff-row__chip {
   flex: none;
-  padding: 0 10px;
+  padding: 0 var(--space-3);
   border: 1.5px dashed var(--row-edge);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--row-bg);
   color: var(--row-fg);
   font-family: var(--font-label);
-  font-size: 15px;
+  font-size: var(--text-md);
   font-weight: 700;
   transform: rotate(-2deg);
 }
@@ -159,16 +159,16 @@
 }
 
 .diff-row__why {
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .diff-row__why summary {
   display: inline-flex;
   align-items: center;
   min-height: 32px;
-  padding: 0 10px;
+  padding: 0 var(--space-3);
   border: 1.5px dashed var(--row-edge);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--row-fg);
@@ -182,7 +182,7 @@
 
 .diff-row__why summary::before {
   content: '▸';
-  margin-right: 6px;
+  margin-right: var(--space-2);
 }
 
 .diff-row__why[open] summary::before {
@@ -190,7 +190,7 @@
 }
 
 .diff-row__why[open] > :not(summary) {
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
   border-top: 1px dashed var(--tp-hemp);
 }

@@ -35,8 +35,9 @@ const EVENT_LABEL: Record<string, string> = {
 }
 // solver_ms buckets for the engine histogram (upper bounds, ms).
 const BUCKETS = [100, 250, 500, 1000, 2000, Infinity]
-const bucketLabel = (i: number) =>
-  BUCKETS[i] === Infinity ? `${BUCKETS[i - 1]}ms+` : `~${BUCKETS[i]}ms`
+// 1000 ms and up read as seconds so the six labels fit a 320px phone.
+const fmtMs = (ms: number) => (ms >= 1000 ? `${ms / 1000}s` : `${ms}ms`)
+const bucketLabel = (i: number) => (BUCKETS[i] === Infinity ? `${fmtMs(BUCKETS[i - 1])}+` : `~${fmtMs(BUCKETS[i])}`)
 
 function parse(text: string): Row[] {
   const [, ...lines] = text.trim().split(/\r?\n/)
