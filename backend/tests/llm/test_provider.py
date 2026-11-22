@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+import openai
 import pytest
 from pydantic import BaseModel, ValidationError
 
@@ -64,5 +65,25 @@ def test_retries_once_after_schema_mismatch():
 def test_raises_after_second_failure_and_does_not_retry_again():
     client = FakeClient([_completion(refusal="no"), _completion(refusal="no")])
     with pytest.raises(LLMOutputError):
+        _call(_provider(client))
+    assert client.calls == 2
+
+
+def _cut_off() -> openai.LengthFinishReasonError:
+    # The model ran to max tokens (seen 2026-11-19 in the eval rerun: 16384 tokens of a loop).
+    # The error only reads usage from the completion for its message.
+    usage = SimpleNamespace(completion_tokens=16384, prompt_tokens=1026, total_tokens=17410)
+    return openai.LengthFinishReasonError(completion=SimpleNamespace(usage=usage))
+
+
+def test_retries_once_after_an_answer_cut_off_at_the_length_limit():
+    client = FakeClient([_cut_off(), _completion(parsed=Answer(n=4))])
+    assert _call(_provider(client)) == Answer(n=4)
+    assert client.calls == 2
+
+
+def test_two_cut_off_answers_are_an_output_error_not_a_crash():
+    client = FakeClient([_cut_off(), _cut_off()])
+    with pytest.raises(LLMOutputError, match="length limit"):
         _call(_provider(client))
     assert client.calls == 2

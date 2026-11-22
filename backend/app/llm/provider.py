@@ -68,6 +68,11 @@ class OpenAIProvider:
             except ValidationError as exc:
                 last_problem = f"schema mismatch: {exc.error_count()} error(s)"
                 continue
+            except openai.LengthFinishReasonError:
+                # Ran to max tokens (a repeating answer): unparseable, so retried like a schema
+                # mismatch instead of crashing the request (invariant 4).
+                last_problem = "answer cut off at the length limit"
+                continue
             message = completion.choices[0].message
             if message.parsed is None:
                 last_problem = f"refused or empty: {message.refusal or 'no content'}"
