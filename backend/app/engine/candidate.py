@@ -2,10 +2,21 @@ from app.engine.constraint_builder import build_constraints
 from app.engine.cost import compute_cost
 from app.engine.optimizer_dp import solve_fixed_order
 from app.engine.presets import Strategy
-from app.engine.validator import validate
+from app.engine.validator import Violation, validate
 from app.schemas.enums import EventType
 from app.schemas.events import FatigueEvent
+from app.schemas.models import _Frozen
 from app.schemas.recovery import RecoveryChange, RecoveryInput, RecoveryResult
+
+
+class Discard(_Frozen):
+    """A candidate the validator rejected (CLAUDE.md 6: discard + log). Handed back as a value
+    so the engine stays pure; the service layer writes the log. Normally never happens: one
+    means the solver let a hard constraint through."""
+
+    strategy: str
+    violations: tuple[Violation, ...]
+
 
 # Events the solver and validator actually handle. MUST_VISIT exists in the schema but is not
 # implemented yet: it must be refused, not silently ignored.
@@ -64,13 +75,20 @@ def solve_candidate(
     strategy: Strategy,
     order: tuple[str, ...],
     no_drop: frozenset[str] = frozenset(),
+    discards: list[Discard] | None = None,
 ) -> RecoveryResult | None:
     """One candidate for one strategy, or None. The single path every plan takes to the user:
-    solve, then the independent validator (a violating plan is discarded, never returned)."""
+    solve, then the independent validator (a violating plan is discarded, never returned).
+    A rejected plan is appended to `discards` when the caller passes a list."""
     if inp.event.type not in SUPPORTED_EVENTS:
         raise UnsupportedEventError(f"event type not supported yet: {inp.event.type}")
-    solution =solve_fixed_order(inp, order, strategy.weights, strategy.min_buffer, no_drop=no_drop)
-    if solution is None or validate(inp, solution.changes, strategy.min_buffer):
+    solution = solve_fixed_order(inp, order, strategy.weights, strategy.min_buffer, no_drop=no_drop)
+    if solution is None:
+        return None
+    violations = validate(inp, solution.changes, strategy.min_buffer)
+    if violations:
+        if discards is not None:
+            discards.append(Discard(strategy=strategy.name, violations=tuple(violations)))
         return None
     # Changes always come out in the original order, whatever order the solver walked.
     position = {act_id: n for n, act_id in enumerate(original_order(inp))}

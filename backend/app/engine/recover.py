@@ -1,16 +1,17 @@
-from app.engine.candidate import original_order, solve_candidate
+from app.engine.candidate import Discard, original_order, solve_candidate
 from app.engine.local_search import improve_order
 from app.engine.presets import STRATEGIES, Strategy
 from app.engine.reasons import explain_changes
 from app.schemas.recovery import RecoveryInput, RecoveryResult
 
-__all__ = ["original_order", "recover", "solve_candidate"]  # re-exported for callers
+__all__ = ["Discard", "original_order", "recover", "solve_candidate"]  # re-exported for callers
 
 
 def recover(
     inp: RecoveryInput,
     strategies: tuple[Strategy, ...] = STRATEGIES,
     max_tries: int = 2,
+    discards: list[Discard] | None = None,
 ) -> list[RecoveryResult]:
     """Distinct candidates that passed the independent validator, one per strategy at most.
 
@@ -23,12 +24,14 @@ def recover(
     Order swapping is tried for the first strategy only (the representative candidate): on the
     eval set it tripled the time and improved the best plan in 1 of 50 scenarios, and that one
     was the first strategy's (decision 2026-11-18). The others keep the original order.
+
+    `discards`, when given, collects the candidates the validator rejected (for the log).
     """
     order = original_order(inp)
     results: list[RecoveryResult] = []
     seen: set[tuple] = set()
     for i, strategy in enumerate(strategies):
-        result = solve_candidate(inp, strategy, order)
+        result = solve_candidate(inp, strategy, order, discards=discards)
         if result is not None and i == 0:
             result = improve_order(inp, strategy, result, max_tries)
         if result is None or result.changes in seen:

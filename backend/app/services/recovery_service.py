@@ -1,9 +1,10 @@
+import logging
 import math
 import time
 
 from app.engine.conflict_detector import find_blockers
 from app.engine.counterfactual import restore
-from app.engine.recover import recover
+from app.engine.recover import Discard, recover
 from app.schemas.recovery import (
     RecoveryInput,
     RecoveryResponse,
@@ -30,6 +31,20 @@ def _mark_unknown_substitutes(inp: RecoveryInput, result: RecoveryResult) -> Rec
     return result.model_copy(update={"changes": changes})
 
 
+log = logging.getLogger(__name__)
+
+
+def _recover_logged(inp: RecoveryInput) -> list[RecoveryResult]:
+    """recover(), writing a warning for each candidate the validator rejected (CLAUDE.md 6).
+    One means the solver let a hard constraint through: never silent, never shown to the user."""
+    discards: list[Discard] = []
+    results = recover(inp, discards=discards)
+    for d in discards:
+        detail = "; ".join(f"{v.kind} {v.activity_id}: {v.detail}" for v in d.violations)
+        log.warning("validator rejected the %s candidate: %s", d.strategy, detail)
+    return results
+
+
 def run_recovery(inp: RecoveryInput) -> RecoveryResponse:
     """Call the engine and do what the engine must not: read the clock.
 
@@ -37,7 +52,7 @@ def run_recovery(inp: RecoveryInput) -> RecoveryResponse:
     the engine itself leaves it 0. With no candidate, the blockers say why.
     """
     start = time.perf_counter()
-    results = recover(inp)
+    results = _recover_logged(inp)
     solver_ms = _elapsed_ms(start)
     candidates = tuple(
         _mark_unknown_substitutes(inp, r.model_copy(update={"solver_ms": solver_ms}))
@@ -55,7 +70,7 @@ def run_restore(req: RestoreRequest) -> RestoreResponse:
     LookupError: the input has no candidate for that strategy. ValueError: X is not dropped in it.
     """
     start = time.perf_counter()
-    base = next((r for r in recover(req.input) if r.strategy == req.strategy), None)
+    base = next((r for r in _recover_logged(req.input) if r.strategy == req.strategy), None)
     if base is None:
         raise LookupError(f"no candidate for strategy: {req.strategy}")
     cf = restore(req.input, base, req.activity_id)
