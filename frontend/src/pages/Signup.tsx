@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { allAgreed, ConsentList, NO_CONSENT } from '../components/ConsentList'
 import { StateCard } from '../components/StateCard'
 import { useAuth } from '../store/auth'
@@ -26,6 +26,9 @@ export default function Signup() {
       </StateCard>
     )
   }
+  // With "Confirm email" off (decision 2026-11-22) sign-up signs the user in at once: go home.
+  // With it on, there is no session yet and the mail screen below is the right answer.
+  if (auth.user) return <Navigate to="/" replace />
   if (sent) {
     return (
       <StateCard
