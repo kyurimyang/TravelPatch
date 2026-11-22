@@ -93,6 +93,15 @@ def build_substitutes(
     return Found(tuple(subs), frozenset(unknown))
 
 
+def wants_substitutes(inp: RecoveryInput) -> bool:
+    """A closure whose activity has no substitute yet: the only case that calls the LLM and
+    Google. The router asks this too, to charge a guest only when the search happens."""
+    ev = inp.event
+    return isinstance(ev, ClosureEvent) and not any(
+        s.replaces == ev.activity_id for s in inp.substitutes
+    )
+
+
 def add_substitutes(
     inp: RecoveryInput, provider: LLMProvider, places: GooglePlacesClient
 ) -> RecoveryInput:
@@ -100,11 +109,10 @@ def add_substitutes(
     (not a closure, substitutes already given) or Google cannot answer (then the blockers say so).
     A substitute with unknown hours has no open_at/close_at; see `needs_check_ids`.
     """
-    ev = inp.event
-    if not isinstance(ev, ClosureEvent) or any(
-        s.replaces == ev.activity_id for s in inp.substitutes
-    ):
+    if not wants_substitutes(inp):
         return inp
+    ev = inp.event
+    assert isinstance(ev, ClosureEvent)  # narrowed by wants_substitutes
     target = next(a for a in inp.activities if a.id == ev.activity_id)
 
     query = substitute_query(provider, target.title, target.category)

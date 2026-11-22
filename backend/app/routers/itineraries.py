@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from app.llm.parser import parse_itinerary
 from app.llm.provider import LLMOutputError, LLMProvider
-from app.routers.deps import get_provider
+from app.routers.deps import charged_provider
 from app.schemas.itinerary import ParseProblem, ParseRequest, ParseResponse
 from app.services.itinerary_draft import build_draft
 
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/itineraries", tags=["itineraries"])
 # Plain `def`: the LLM call blocks, so FastAPI runs it in a worker thread.
 @router.post("/parse", response_model=ParseResponse)
 def parse(
-    req: ParseRequest, provider: Annotated[LLMProvider, Depends(get_provider)]
+    req: ParseRequest, provider: Annotated[LLMProvider, Depends(charged_provider)]
 ) -> ParseResponse:
     """Step ①: pasted text -> draft the Confirm screen shows. Nothing is stored.
 

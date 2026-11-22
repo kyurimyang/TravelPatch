@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.routers.deps import get_places_client
+from app.routers.deps import charged_places
 from app.schemas.place import PlaceOption, PlaceSearchResponse
 from app.services.places_client import GooglePlacesClient, PlacesError
 from app.services.travel_estimate import haversine_km
@@ -30,7 +30,7 @@ def _hotel_point(places: GooglePlacesClient, place_id: str | None) -> tuple[floa
 # Plain `def`: the Google call blocks, so FastAPI runs it in a worker thread.
 @router.get("/search", response_model=PlaceSearchResponse)
 def search(
-    places: Annotated[GooglePlacesClient, Depends(get_places_client)],
+    places: Annotated[GooglePlacesClient, Depends(charged_places)],
     q: Annotated[str, Query(min_length=1, max_length=100)],
     city: Annotated[str | None, Query(max_length=60)] = None,
     near: Annotated[str | None, Query(max_length=300, description="hotel place_id")] = None,

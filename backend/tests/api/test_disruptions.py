@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from app.llm.disruption_interpreter import InterpretedDisruption
 from app.llm.provider import LLMOutputError
 from app.main import app
-from app.routers.disruptions import get_provider
+from app.routers.deps import get_provider
 from tests.engine.helpers import load_scenario_a
 
 
