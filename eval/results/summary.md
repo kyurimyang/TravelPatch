@@ -2,28 +2,28 @@
 
 | method | scenarios | no solution | violation rate | violation-free | preservation (violation-free) | RC (violation-free) | ms (all) |
 |---|---|---|---|---|---|---|---|
-| right_shift | 50 | 0 | 60% | 20 | 93.9% | 1.468 | 0.4 |
-| greedy | 50 | 0 | 60% | 20 | 76.2% | 4.456 | 0.4 |
-| engine | 50 | 5 | 0% | 45 | 90.3% | 1.646 | 321.6 |
-| llm_only | 50 | 5 | 91% | 4 | 88.2% | 2.450 | 2332.0 |
-| llm_validated | 50 | 44 | 0% | 6 | 88.3% | 2.284 | 4110.5 |
+| right_shift | 50 | 0 | 62% | 19 | 93.8% | 1.405 | 0.3 |
+| greedy | 50 | 0 | 62% | 19 | 75.4% | 4.524 | 0.2 |
+| engine | 50 | 5 | 0% | 45 | 90.2% | 1.686 | 147.6 |
+| llm_only | 50 | 21 | 83% | 5 | 78.2% | 4.026 | 2743.1 |
+| llm_validated | 50 | 42 | 0% | 8 | 82.9% | 3.368 | 4651.4 |
 
 ### Violation rate by event (no solution counted separately)
 
 | method | closure | delay | extend | fatigue | weather |
 |---|---|---|---|---|---|
-| right_shift | 10/10 | 1/10 | 1/10 | 10/10 | 8/10 |
-| greedy | 10/10 | 1/10 | 1/10 | 10/10 | 8/10 |
+| right_shift | 10/10 | 2/10 | 1/10 | 10/10 | 8/10 |
+| greedy | 10/10 | 2/10 | 1/10 | 10/10 | 8/10 |
 | engine | 0/10 | 0/9 (+1 none) | 0/9 (+1 none) | 0/10 | 0/7 (+3 none) |
-| llm_only | 4/5 (+5 none) | 9/10 | 8/10 | 10/10 | 10/10 |
-| llm_validated | 0/3 (+7 none) | 0/1 (+9 none) | 0/2 (+8 none) | 0/0 (+10 none) | 0/0 (+10 none) |
+| llm_only | 5/7 (+3 none) | 8/10 | 1/1 (+9 none) | 4/5 (+5 none) | 6/6 (+4 none) |
+| llm_validated | 0/4 (+6 none) | 0/2 (+8 none) | 0/1 (+9 none) | 0/1 (+9 none) | 0/0 (+10 none) |
 
-### Same 3 scenarios where all methods are violation-free
+### Same 2 scenarios where all methods are violation-free
 
 | method | preservation | RC | dropped (mean) |
 |---|---|---|---|
-| right_shift | 94.1% | 1.266 | 0.33 |
-| greedy | 76.5% | 4.766 | 2.00 |
-| engine | 94.1% | 1.266 | 0.33 |
-| llm_only | 85.2% | 2.888 | 0.33 |
-| llm_validated | 85.2% | 2.888 | 0.33 |
+| right_shift | 88.2% | 2.142 | 1.00 |
+| greedy | 55.9% | 9.483 | 4.50 |
+| engine | 88.2% | 2.142 | 1.00 |
+| llm_only | 73.0% | 4.804 | 1.50 |
+| llm_validated | 73.0% | 4.804 | 1.50 |

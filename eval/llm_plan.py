@@ -10,8 +10,9 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from app.engine.presets import MEAL_WINDOW_MINUTES
 from app.engine.validator import Violation
-from app.schemas.enums import Op, Tier
+from app.schemas.enums import Category, Op, Tier
 from app.schemas.events import (
     ClosureEvent,
     DelayEvent,
@@ -35,6 +36,8 @@ Hard rules (a plan that breaks any of them is unusable):
   current place). Activities cannot overlap.
 - An activity with a reservation must start exactly at the reserved time.
 - Stay inside opening hours (start >= opens, end <= closes) when they are given.
+- A meal (marked "meal: start between ...") must start inside that window, a replacement for it
+  too; if it cannot, drop it.
 - An activity can be shortened but never below its minimum duration.
 - Activities marked MUST cannot be dropped.
 - The traveler must be back at the hotel, including travel time, by the deadline.
@@ -125,6 +128,11 @@ def build_prompt(inp: RecoveryInput) -> str:
             notes.append(f"opens {hhmm(a.open_at)}")
         if a.close_at is not None:
             notes.append(f"closes {hhmm(a.close_at)}")
+        if a.category == Category.MEAL:
+            # The engine's meal window (A3, 2026-11-19), told as numbers like opening hours.
+            lo = max(0, a.planned_start - MEAL_WINDOW_MINUTES)
+            hi = min(MINUTES_PER_DAY, a.planned_start + MEAL_WINDOW_MINUTES)
+            notes.append(f"meal: start between {hhmm(lo)} and {hhmm(hi)}")
         if a.outdoor:
             notes.append("outdoor")
         if a.walking:
