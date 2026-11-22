@@ -28,11 +28,12 @@ const ISSUE_TEXT: Record<DraftIssue['code'], string> = {
 // Judged from the item itself, not from the parser's issue list, which goes stale once the user edits.
 const hasTime = (it: TripItem) => it.start != null && it.end != null && it.end > it.start
 
-// Search result for one item. Missing from the map = still searching.
-type Match = { status: 'ok'; options: PlaceOption[] } | { status: 'error' }
+// Search result for one item. Missing from the map = still searching. unwritten = the text names
+// no place for it: nothing is searched (never the title, decision 2026-11-23), the user picks.
+type Match = { status: 'ok'; options: PlaceOption[] } | { status: 'error' } | { status: 'unwritten' }
 
 export default function Confirm() {
-  const { trip, setTrip, updateItem } = useTrip()
+  const { trip, setTrip, updateItem, updateTrip } = useTrip()
   const [dayIndex, setDayIndex] = useState(0)
   const [matches, setMatches] = useState<Record<string, Match>>({})
   // Google's name for each picked place, for this screen only (names are never saved).
@@ -51,9 +52,16 @@ export default function Confirm() {
   useEffect(() => {
     if (!trip || !day) return
     for (const it of day.items) {
-      if (it.placeId || requested.current.has(it.id)) continue
+      if (it.placeId) continue
+      if (it.placeFrom) {
+        // Same place as another item of the day: copy it once that one has a place.
+        const from = day.items.find((x) => x.id === it.placeFrom!.id)
+        if (from?.placeId) updateItem(it.id, { placeId: from.placeId })
+        continue
+      }
+      if (!it.placeQuery || requested.current.has(it.id)) continue // no query: see matchOf
       requested.current.add(it.id)
-      searchPlaces(it.placeQuery || it.title, trip.city, trip.hotel?.placeId)
+      searchPlaces(it.placeQuery, trip.city, trip.hotel?.placeId)
         .then(({ candidates }) => {
           setMatches((m) => ({ ...m, [it.id]: { status: 'ok', options: candidates } }))
           const first = candidates[0]
@@ -64,6 +72,31 @@ export default function Confirm() {
         .catch(() => setMatches((m) => ({ ...m, [it.id]: { status: 'error' } })))
     }
   }, [trip, day, updateItem])
+
+  // Flights read from the text (tripFromDraft): find their airport, then they are the trip's
+  // flights like ones entered at registration. A take-off the text does not give is flagged.
+  useEffect(() => {
+    const pending = trip?.textFlights
+    if (!trip || !pending) return
+    for (const which of ['arrival', 'departure'] as const) {
+      const f = pending[which]
+      const key = `flight:${which}`
+      if (!f?.airport_query || trip[which] || requested.current.has(key)) continue
+      requested.current.add(key)
+      const title = f.airport_query
+      searchPlaces(title, trip.city, trip.hotel?.placeId)
+        .then(({ candidates }) => {
+          const first = candidates[0]
+          if (!first) return
+          updateTrip((t) => ({
+            [which]: { time: f.time, airport: { title, placeId: first.place_id }, bufferMinutes: f.buffer_minutes },
+            textFlights: t.textFlights && { ...t.textFlights, [which]: null },
+            ...(which === 'departure' ? { departureTimeGuessed: !f.time_written } : {}),
+          }))
+        })
+        .catch(() => {}) // the trip simply has no flight then, as before this step
+    }
+  }, [trip, updateTrip])
 
   if (!trip || !day) {
     return (
@@ -83,13 +116,27 @@ export default function Confirm() {
 
   const needs = (items: TripItem[]) => items.filter((it) => !it.placeId || !hasTime(it)).length
   const totalItems = trip.days.reduce((n, d) => n + d.items.length, 0)
-  const totalNeeds = trip.days.reduce((n, d) => n + needs(d.items), 0)
-  const otherNeeds = totalNeeds - needs(day.items)
+  const flightNeeds = trip.departure && trip.departureTimeGuessed ? 1 : 0
+  const totalNeeds = trip.days.reduce((n, d) => n + needs(d.items), 0) + flightNeeds
+  const otherNeeds = totalNeeds - needs(day.items) - flightNeeds
   function pick(item: TripItem, place: PlaceOption) {
-    // The user chose it themselves: no "far from the hotel" second look.
-    setChoice((c) => ({ ...c, [item.id]: { ...place, far: null } }))
-    updateItem(item.id, { placeId: place.place_id })
+    // The user chose it themselves: no "far from the hotel" second look. Picking for an item
+    // that shared another's place makes it its own; items sharing this one's place follow it.
+    const chosen = { ...place, far: null }
+    const followers = day!.items.filter((x) => x.placeFrom?.id === item.id && x.placeId === item.placeId)
+    setChoice((c) => ({ ...c, [item.id]: chosen, ...Object.fromEntries(followers.map((x) => [x.id, chosen])) }))
+    updateItem(item.id, { placeId: place.place_id, placeFrom: null })
+    for (const x of followers) updateItem(x.id, { placeId: place.place_id })
     setOpen(null)
+  }
+
+  // Why an item has another's place, in the user's words (shown under the place).
+  function sharedLabel(it: TripItem): string | null {
+    const from = it.placeFrom && day!.items.find((x) => x.id === it.placeFrom!.id)
+    if (!from) return null
+    return it.placeFrom!.why === 'venue'
+      ? `“${from.title}” 안이라 같은 장소로 묶었어요`
+      : `앞 일정 “${from.title}”의 장소를 이어 썼어요`
   }
 
   // Hotel and airport lines were linked at registration (tripFromDraft): name them by the user's words.
@@ -143,9 +190,23 @@ export default function Confirm() {
     )
   }
 
+  // An item with nothing to search or copy is never searched: it waits for the user.
+  function matchOf(it: TripItem): Match | undefined {
+    if (matches[it.id]) return matches[it.id]
+    return !it.placeId && !it.placeFrom && !it.placeQuery ? { status: 'unwritten' } : undefined
+  }
+
+  // Google's name to show: the item's own pick, or, while it still shares a place, the other's.
+  function shownOf(it: TripItem): PlaceOption | undefined {
+    if (choice[it.id]) return choice[it.id]
+    const from = it.placeFrom && day!.items.find((x) => x.id === it.placeFrom!.id)
+    const theirs = from && from.placeId === it.placeId ? choice[from.id] : undefined
+    return theirs && { ...theirs, far: null }
+  }
+
   function renderPlace(it: TripItem) {
-    const match = matches[it.id]
-    const shown = choice[it.id]
+    const match = matchOf(it)
+    const shown = shownOf(it)
     const options = match?.status === 'ok' ? match.options : []
 
     if (open === it.id || (!it.placeId && match)) {
@@ -153,8 +214,11 @@ export default function Confirm() {
       return (
         <div className="confirm__choose">
           {match?.status === 'error' && <p className="confirm__hint">검색하지 못했어요. 직접 찾아 주세요</p>}
+          {match?.status === 'unwritten' && <p className="confirm__warn">장소가 적혀 있지 않아요. 찾아 주세요</p>}
           {match?.status === 'ok' && options.length === 0 && (
-            <p className="confirm__hint">{withJosa(`“${it.title}”`, '으로/로')} 찾은 곳이 없어요. 직접 찾아 주세요</p>
+            <p className="confirm__hint">
+              {withJosa(`“${it.placeQuery ?? it.title}”`, '으로/로')} 찾은 곳이 없어요. 직접 찾아 주세요
+            </p>
           )}
           {options.map((o) => (
             <label className="confirm__option" key={o.place_id}>
@@ -181,10 +245,16 @@ export default function Confirm() {
       )
     }
 
+    if (!it.placeId && it.placeFrom) {
+      const from = day!.items.find((x) => x.id === it.placeFrom!.id)
+      return <p className="confirm__hint">“{from?.title ?? '앞 일정'}”의 장소가 정해지면 같이 채워져요</p>
+    }
     if (!match && !it.placeId) return <p className="confirm__hint">장소를 찾고 있어요…</p>
 
+    const shared = sharedLabel(it)
     return (
       <>
+        {shared && <p className="confirm__hint">{shared}</p>}
         {/* Non-blocking: a far hit is often the wrong branch, but a day trip is far on purpose. */}
         {shown?.far && <p className="confirm__warn">숙소에서 20km 넘게 떨어진 곳이에요. 맞는지 봐 주세요</p>}
         <div className="confirm__found">
@@ -250,6 +320,36 @@ export default function Confirm() {
             }}
           />
         </div>
+
+        {trip.departure && trip.departureTimeGuessed && (
+          <div className="confirm__deadline tp-fabric">
+            <label htmlFor="departure-time">
+              <b>출국편 출발 시각</b>
+              <span>적혀 있지 않아 탑승 대기가 끝나는 시각으로 뒀어요. 맞는지 봐 주세요</span>
+            </label>
+            <input
+              id="departure-time"
+              type="time"
+              step={300}
+              value={formatTime(trip.departure.time)}
+              onChange={(e) => {
+                const m = parseTime(e.target.value)
+                const d = trip.departure!
+                // The written fact is when the traveler is at the airport: keep it, move the buffer.
+                const atAirport = d.time - (d.bufferMinutes ?? 0)
+                if (m !== null && m > atAirport) {
+                  updateTrip(() => ({
+                    departure: { ...d, time: m, bufferMinutes: m - atAirport },
+                    departureTimeGuessed: false,
+                  }))
+                }
+              }}
+            />
+            <button type="button" className="confirm__link" onClick={() => updateTrip(() => ({ departureTimeGuessed: false }))}>
+              맞아요
+            </button>
+          </div>
+        )}
 
         <nav className="confirm__days" aria-label="여행 날짜">
           {trip.days.map((d, i) => {

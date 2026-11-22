@@ -1,8 +1,10 @@
 import type { DraftItinerary } from '../api/types'
-import { DEFAULT_END_DEADLINE, type Trip } from '../store/trip'
+import { DEFAULT_END_DEADLINE, type Trip, type TripItem } from '../store/trip'
 import { defaultTier } from './category'
 
 type TripMeta = Pick<Trip, 'city' | 'startDate' | 'endDate' | 'hotel' | 'travelMode' | 'arrival' | 'departure'>
+type DraftDay = DraftItinerary['days'][number]
+type DraftItem = DraftDay['items'][number]
 
 /** ISO date `days` after `iso` ("2026-10-08" + 1 -> "2026-10-09"). UTC math: no DST surprises. */
 export function addDays(iso: string, days: number): string {
@@ -11,36 +13,53 @@ export function addDays(iso: string, days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-// Lines that are about the hotel or the airport, not a place to look up. Narrow on purpose:
-// "호텔" alone is not enough ("파크 하얏트 뉴욕 바" is a bar to search for).
-const HOTEL_LINE = /체크\s?인|체크\s?아웃|check[\s-]?in|check[\s-]?out|숙소|짐\s?(맡기|찾)|호텔\s?(복귀|귀환|도착|휴식)/i
-const AIRPORT_LINE = /공항|airport|출국|입국|탑승|비행기/i
-
 /**
- * The place already known for a line, so it is never searched (decision 2026-11-18): hotel lines
- * get the hotel, airport lines on the first/last day get the flight's airport. Otherwise null.
+ * Where an item is, from the server's place rules (decision 2026-11-23). Nothing is ever searched
+ * by the title: an item with no written place is left for the user to pick.
+ * - hotel: the registered hotel at once. An airport item on the first/last day: the flight's airport.
+ * - written: search the name with the address, when one is written (the surest match).
+ * - venue / previous with `place_of`: copy that item's place on Confirm (one pin per theme park).
+ * - venue without it: search the larger place's name.
  */
-function knownPlace(title: string, dayIndex: number, dayCount: number, meta: TripMeta): string | null {
-  if (meta.hotel && HOTEL_LINE.test(title)) return meta.hotel.placeId
-  if (AIRPORT_LINE.test(title)) {
-    if (dayIndex === 0 && meta.arrival) return meta.arrival.airport.placeId
-    if (dayIndex === dayCount - 1 && meta.departure) return meta.departure.airport.placeId
+function placeOf(it: DraftItem, di: number, dayCount: number, meta: TripMeta): Pick<TripItem, 'placeId' | 'placeQuery' | 'placeFrom'> {
+  const none = { placeId: null, placeQuery: null, placeFrom: null }
+  if (it.place_source === 'hotel') return { ...none, placeId: meta.hotel?.placeId ?? null }
+  if (it.role === 'airport') {
+    const flight = di === 0 ? meta.arrival : di === dayCount - 1 ? meta.departure : null
+    if (flight) return { ...none, placeId: flight.airport.placeId }
   }
-  return null
+  if ((it.place_source === 'venue' || it.place_source === 'previous') && it.place_of != null) {
+    return { ...none, placeFrom: { id: `d${di}-${it.place_of}`, why: it.place_source } }
+  }
+  const query = [it.place_query, it.address].filter(Boolean).join(' ')
+  return { ...none, placeQuery: query || null }
+}
+
+/** The end time the text writes for the day at the hotel, when every day that writes one agrees. */
+function writtenDeadline(days: DraftDay[]): number | null {
+  const ends = new Set(days.map((d) => d.end_time).filter((m): m is number => m != null))
+  return ends.size === 1 ? [...ends][0] : null
 }
 
 /**
  * Parsed draft -> the trip the app keeps. Day i of the text becomes startDate + i, in the order
- * written (the parser never reorders). Hotel and airport lines get their place here; the rest are
- * searched on Confirm. Tier default until the LLM step exists: reserved -> must, else nice
- * (decisions 2026-11-17).
+ * written (the parser never reorders). Hotel items get their place here; the rest are searched or
+ * copied on Confirm. Flights written in the text wait on Confirm for their airport, unless the
+ * user entered them at registration. Tier default until the LLM step exists: reserved -> must,
+ * else nice (decisions 2026-11-17).
  */
 export function tripFromDraft(draft: DraftItinerary, meta: TripMeta): Trip {
   const dayCount = draft.days.length
+  const first = draft.days[0]
+  const last = draft.days[dayCount - 1]
   return {
     id: crypto.randomUUID(),
     ...meta,
-    endDeadline: DEFAULT_END_DEADLINE,
+    endDeadline: writtenDeadline(draft.days) ?? DEFAULT_END_DEADLINE,
+    textFlights: {
+      arrival: meta.arrival ? null : (first?.arrival ?? null),
+      departure: meta.departure ? null : (last?.departure ?? null),
+    },
     patches: [],
     days: draft.days.map((day, di) => ({
       date: addDays(meta.startDate, di),
@@ -55,9 +74,8 @@ export function tripFromDraft(draft: DraftItinerary, meta: TripMeta): Trip {
         durationEstimated: it.duration_estimated ?? false,
         reservationTime: it.reservation_time ?? null,
         note: it.note ?? null,
-        placeQuery: it.place_query ?? null,
         patch: it.patch ?? null,
-        placeId: knownPlace(it.title, di, dayCount, meta),
+        ...placeOf(it, di, dayCount, meta),
         tier: defaultTier({ reservationTime: it.reservation_time ?? null }),
       })),
     })),

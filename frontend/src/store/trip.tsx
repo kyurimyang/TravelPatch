@@ -30,6 +30,7 @@ export type Category = Schemas['DraftItem']['category']
 /** Place kind for the patch picture (worship, museum, ...), chosen by the parser. */
 export type PatchKind = NonNullable<Schemas['DraftItem']['patch']>
 export type DraftIssue = Schemas['DraftIssue']
+export type DraftFlight = Schemas['DraftFlight']
 
 export type TripItem = {
   /** Local id, stable while the trip lives ("d0-3" = day 0, item 3). */
@@ -51,6 +52,10 @@ export type TripItem = {
   patch?: PatchKind | null
   /** Google place_id the user picked. null = not picked yet. */
   placeId: string | null
+  /** Same place as this item of the day (inside the theme park it is in, or the item before):
+   *  Confirm copies its place instead of searching. Only for the confirm step: not saved to
+   *  the account, so a trip loaded later just has the copied placeId. */
+  placeFrom?: { id: string; why: 'venue' | 'previous' } | null
   tier: Tier
   /** Taken out by a stitched patch (kept in the list, shown struck through, not recovered). */
   dropped?: boolean
@@ -94,6 +99,12 @@ export type Trip = {
   arrival: TripFlight | null
   /** Takes off on the last day: that day ends at the airport. */
   departure: TripFlight | null
+  /** Flights read from the pasted text, waiting on Confirm for their airport to be found.
+   *  Only for the confirm step (not saved to the account). */
+  textFlights?: { arrival: DraftFlight | null; departure: DraftFlight | null }
+  /** The text gave no take-off: the departure time is the last airport block's end. Cleared
+   *  when the user sets the time on Confirm. */
+  departureTimeGuessed?: boolean
   days: TripDay[]
   /** Stitched patches, oldest first: each is the change list against its day (invariant 6). */
   patches: SavedPatch[]
@@ -125,6 +136,8 @@ type TripStore = {
   deleteTrip: (id: string) => void
   /** Change one item of the current trip, leaving everything else as it is. */
   updateItem: (itemId: string, patch: Partial<Omit<TripItem, 'id'>>) => void
+  /** Change fields of the current trip as it is when applied (safe after an await). */
+  updateTrip: (patch: (t: Trip) => Partial<Omit<Trip, 'id' | 'days'>>) => void
   /** Stitch a patch onto its day of the current trip (idempotent by patch id). */
   stitch: (patch: SavedPatch) => void
   /** Take the latest patch of a day back off. */
@@ -417,6 +430,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
       })),
     }))
 
+  const updateTrip: TripStore['updateTrip'] = (patch) => editCurrent((t) => ({ ...t, ...patch(t) }))
+
   const stitch: TripStore['stitch'] = (patch) => editCurrent((t) => applyPatch(t, patch))
   const unstitch: TripStore['unstitch'] = (id) => editCurrent((t) => undoPatch(t, id))
 
@@ -429,6 +444,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         selectTrip,
         deleteTrip,
         updateItem,
+        updateTrip,
         stitch,
         unstitch,
         sync: signedIn ? sync : { kind: 'guest' },

@@ -299,13 +299,45 @@ export interface components {
         DraftDay: {
             /** Day Label */
             day_label: string | null;
+            /** Theme */
+            theme?: string | null;
             /** Items */
             items: components["schemas"]["DraftItem"][];
+            /**
+             * Legs
+             * @default []
+             */
+            legs: components["schemas"]["DraftLeg"][];
+            arrival?: components["schemas"]["DraftFlight"] | null;
+            departure?: components["schemas"]["DraftFlight"] | null;
+            /** End Time */
+            end_time?: number | null;
             /**
              * Issues
              * @default []
              */
             issues: components["schemas"]["DraftIssue"][];
+        };
+        /**
+         * DraftFlight
+         * @description Airport blocks at the start / end of a day, read as the arrival / departure flight.
+         *     `time` is landing / take-off. `time_written` is False when the text gives no take-off and
+         *     the last airport block's end stands in: the screen asks the user to check it.
+         */
+        DraftFlight: {
+            /** Airport Query */
+            airport_query: string | null;
+            /** Time */
+            time: number;
+            /** Buffer Minutes */
+            buffer_minutes: number | null;
+            /** Time Written */
+            time_written: boolean;
+            /**
+             * Absorbed
+             * @default []
+             */
+            absorbed: string[];
         };
         /**
          * DraftIssue
@@ -331,6 +363,12 @@ export interface components {
              * @enum {string}
              */
             category: "meal" | "sightseeing" | "shopping" | "cafe" | "transport" | "other";
+            /**
+             * Role
+             * @default activity
+             * @enum {string}
+             */
+            role: "activity" | "lodging" | "airport";
             /** Start */
             start?: number | null;
             /** End */
@@ -344,15 +382,48 @@ export interface components {
             reservation_time?: number | null;
             /** Note */
             note?: string | null;
+            /**
+             * Place Source
+             * @default none
+             * @enum {string}
+             */
+            place_source: "written" | "venue" | "previous" | "hotel" | "none";
+            /** Place Of */
+            place_of?: number | null;
             /** Place Query */
             place_query?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Spot */
+            spot?: string | null;
             /** Patch */
             patch?: ("worship" | "museum" | "viewpoint" | "bar" | "market" | "nature" | "spa" | "beach" | "lodging" | "theme_park" | "venue" | "mall") | null;
         };
         /** DraftItinerary */
         DraftItinerary: {
+            /** Hotel Query */
+            hotel_query?: string | null;
             /** Days */
             days: components["schemas"]["DraftDay"][];
+        };
+        /**
+         * DraftLeg
+         * @description A transport block, kept as the way between two items, not as an item. `after` / `before`
+         *     are item indexes; None = the day's start (hotel or arrival airport) / end.
+         */
+        DraftLeg: {
+            /** After */
+            after: number | null;
+            /** Before */
+            before: number | null;
+            /** Start */
+            start?: number | null;
+            /** End */
+            end?: number | null;
+            /** Title */
+            title: string;
+            /** Note */
+            note?: string | null;
         };
         /** ExtendEvent */
         ExtendEvent: {
