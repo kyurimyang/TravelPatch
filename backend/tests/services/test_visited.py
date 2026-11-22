@@ -75,7 +75,12 @@ def test_an_arrival_airport_start_is_replaced() -> None:
 def test_substitutes_for_a_visited_place_go_too() -> None:
     inp = load_scenario_c()  # izakaya_near / izakaya_far replace the izakaya
     data = inp.model_dump(mode="json")
-    data["event"] = {"type": "WEATHER", "occurred_at": 1300, "start_time": 1300, "location_id": "hotel"}
+    data["event"] = {
+        "type": "WEATHER",
+        "occurred_at": 1300,
+        "start_time": 1300,
+        "location_id": "hotel",
+    }
     out = apply_visited(type(inp).model_validate(data), ("izakaya",))
     assert out.substitutes == ()
     assert not any("izakaya" in (t.a + t.b) for t in out.travel)
@@ -85,7 +90,12 @@ def test_substitutes_for_a_visited_place_go_too() -> None:
 def test_unknown_ids_and_the_event_target_cannot_be_visited(bad: tuple[str, ...]) -> None:
     inp = load_scenario_a()
     data = inp.model_dump(mode="json")
-    data["event"] = {"type": "CLOSURE", "occurred_at": NOON, "location_id": "omotesando", "activity_id": "ramen"}
+    data["event"] = {
+        "type": "CLOSURE",
+        "occurred_at": NOON,
+        "location_id": "omotesando",
+        "activity_id": "ramen",
+    }
     with pytest.raises(VisitedError):
         apply_visited(type(inp).model_validate(data), bad)
 

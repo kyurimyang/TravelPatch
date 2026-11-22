@@ -53,12 +53,14 @@ def _flag_unknown_outdoor(
         return changes
     unknown = {a.id for a in inp.activities if a.outdoor is None}
     return tuple(
-        c.model_copy(update={"needs_check": True})
-        if c.activity_id in unknown
-        and c.after is not None
-        and c.after.start < rain[1]
-        and c.after.end > rain[0]
-        else c
+        (
+            c.model_copy(update={"needs_check": True})
+            if c.activity_id in unknown
+            and c.after is not None
+            and c.after.start < rain[1]
+            and c.after.end > rain[0]
+            else c
+        )
         for c in changes
     )
 
@@ -71,9 +73,13 @@ def _flag_unknown_walking(
         return changes
     unknown = {a.id for a in inp.activities if a.walking is None}
     return tuple(
-        c.model_copy(update={"needs_check": True})
-        if c.activity_id in unknown and c.after is not None and c.activity_id != inp.event.location_id
-        else c
+        (
+            c.model_copy(update={"needs_check": True})
+            if c.activity_id in unknown
+            and c.after is not None
+            and c.activity_id != inp.event.location_id
+            else c
+        )
         for c in changes
     )
 

@@ -66,7 +66,11 @@ def _own_violations(
         activity_id=change.activity_id, op=Op.KEEP, before=change.before, after=change.before
     )
     plan = tuple(restored if c.activity_id == change.activity_id else c for c in changes)
-    kinds = {v.kind for v in validate(inp, plan, min_buffer, **rules) if v.activity_id == change.activity_id}
+    kinds = {
+        v.kind
+        for v in validate(inp, plan, min_buffer, **rules)
+        if v.activity_id == change.activity_id
+    }
     return tuple(sorted(kinds))
 
 

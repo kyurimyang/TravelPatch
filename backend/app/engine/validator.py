@@ -141,7 +141,9 @@ def _check_meal_window(
     return out
 
 
-def _check_must_kept(info: dict[str, _Info], changes: tuple[RecoveryChange, ...]) -> list[Violation]:
+def _check_must_kept(
+    info: dict[str, _Info], changes: tuple[RecoveryChange, ...]
+) -> list[Violation]:
     return [
         Violation(kind="must_drop", activity_id=c.activity_id, detail=f"{c.activity_id} is must")
         for c in sorted(changes, key=lambda c: c.activity_id)
@@ -382,7 +384,9 @@ def _check_no_drop_categories(
     # A strategy's hard rule ("food": meals are never dropped).
     category = {a.id: a.category for a in inp.activities}
     return [
-        Violation(kind="no_drop", activity_id=c.activity_id, detail=f"{category[c.activity_id]} kept")
+        Violation(
+            kind="no_drop", activity_id=c.activity_id, detail=f"{category[c.activity_id]} kept"
+        )
         for c in sorted(changes, key=lambda c: c.activity_id)
         if c.op == Op.DROP and category.get(c.activity_id) in categories
     ]

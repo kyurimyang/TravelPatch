@@ -176,7 +176,6 @@ class RecoveryInput(_Frozen):
             raise ValueError(f"travel table incomplete: {len(seen)} of {expected} pairs")
 
 
-
 class RecoveryRequest(RecoveryInput):
     """POST /recoveries: the day as planned, plus the activities already visited (decision
     2026-11-22). The server takes those out before the engine (services/visited.py); the
@@ -186,6 +185,7 @@ class RecoveryRequest(RecoveryInput):
 
     def plan(self) -> RecoveryInput:
         return RecoveryInput.model_validate(self.model_dump(exclude={"visited"}))
+
 
 class SideEffect(_Frozen):
     """Another activity whose change differs once X is kept."""
@@ -204,7 +204,7 @@ class Counterfactual(_Frozen):
 
 
 class LockRequest(_Frozen):
-    """"Leave these pieces as they were": recompute with them held at their original slots."""
+    """ "Leave these pieces as they were": recompute with them held at their original slots."""
 
     input: RecoveryInput
     activity_ids: tuple[str, ...] = Field(min_length=1)

@@ -31,7 +31,9 @@ def event_chips(event: DisruptionEvent, activities: tuple[Activity, ...]) -> tup
         case DelayEvent():
             return (f"{_hhmm(event.start_time)}부터 움직일 수 있어요",)
         case WeatherEvent():
-            end = f"{_hhmm(event.end_time)}까지" if event.end_time is not None else "끝나는 시각 미정"
+            end = (
+                f"{_hhmm(event.end_time)}까지" if event.end_time is not None else "끝나는 시각 미정"
+            )
             return (f"{_hhmm(event.start_time)}부터 비 · {end}",)
         case ClosureEvent():
             return (f"{title[event.activity_id]} 이용 불가",)
@@ -50,7 +52,9 @@ def interpret_disruption(req: InterpretRequest, provider: LLMProvider) -> Interp
         interpretation: InterpretedDisruption | None = interpret(provider, req.text)
     except LLMOutputError as exc:
         problem = InterpretProblem(code="LLM_FAILED", detail=str(exc))
-        return InterpretResponse(status="needs_input", interpretation=None, event=None, problem=problem)
+        return InterpretResponse(
+            status="needs_input", interpretation=None, event=None, problem=problem
+        )
 
     try:
         event = build_event(

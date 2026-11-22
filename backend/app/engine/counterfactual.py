@@ -38,9 +38,11 @@ def restore(
     if result is None:
         return None
     result = result.model_copy(
-        update={"changes": explain_changes(
-            inp, result.changes, strategy.min_buffer, **strategy_rules(strategy)
-        )}
+        update={
+            "changes": explain_changes(
+                inp, result.changes, strategy.min_buffer, **strategy_rules(strategy)
+            )
+        }
     )
     new = {c.activity_id: c for c in result.changes}
     effects = tuple(

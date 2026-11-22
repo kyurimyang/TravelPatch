@@ -28,6 +28,4 @@ def _require(name: str) -> str:
 @lru_cache(maxsize=1)
 def get_client() -> Client:
     load_dotenv(_ENV_PATH)
-    return create_client(
-        _require("SUPABASE_URL"), _require("SUPABASE_SERVICE_ROLE_KEY")
-    )
+    return create_client(_require("SUPABASE_URL"), _require("SUPABASE_SERVICE_ROLE_KEY"))

@@ -158,7 +158,9 @@ def solve_fixed_order(
 
                 if in_progress:
                     # Already started: the start cannot move.
-                    starts = [a.planned_start] if last is None or a.planned_start >= earliest else []
+                    starts = (
+                        [a.planned_start] if last is None or a.planned_start >= earliest else []
+                    )
                 elif opt.substitute is None and a.reservation_time is not None:
                     # A strategy may want the traveller there early (the validator re-checks).
                     ready = max(earliest, t + travel(origin, opt.node) + reservation_buffer)
@@ -185,7 +187,9 @@ def solve_fixed_order(
                     if opt.substitute is not None
                     else 0.0
                 )
-                move_cost = weights.w_move * travel(last, opt.node) / 60 if last is not None else 0.0
+                move_cost = (
+                    weights.w_move * travel(last, opt.node) / 60 if last is not None else 0.0
+                )
                 for s in starts:
                     time_cost = weights.w_time * abs(s - a.planned_start) / 60 + move_cost
                     for d in durations:  # longer than a tiredness cap: already left out
@@ -201,9 +205,12 @@ def solve_fixed_order(
                         if opt.substitute is not None:
                             step = weights.w_changed + sub_cost
                         else:
-                            step = (
-                                weights.w_shrink * value * max(0, planned_len - d) / planned_len
-                                + (weights.w_changed if (s, end) != (a.planned_start, a.planned_end) else 0.0)
+                            step = weights.w_shrink * value * max(
+                                0, planned_len - d
+                            ) / planned_len + (
+                                weights.w_changed
+                                if (s, end) != (a.planned_start, a.planned_end)
+                                else 0.0
                             )
                         step += time_cost
                         _relax(nxt, (opt.node, end), cost + step, (state, (s, d, opt.node)))
@@ -247,6 +254,8 @@ def solve_fixed_order(
                 )
             else:
                 changes.append(
-                    RecoveryChange(activity_id=act_id, op=_op(before, after), before=before, after=after)
+                    RecoveryChange(
+                        activity_id=act_id, op=_op(before, after), before=before, after=after
+                    )
                 )
     return Solution(tuple(changes), best_cost)

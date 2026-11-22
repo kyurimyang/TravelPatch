@@ -59,7 +59,9 @@ def find_blockers(inp: RecoveryInput) -> list[Blocker]:
         target = next(a for a in inp.activities if a.id == ev.activity_id)
         most = _max_extra(inp, target, travel)
         if most < ev.extra_minutes:
-            out.append(Blocker(kind="extension_blocked", activity_id=target.id, max_extra_minutes=most))
+            out.append(
+                Blocker(kind="extension_blocked", activity_id=target.id, max_extra_minutes=most)
+            )
     return out
 
 
@@ -79,7 +81,9 @@ def _max_extra(inp: RecoveryInput, a: Activity, travel) -> int:
     return max(0, (latest_end - start - planned) // STEP * STEP)
 
 
-def _reservation_clashes(inp: RecoveryInput, musts: set[str], extended: str | None, travel) -> list[Blocker]:
+def _reservation_clashes(
+    inp: RecoveryInput, musts: set[str], extended: str | None, travel
+) -> list[Blocker]:
     """Two bookings that can neither move nor be dropped, too close for the first to end and the
     traveller to get to the second. Reserved slots keep their length, so this is certain."""
     ev = inp.event

@@ -44,7 +44,11 @@ def apply_visited(inp: RecoveryInput, visited: Iterable[str]) -> RecoveryInput:
         spot = next(a for a in inp.activities if a.id == here)
         data["day"] |= {"start_lat": spot.lat, "start_lng": spot.lng}
         travel = [
-            {**t, "a": START_ID if t["a"] == here else t["a"], "b": START_ID if t["b"] == here else t["b"]}
+            {
+                **t,
+                "a": START_ID if t["a"] == here else t["a"],
+                "b": START_ID if t["b"] == here else t["b"],
+            }
             for t in travel
             if START_ID not in (t["a"], t["b"])
         ]
