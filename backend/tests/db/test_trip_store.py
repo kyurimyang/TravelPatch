@@ -28,6 +28,7 @@ def item(key: str, title: str, start: int | None, end: int | None, **extra: Any)
         "reservationTime": None,
         "note": None,
         "placeQuery": None,
+        "patch": None,
         "placeId": place(key),
         "tier": "nice",
         "dropped": False,
@@ -56,7 +57,8 @@ def sample_trip() -> dict[str, Any]:
                 "issues": [],
                 "items": [
                     item("d0-0", "오모테산도 산책", 660, 720, placeQuery="오모테산도"),
-                    item("d0-1", "스카이 전망대", 1020, 1080, tier="must", reservationTime=1020),
+                    item("d0-1", "스카이 전망대", 1020, 1080, tier="must", reservationTime=1020,
+                         patch="viewpoint"),
                     item("d0-2", "이자카야", None, None, category="meal", placeId=None,
                          note="시간 미정", durationEstimated=True),
                 ],
