@@ -1,3 +1,5 @@
+import { supabase } from '../lib/supabase'
+
 // Backend problems the UI should tell apart from a network failure.
 export class ApiError extends Error {
   readonly status: number
@@ -24,7 +26,26 @@ export const LLM_TIMEOUT_MS = 60_000
 
 export type RequestOptions = { timeoutMs?: number }
 
+/** A signed-in user's token, so the server does not count the call against the guest limit
+ * (decision 2026-11-22). getSession() refreshes an expired token before handing it over. */
+async function authHeader(): Promise<Record<string, string>> {
+  if (!supabase) return {}
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+/** What to tell the user for the two answers about who is calling, or null for any other error. */
+export function accessMessage(e: unknown): string | null {
+  if (!(e instanceof ApiError)) return null
+  if (e.status === 429) return '오늘 게스트로 쓸 수 있는 횟수를 다 썼어요. 로그인하면 계속 쓸 수 있어요.'
+  if (e.status === 401) return '로그인이 만료됐어요. 다시 로그인해 주세요.'
+  return null
+}
+
 async function fetchWithTimeout(path: string, init: RequestInit, ms: number): Promise<Response> {
+  const headers = { ...(init.headers as Record<string, string> | undefined), ...(await authHeader()) }
+  init = { ...init, headers }
   const ctrl = new AbortController()
   // Our own timer, not AbortSignal.timeout(): it is cleared as soon as the answer is in.
   const timer = setTimeout(() => ctrl.abort(new RequestTimeoutError(path, ms)), ms)

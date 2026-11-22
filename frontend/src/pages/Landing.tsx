@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { accessMessage } from '../api/http'
 import { parseItinerary } from '../api/itineraries'
 import type { PlaceOption, TravelMode } from '../api/types'
 import wordmark from '../assets/wordmark.webp'
@@ -68,8 +69,8 @@ export default function Landing() {
       }
       setTrip(tripFromDraft(res.draft, meta))
       navigate('/new/confirm')
-    } catch {
-      setProblem('서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요.')
+    } catch (e) {
+      setProblem(accessMessage(e) ?? '서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요.')
     } finally {
       setBusy(false)
     }

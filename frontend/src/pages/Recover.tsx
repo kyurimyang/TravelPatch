@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { interpretDisruption } from '../api/disruptions'
-import { ApiError } from '../api/http'
+import { accessMessage, ApiError } from '../api/http'
 import { buildPlan } from '../api/plans'
 import type { BuiltPlan, InterpretResponse } from '../api/types'
 import closed from '../assets/patches/hole-closed.svg'
@@ -99,9 +99,10 @@ export default function Recover() {
       .catch((e: Error) => {
         if (cancelled) return
         const message =
-          e instanceof ApiError && e.status === 503
+          accessMessage(e) ??
+          (e instanceof ApiError && e.status === 503
             ? '장소 정보를 불러올 수 없어요. 서버에 장소 검색 키가 설정되어 있는지 확인해 주세요.'
-            : '장소 정보를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.'
+            : '장소 정보를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.')
         setFetched({ kind: 'blocked', message })
       })
     return () => {
@@ -174,9 +175,10 @@ export default function Recover() {
       setPhase({ kind: 'result', response })
     } catch (e) {
       const message =
-        e instanceof ApiError && e.status === 503
+        accessMessage(e) ??
+        (e instanceof ApiError && e.status === 503
           ? '지금은 한 줄 해석을 쓸 수 없어요. 서버에 AI 키가 설정되어 있는지 확인해 주세요.'
-          : '해석하지 못했어요. 잠시 뒤 다시 시도해 주세요.'
+          : '해석하지 못했어요. 잠시 뒤 다시 시도해 주세요.')
       setPhase({ kind: 'error', message })
     }
   }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ApiError } from '../api/http'
+import { accessMessage, ApiError } from '../api/http'
 import { searchPlaces } from '../api/places'
 import type { PlaceOption } from '../api/types'
 import './PlaceSearch.css'
@@ -35,7 +35,9 @@ export function PlaceSearch({ inputId, city, placeholder, picked, onPick }: Prop
       const { candidates } = await searchPlaces(query.trim(), city.trim() || undefined)
       setPhase({ kind: 'results', options: candidates })
     } catch (e) {
-      const message = e instanceof ApiError && e.status === 503 ? '장소 검색이 아직 설정되지 않았어요' : '검색하지 못했어요. 다시 해 주세요'
+      const message =
+        accessMessage(e) ??
+        (e instanceof ApiError && e.status === 503 ? '장소 검색이 아직 설정되지 않았어요' : '검색하지 못했어요. 다시 해 주세요')
       setPhase({ kind: 'error', message })
     }
   }
