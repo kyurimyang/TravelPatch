@@ -142,7 +142,7 @@
 .confirm__card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
   padding: 14px;
   border-radius: 12px;
   background: var(--tp-linen);
@@ -179,6 +179,12 @@
 .confirm__card-row {
   display: flex;
   gap: 12px;
+  margin-bottom: 4px;
+}
+
+/* Everything under the head row lines up with the title column (46px icon + 12px gap). */
+.confirm__card > :not(.confirm__card-row) {
+  margin-left: 58px;
 }
 
 .confirm__option {
@@ -257,10 +263,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 12px;
-  border: 1.5px solid var(--tp-hemp);
-  border-radius: 12px;
-  background: var(--tp-lace);
+  padding-top: 6px;
+  border-top: 1px dashed var(--tp-hemp);
+  font-size: 14px;
 }
 
 .confirm__found > span {
@@ -278,7 +283,7 @@
 .confirm__found button {
   flex: none;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 0 0 12px;
   border: 0;
   background: none;
   font: inherit;
