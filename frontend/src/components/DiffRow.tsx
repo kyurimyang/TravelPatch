@@ -57,11 +57,13 @@ interface Props {
   substituteTitle?: string
   /** "왜?" content, folded under the row. Changed rows only (a kept row needs no reason). */
   detail?: ReactNode
+  /** It changed places with a piece around it (lib/timetable). */
+  reordered?: boolean
 }
 
 // A piece of the day as a row of the timetable: time | patch | name + what changes | op label.
 // Changed pieces are stitched on (dashed edge in the op colour); kept pieces stay flat.
-export function DiffRow({ title, change, icon, substituteTitle, detail }: Props) {
+export function DiffRow({ title, change, icon, substituteTitle, detail, reordered }: Props) {
   const slot = change.after ?? change.before
   return (
     <li className="diff-row" data-op={change.op}>
@@ -73,6 +75,7 @@ export function DiffRow({ title, change, icon, substituteTitle, detail }: Props)
           <span className="diff-row__chip">{OP_LABEL[change.op]}</span>
         </div>
         <ChangeLine change={change} substituteTitle={substituteTitle} />
+        {reordered && <span className="diff-row__reordered">순서 바뀜</span>}
         {change.needs_check && <span className="diff-row__check">현장 확인 필요</span>}
         {detail && change.op !== 'keep' && (
           <details className="diff-row__why">

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { RecoveryChange, RecoveryResult } from '../api/types'
+import { timetable } from '../lib/timetable'
 import { DiffRow } from './DiffRow'
 import './CandidateCard.css'
 
@@ -17,9 +18,10 @@ interface Props {
 export function CandidateCard({ result, titleOf, iconOf, renderDetail }: Props) {
   return (
     <ul className="candidate-card">
-      {result.changes.map((change) => (
+      {timetable(result.changes).map(({ change, reordered }) => (
         <DiffRow
           key={change.activity_id}
+          reordered={reordered}
           title={titleOf.get(change.activity_id) ?? change.activity_id}
           icon={iconOf?.get(change.activity_id)}
           substituteTitle={change.substitute_id ? titleOf.get(change.substitute_id) : undefined}

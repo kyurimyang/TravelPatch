@@ -139,6 +139,18 @@
   color: var(--color-text);
 }
 
+/* Said in words, next to the time: the list is in time order now, so a piece that changed
+   places would otherwise look like it was always there. */
+.diff-row__reordered {
+  align-self: flex-start;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--op-move-edge);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--op-move-fg);
+}
+
 .diff-row__check {
   align-self: flex-start;
   font-size: var(--text-sm);
