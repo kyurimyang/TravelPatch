@@ -4,7 +4,7 @@
   margin-top: auto;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  background: var(--tp-linen);
+  background: var(--tp-tex-linen), var(--tp-linen);
   border-top: 2px dashed var(--tp-hemp);
 }
 

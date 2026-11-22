@@ -12,7 +12,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 24px 20px 30px;
-  background: var(--tp-linen);
+  background: var(--tp-tex-linen), var(--tp-linen);
   border-bottom: 2px dashed var(--tp-hemp);
 }
 
@@ -104,7 +104,7 @@
   padding: 22px 16px;
   border: 2px dashed var(--tp-indigo);
   border-radius: 14px;
-  background: var(--tp-linen);
+  background: var(--tp-tex-linen), var(--tp-linen);
 }
 
 .landing__form p {

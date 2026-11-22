@@ -5,7 +5,7 @@
   min-height: 56px;
   padding: 6px 16px;
   box-sizing: border-box;
-  background: var(--tp-linen);
+  background: var(--tp-tex-linen), var(--tp-linen);
   border-bottom: 2px dashed var(--tp-hemp);
 }
 

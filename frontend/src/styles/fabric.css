@@ -1,14 +1,14 @@
-/* TravelPatch fabric details: weave, stitches, pinked edges. Apply by class; colours come from tokens.css. */
+/* TravelPatch fabric details: cloth grain (textures in patterns.css), stitches, pinked edges. Apply by class; colours come from tokens.css. */
 .tp-fabric{
-  background-image:repeating-linear-gradient(0deg,rgba(122,78,50,.045) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(122,78,50,.045) 0 1px,transparent 1px 3px)!important;
+  background-image:var(--tp-tex-linen)!important;
   outline:1.5px dashed rgba(122,78,50,.42);outline-offset:-7px;
   box-shadow:0 1px 0 rgba(36,49,77,.06),0 5px 10px -6px rgba(36,49,77,.35);
 }
 .tp-linen-tex{
-  background-image:repeating-linear-gradient(0deg,rgba(122,78,50,.03) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(122,78,50,.03) 0 1px,transparent 1px 3px)!important;
+  background-image:var(--tp-tex-linen)!important;
 }
 .tp-denim{
-  background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.09) 0 1px,transparent 1px 3px),repeating-linear-gradient(45deg,rgba(0,0,0,.22) 0 1px,transparent 1px 4px)!important;
+  background-image:var(--tp-tex-denim),repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 1px,transparent 1px 3px),repeating-linear-gradient(45deg,rgba(0,0,0,.2) 0 1px,transparent 1px 4px)!important;
 }
 .tp-tagstitch{outline:1px dashed rgba(255,255,255,.8);outline-offset:-3px}
 .tp-swatch{outline:2px dashed rgba(253,250,243,.85);outline-offset:-6px;box-shadow:0 0 0 2px rgba(255,255,255,.25),1px 3px 0 rgba(0,0,0,.3)}
