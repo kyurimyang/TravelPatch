@@ -11,7 +11,15 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from app.schemas.enums import Category, Tier, TravelMode
-from app.schemas.models import MINUTES_PER_DAY, Activity, Day, Preference, TravelTime, _Frozen
+from app.schemas.models import (
+    MAX_ACTIVITIES,
+    MINUTES_PER_DAY,
+    Activity,
+    Day,
+    Preference,
+    TravelTime,
+    _Frozen,
+)
 
 
 class PlanItem(_Frozen):
@@ -58,7 +66,8 @@ class PlanRequest(_Frozen):
     # left out there; it is required on every other day.
     end_deadline: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
     travel_mode: TravelMode = TravelMode.TRANSIT
-    items: tuple[PlanItem, ...] = Field(min_length=1)
+    # One Google lookup per distinct place, for one counted call: capped like the recovery day.
+    items: tuple[PlanItem, ...] = Field(min_length=1, max_length=MAX_ACTIVITIES)
     arrival: Flight | None = None  # the day starts at this airport after landing
     departure: Flight | None = None  # the day ends at this airport before take-off
 

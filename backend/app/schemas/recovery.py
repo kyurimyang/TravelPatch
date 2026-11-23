@@ -6,6 +6,7 @@ from app.schemas.enums import Op, ReasonType
 from app.schemas.events import DelayEvent, DisruptionEvent
 from app.schemas.models import (
     HOTEL_ID,
+    MAX_ACTIVITIES,
     MINUTES_PER_DAY,
     START_ID,
     Activity,
@@ -105,24 +106,45 @@ class RecoveryResult(_Frozen):
     solver_ms: int = Field(ge=0)
 
 
+class Relaxation(_Frozen):
+    """With no plan at all: one "꼭" (must) activity that, taken down to "좋음" (nice), lets a
+    valid plan exist. Only a suggestion: the client asks again with that tier, so the plan the
+    user sees still comes from the normal solve + validate path."""
+
+    activity_id: str
+    preservation_rate: float = Field(ge=0.0, le=1.0)  # of the best plan found that way
+
+
 class RecoveryResponse(_Frozen):
-    """What the API returns: the candidates, or, when none exists, the blockers explaining why."""
+    """What the API returns: the candidates, or, when none exists, the blockers explaining why
+    and the relaxations that would make a plan possible."""
 
     candidates: tuple[RecoveryResult, ...]
     blockers: tuple[Blocker, ...] = ()
+    relaxations: tuple[Relaxation, ...] = ()
     # The input the candidates were computed from. It differs from the request when the server
     # added substitutes for a closure; the client sends this one back (restore, re-run) so the
     # same substitutes are used again instead of a new search.
     used_input: "RecoveryInput | None" = None
 
 
+# Caps on one day's size (MAX_ACTIVITIES: models.py), so an oversized request cannot hold
+# the server for long.
+MAX_SUBSTITUTES = 48
+
+
 class RecoveryInput(_Frozen):
     day: Day
-    activities: tuple[Activity, ...]
-    preferences: tuple[Preference, ...]
-    travel: tuple[TravelTime, ...]
+    activities: tuple[Activity, ...] = Field(max_length=MAX_ACTIVITIES)
+    preferences: tuple[Preference, ...] = Field(max_length=MAX_ACTIVITIES)
+    # Every pair of nodes: activities + substitutes + hotel + start (+ a must-visit place).
+    travel: tuple[TravelTime, ...] = Field(
+        max_length=(MAX_ACTIVITIES + MAX_SUBSTITUTES + 3)
+        * (MAX_ACTIVITIES + MAX_SUBSTITUTES + 2)
+        // 2
+    )
     event: DisruptionEvent
-    substitutes: tuple[Substitute, ...] = ()
+    substitutes: tuple[Substitute, ...] = Field(default=(), max_length=MAX_SUBSTITUTES)
 
     @property
     def now(self) -> int:
@@ -207,7 +229,7 @@ class LockRequest(_Frozen):
     """ "Leave these pieces as they were": recompute with them held at their original slots."""
 
     input: RecoveryInput
-    activity_ids: tuple[str, ...] = Field(min_length=1)
+    activity_ids: tuple[str, ...] = Field(min_length=1, max_length=MAX_ACTIVITIES)
 
 
 class RestoreRequest(_Frozen):

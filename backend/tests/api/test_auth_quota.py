@@ -1,5 +1,5 @@
-"""Who may spend the LLM / Places budget (decision 2026-11-22): signed-in users without a count,
-guests up to a daily limit, an untrusted token never."""
+"""Who may spend the LLM / Places budget (decisions 2026-11-22, 2026-11-23): guests up to a daily
+limit per IP and in total, signed-in users up to their own (larger) limit, an untrusted token never."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -29,8 +29,13 @@ class FakeVerifier:
         return "user-1"
 
 
-def _quota(llm: int = 1, places: int = 1) -> GuestQuota:
-    q = GuestQuota({Kind.LLM: Limit(per_ip=llm, total=100), Kind.PLACES: Limit(per_ip=places, total=100)})
+def _quota(llm: int = 1, places: int = 1, per_user: int = 50) -> GuestQuota:
+    q = GuestQuota(
+        {
+            Kind.LLM: Limit(per_ip=llm, total=100, per_user=per_user),
+            Kind.PLACES: Limit(per_ip=places, total=100, per_user=per_user),
+        }
+    )
     app.dependency_overrides[get_guest_quota] = lambda: q
     return q
 
@@ -50,10 +55,12 @@ def test_guest_is_refused_past_the_daily_limit() -> None:
     assert [_search() for _ in range(3)] == [200, 200, 429]
 
 
-def test_signed_in_user_is_not_counted() -> None:
-    _quota(places=1)
+def test_signed_in_user_has_a_limit_of_their_own() -> None:
+    _quota(places=1, per_user=3)
     assert [_search({"Authorization": "Bearer good"}) for _ in range(3)] == [200, 200, 200]
     assert _search() == 200  # the guest's one call is still unused
+    # Sign-up needs no e-mail check: signed in is not unlimited (2026-11-23).
+    assert _search({"Authorization": "Bearer good"}) == 429
 
 
 def test_vercel_ip_counts_each_guest_apart() -> None:

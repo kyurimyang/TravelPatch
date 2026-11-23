@@ -69,6 +69,23 @@ def written_times(text: str) -> list[tuple[str, str | None]]:
     return out
 
 
+# Below this share of the text's time lines, the answer stopped early (a whole answer reads
+# ~100%: 51/51 and 45/45 on the recorded pastes; the early stops read 10/51).
+MIN_READ_SHARE = 0.8
+
+
+def read_count(parsed: ParsedItinerary, text: str) -> tuple[int, int]:
+    """(timed items the parser gave, time lines written in the text). Language-free: it counts
+    times, not day headings."""
+    read = sum(1 for day in parsed.days for item in day.items if (item.start or "").strip())
+    return read, len(written_times(text))
+
+
+def reads_short(parsed: ParsedItinerary, text: str) -> bool:
+    read, written = read_count(parsed, text)
+    return written > 0 and read < MIN_READ_SHARE * written
+
+
 def _with_written_ends(
     days: list[list[ParsedItem]], ranges: list[tuple[str, str | None]]
 ) -> list[list[ParsedItem]]:

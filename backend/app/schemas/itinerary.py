@@ -111,7 +111,16 @@ class ParseProblem(_Frozen):
     detail: str
 
 
+class PartialRead(_Frozen):
+    """The draft covers only part of the text, even after asking twice: `read` timed items came
+    back for `written` time lines. The screen tells the user what is missing."""
+
+    read: int = Field(ge=0)
+    written: int = Field(ge=1)
+
+
 class ParseResponse(_Frozen):
     status: Literal["ok", "manual"]
     draft: DraftItinerary | None  # set exactly when status is "ok"
     problem: ParseProblem | None = None
+    partial: PartialRead | None = None  # None = the draft covers the text

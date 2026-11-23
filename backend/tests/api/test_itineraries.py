@@ -103,3 +103,72 @@ def test_no_days_found_is_reported():
     body = res.json()
     assert body["status"] == "manual"
     assert body["problem"]["code"] == "NOTHING_FOUND"
+
+
+# --- an answer that stops early (decision 2026-11-23: a remark line ended the plan) ---------
+
+FOUR_DAYS = "".join(f"DAY {d}\n09:00~10:00\na{d}\n11:00~12:00\nb{d}\n" for d in range(1, 5))
+
+
+def _days(n: int) -> ParsedItinerary:
+    return ParsedItinerary(
+        days=[
+            ParsedDay(
+                day_label=f"DAY {d}",
+                theme=None,
+                items=[_item(f"a{d}", "09:00", end="10:00"), _item(f"b{d}", "11:00", end="12:00")],
+            )
+            for d in range(1, n + 1)
+        ]
+    )
+
+
+class SeqProvider:
+    """Gives its answers in turn: the first call gets the first one."""
+
+    def __init__(self, *answers: ParsedItinerary | Exception) -> None:
+        self.answers = list(answers)
+        self.calls = 0
+
+    def complete_json(self, *, system, user, schema):
+        answer = self.answers[min(self.calls, len(self.answers) - 1)]
+        self.calls += 1
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+
+def _post_seq(text: str, *answers) -> tuple[object, SeqProvider]:
+    fake = SeqProvider(*answers)
+    app.dependency_overrides[get_provider] = lambda: fake
+    try:
+        return TestClient(app).post("/itineraries/parse", json={"text": text}), fake
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_an_answer_that_reads_most_of_the_text_is_not_asked_again():
+    res, fake = _post_seq(FOUR_DAYS, _days(4))
+    assert fake.calls == 1 and res.json()["partial"] is None
+
+
+def test_an_answer_that_stops_early_is_asked_once_more():
+    res, fake = _post_seq(FOUR_DAYS, _days(1), _days(4))
+    body = res.json()
+    assert fake.calls == 2
+    assert len(body["draft"]["days"]) == 4 and body["partial"] is None
+
+
+def test_short_twice_keeps_the_longer_answer_and_says_how_much_was_read():
+    res, fake = _post_seq(FOUR_DAYS, _days(2), _days(1))
+    body = res.json()
+    assert fake.calls == 2 and body["status"] == "ok"
+    assert len(body["draft"]["days"]) == 2
+    assert body["partial"] == {"read": 4, "written": 8}
+
+
+def test_a_failed_second_try_keeps_the_first_answer():
+    res, _ = _post_seq(FOUR_DAYS, _days(1), LLMOutputError("x"))
+    body = res.json()
+    assert body["status"] == "ok" and len(body["draft"]["days"]) == 1
+    assert body["partial"] == {"read": 2, "written": 8}

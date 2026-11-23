@@ -64,6 +64,14 @@ def _effective(inp: RecoveryInput, strategy: Strategy) -> Strategy:
             "relocates": 0,
             "reservation_buffer": strategy.reservation_buffer if booked else 0,
             "no_drop_categories": tuple(c for c in strategy.no_drop_categories if c in present),
+            # A heavier drop cost for a category absent today changes nothing either.
+            "weights": strategy.weights.model_copy(
+                update={
+                    "category_drop_factor": tuple(
+                        (c, f) for c, f in strategy.weights.category_drop_factor if c in present
+                    )
+                }
+            ),
         }
     )
 

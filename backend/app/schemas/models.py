@@ -7,6 +7,10 @@ from app.schemas.enums import Category, Tier, TimeRigidity, TravelMode
 
 # All times are minutes since midnight (int). 09:30 -> 570.
 MINUTES_PER_DAY = 1440
+# Most activities one day may hold, for the recovery engine and the plan builder alike. The
+# solver's work grows with every activity and is re-run per strategy and per reordering; a real
+# day is far below this (the stress test runs 12).
+MAX_ACTIVITIES = 16
 
 
 # Location id of the hotel in travel tables (start of day and the return deadline).

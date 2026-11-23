@@ -19,6 +19,10 @@ T = TypeVar("T", bound=BaseModel)
 _ENV_PATH = Path(__file__).resolve().parents[3] / ".env"
 DEFAULT_MODEL = "gpt-4o-mini"
 MAX_ATTEMPTS = 2  # first try + one retry (invariant 4)
+# Per request to OpenAI. The SDK's default is 10 minutes with 2 hidden retries of its own: one
+# slow answer could hold a worker of the single server for half an hour. Our own MAX_ATTEMPTS
+# loop is the only retry. The browser gives up on LLM calls at 60 s (frontend/src/api/http.ts).
+LLM_TIMEOUT_SECONDS = 25.0
 
 
 class LLMError(RuntimeError):
@@ -49,7 +53,7 @@ class OpenAIProvider:
             key = (api_key or os.environ.get("OPENAI_KEY", "")).strip()
             if not key:
                 raise LLMConfigError("OPENAI_KEY is not set (see .env)")
-            client = openai.OpenAI(api_key=key)
+            client = openai.OpenAI(api_key=key, timeout=LLM_TIMEOUT_SECONDS, max_retries=0)
         self._client = client
         self._model = model or os.environ.get("OPENAI_MODEL") or DEFAULT_MODEL
 

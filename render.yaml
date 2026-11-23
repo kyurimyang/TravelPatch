@@ -23,3 +23,7 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      # Daily usage counts in the database (migration 0006), not in memory: a restart must not
+      # reset the limits. Apply 0006 before deploying this.
+      - key: QUOTA_STORE
+        value: supabase

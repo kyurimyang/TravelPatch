@@ -5,6 +5,7 @@ import time
 from app.engine.conflict_detector import find_blockers
 from app.engine.counterfactual import restore
 from app.engine.recover import Discard, recover
+from app.engine.relax import relaxations
 from app.schemas.recovery import (
     RecoveryInput,
     RecoveryResponse,
@@ -49,7 +50,8 @@ def run_recovery(inp: RecoveryInput) -> RecoveryResponse:
     """Call the engine and do what the engine must not: read the clock.
 
     solver_ms is the time of the whole call (all strategies), copied onto every candidate;
-    the engine itself leaves it 0. With no candidate, the blockers say why.
+    the engine itself leaves it 0. With no candidate, the blockers say why and the
+    relaxations say which single "must" to loosen for a plan to exist.
     """
     start = time.perf_counter()
     results = _recover_logged(inp)
@@ -59,7 +61,10 @@ def run_recovery(inp: RecoveryInput) -> RecoveryResponse:
         for r in results
     )
     blockers = () if candidates else tuple(find_blockers(inp))
-    return RecoveryResponse(candidates=candidates, blockers=blockers, used_input=inp)
+    relaxed = () if candidates else tuple(relaxations(inp))
+    return RecoveryResponse(
+        candidates=candidates, blockers=blockers, relaxations=relaxed, used_input=inp
+    )
 
 
 def run_restore(req: RestoreRequest) -> RestoreResponse:

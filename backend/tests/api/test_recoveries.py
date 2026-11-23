@@ -28,6 +28,15 @@ def test_returns_valid_candidates_with_the_solver_time_filled_in() -> None:
         assert c["solver_ms"] > 0  # the engine leaves 0; the service layer measures it
 
 
+def test_an_oversized_day_is_refused_before_the_solver() -> None:
+    body = load_scenario_a().model_dump(mode="json")
+    a = body["activities"][0]
+    body["activities"] = [{**a, "id": f"x{i}"} for i in range(17)]  # MAX_ACTIVITIES is 16
+    res = client.post("/recoveries", json=body)
+    assert res.status_code == 422
+    assert any(e["type"] == "too_long" and e["loc"][-1] == "activities" for e in res.json()["detail"])
+
+
 def test_same_input_gives_the_same_candidates() -> None:
     body = load_scenario_a().model_dump(mode="json")
     first = client.post("/recoveries", json=body).json()["candidates"]
@@ -46,6 +55,8 @@ def test_no_valid_plan_comes_back_with_the_reason() -> None:
     body = res.json()
     assert body["candidates"] == []
     assert [(b["kind"], b["activity_id"]) for b in body["blockers"]] == [("reserved_in_past", "a0")]
+    # ...and which must to loosen: taking a0 down to "nice" makes a plan possible.
+    assert [r["activity_id"] for r in body["relaxations"]] == ["a0"]
 
 
 def test_malformed_input_is_rejected() -> None:

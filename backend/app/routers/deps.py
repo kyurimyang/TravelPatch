@@ -1,5 +1,6 @@
 """Dependencies shared by routers. Tests swap them with app.dependency_overrides."""
 
+import logging
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Annotated
@@ -8,8 +9,10 @@ from fastapi import Depends, Header, HTTPException, Request
 
 from app.llm.provider import LLMConfigError, LLMProvider, OpenAIProvider
 from app.services.auth import AuthConfigError, AuthError, TokenVerifier, get_verifier
-from app.services.guest_quota import GuestQuota, Kind
+from app.services.guest_quota import GuestQuota, Kind, store_from_env
 from app.services.places_client import GooglePlacesClient, PlacesConfigError
+
+log = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=1)
@@ -71,7 +74,12 @@ def get_verifier_optional() -> TokenVerifier | None:
 
 @lru_cache(maxsize=1)
 def get_guest_quota() -> GuestQuota:
-    return GuestQuota()
+    try:
+        store = store_from_env()
+    except Exception:  # QUOTA_STORE=supabase but no keys: still limited, in memory
+        log.warning("QUOTA_STORE is set but the database is not configured", exc_info=True)
+        store = None
+    return GuestQuota(store=store)
 
 
 def _client_ip(request: Request) -> str:
@@ -114,12 +122,15 @@ def get_caller(
 
 
 def allow(caller: Caller, kind: Kind, quota: GuestQuota) -> bool:
-    """Signed-in users are not counted; a guest uses one call of the day's limit."""
-    return caller.user_id is not None or quota.charge(kind, caller.ip)
+    """One call of the day's limit: the signed-in user's own, or the guest's (per IP and in total).
+    Signed-in users are counted too (2026-11-23): sign-up has no e-mail check."""
+    if caller.user_id is not None:
+        return quota.charge_user(kind, caller.user_id)
+    return quota.charge(kind, caller.ip)
 
 
 def _refuse(kind: Kind) -> HTTPException:
-    return HTTPException(status_code=429, detail=f"guest daily limit reached ({kind})")
+    return HTTPException(status_code=429, detail=f"daily limit reached ({kind})")
 
 
 def charged_provider(

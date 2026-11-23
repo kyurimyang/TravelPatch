@@ -30,3 +30,13 @@ def test_an_item_ending_before_it_starts_is_rejected():
     body["items"][0]["end"] = body["items"][0]["start"]
     app.dependency_overrides[get_places_client] = lambda: _places()
     assert client.post("/plans/build", json=body).status_code == 422
+
+
+def test_an_oversized_day_is_refused_before_any_google_call():
+    # One counted call must not turn into hundreds of paid lookups.
+    body = _request().model_dump(mode="json")
+    body["items"] = [{**body["items"][0], "id": f"x{i}"} for i in range(17)]  # MAX_ACTIVITIES 16
+    app.dependency_overrides[get_places_client] = lambda: FakePlaces({}, fail=set())
+    res = client.post("/plans/build", json=body)
+    assert res.status_code == 422
+    assert any(e["type"] == "too_long" and e["loc"][-1] == "items" for e in res.json()["detail"])
