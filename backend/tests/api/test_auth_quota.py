@@ -112,9 +112,13 @@ def test_guest_past_the_limit_still_gets_the_engine_without_a_search() -> None:
     assert [b["kind"] for b in body["blockers"]] == ["closed_no_substitute"]
 
 
-def test_recovery_without_a_search_does_not_use_the_limit() -> None:
+def test_recomputing_from_the_answer_does_not_search_again() -> None:
+    # Since 2026-11-24 a plan that drops a piece searches a nearby place once (and is charged).
+    # Sending the answer's used_input back (recompute) finds those substitutes in place.
     _with_substitute_services()
-    q = _quota(llm=1, places=1)
-    for _ in range(3):  # recompute, lock, restore...: none of them search
-        assert client.post("/recoveries", json=load_scenario_a().model_dump(mode="json")).status_code == 200
-    assert q.charge(Kind.LLM, "testclient")  # still unused
+    q = _quota(llm=5, places=5)
+    first = client.post("/recoveries", json=load_scenario_a().model_dump(mode="json")).json()
+    spent = dict(q._count)
+    for _ in range(3):
+        assert client.post("/recoveries", json=first["used_input"]).status_code == 200
+    assert dict(q._count) == spent

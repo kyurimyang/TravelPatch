@@ -113,13 +113,46 @@ def add_substitutes(
         return inp
     ev = inp.event
     assert isinstance(ev, ClosureEvent)  # narrowed by wants_substitutes
-    target = next(a for a in inp.activities if a.id == ev.activity_id)
+    return add_substitutes_for(inp, [ev.activity_id], provider, places)
 
+
+def add_substitutes_for(
+    inp: RecoveryInput, ids: Iterable[str], provider: LLMProvider, places: GooglePlacesClient
+) -> RecoveryInput:
+    """Substitutes for the given activities (decision 2026-11-23: also for pieces a plan drops,
+    not only for a closure): "instead of dropping it, a similar place nearby that fits". The
+    engine still decides; it takes a substitute only when that changes the day less than the drop.
+    Unchanged when nothing was found."""
+    found_all: list[Substitute] = []
+    for aid in ids:
+        target = next((a for a in inp.activities if a.id == aid), None)
+        if target is None or any(s.replaces == aid for s in inp.substitutes):
+            continue
+        found_all += _search(inp, target, provider, places)
+    if not found_all:
+        return inp
+    points = {a.id: (a.lat, a.lng) for a in inp.activities}
+    points[HOTEL_ID] = (inp.day.end_lat, inp.day.end_lng)
+    if inp.day.start_lat is not None and inp.day.start_lng is not None:
+        points[START_ID] = (inp.day.start_lat, inp.day.start_lng)
+    points.update({s.id: (s.lat, s.lng) for s in (*inp.substitutes, *found_all)})
+    travel = fill_missing_travel(points, inp.travel, inp.day.travel_mode)
+    data = inp.model_dump()
+    data["substitutes"] = [s.model_dump() for s in (*inp.substitutes, *found_all)]
+    data["travel"] = [t.model_dump() for t in travel]
+    return RecoveryInput.model_validate(data)
+
+
+def _search(
+    inp: RecoveryInput, target: Activity, provider: LLMProvider, places: GooglePlacesClient
+) -> list[Substitute]:
+    """Places like `target` near it, open that day: one LLM call for what to search, one Google
+    search, details in parallel. [] when Google cannot answer."""
     query = substitute_query(provider, target.title, target.category)
     try:
         hits = places.search(query, near=(target.lat, target.lng))
     except PlacesError:
-        return inp
+        return []
 
     def lookup(hit: PlaceCandidate) -> PlaceDetails | None:
         try:
@@ -133,20 +166,7 @@ def add_substitutes(
     details = [(hit, d) for hit, d in zip(hits, looked_up, strict=True) if d is not None]
 
     weekday = inp.day.date.weekday() if inp.day.date is not None else None
-    found = build_substitutes(target, details, weekday)
-    if not found.substitutes:
-        return inp
-
-    points = {a.id: (a.lat, a.lng) for a in inp.activities}
-    points[HOTEL_ID] = (inp.day.end_lat, inp.day.end_lng)
-    if inp.day.start_lat is not None and inp.day.start_lng is not None:
-        points[START_ID] = (inp.day.start_lat, inp.day.start_lng)
-    points.update({s.id: (s.lat, s.lng) for s in found.substitutes})
-    travel = fill_missing_travel(points, inp.travel, inp.day.travel_mode)
-    data = inp.model_dump()
-    data["substitutes"] = [s.model_dump() for s in found.substitutes]
-    data["travel"] = [t.model_dump() for t in travel]
-    return RecoveryInput.model_validate(data)
+    return list(build_substitutes(target, details, weekday).substitutes)
 
 
 def needs_check_ids(inp: RecoveryInput) -> frozenset[str]:

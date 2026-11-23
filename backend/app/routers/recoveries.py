@@ -23,10 +23,32 @@ from app.services.guest_quota import GuestQuota, Kind
 from app.services.lock import lock_in_place
 from app.services.places_client import GooglePlacesClient
 from app.services.recovery_service import run_recovery, run_restore
-from app.services.substitute_finder import add_substitutes, wants_substitutes
+from app.services.substitute_finder import (
+    add_substitutes,
+    add_substitutes_for,
+    wants_substitutes,
+)
 from app.services.visited import VisitedError, apply_visited
 
 router = APIRouter(prefix="/recoveries", tags=["recoveries"])
+
+# Pieces a plan drops that get a search for a similar place nearby (one LLM call and one
+# Google search each), the most valuable first. Small on purpose: it runs on every patch
+# that drops something.
+MAX_DROP_SEARCHES = 2
+
+
+def _dropped_worth_a_search(inp, response: RecoveryResponse) -> list[str]:
+    """Activities some candidate drops and that have no substitute yet, highest tier first."""
+    weight = {p.activity_id: p.tier.weight for p in inp.preferences}
+    has_sub = {s.replaces for s in inp.substitutes}
+    dropped = {
+        c.activity_id
+        for r in response.candidates
+        for c in r.changes
+        if c.op == "drop" and c.activity_id not in has_sub and c.activity_id in weight
+    }
+    return sorted(dropped, key=lambda a: (-weight[a], a))[:MAX_DROP_SEARCHES]
 
 
 # Plain `def`s: the solve is CPU-bound, so FastAPI runs them in a worker thread instead of
@@ -55,9 +77,23 @@ def create_recovery(
     ):
         inp = add_substitutes(inp, provider, places)
     try:
-        return run_recovery(inp)
+        response = run_recovery(inp)
     except UnsupportedEventError as e:
         raise HTTPException(status_code=501, detail=str(e)) from e
+    # A plan that drops a piece: look for a similar place nearby and solve again, so "instead of
+    # dropping it, go here" can be offered (2026-11-24). Only kept when it changes something.
+    targets = _dropped_worth_a_search(inp, response)
+    if (
+        targets
+        and provider is not None
+        and places is not None
+        and allow(caller, Kind.LLM, quota)
+        and allow(caller, Kind.PLACES, quota)
+    ):
+        richer = add_substitutes_for(inp, targets, provider, places)
+        if richer is not inp:
+            response = run_recovery(richer)
+    return response
 
 
 @router.post("/restore", response_model=RestoreResponse)
