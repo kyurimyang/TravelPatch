@@ -471,7 +471,7 @@ export interface components {
             /** Spot */
             spot?: string | null;
             /** Patch */
-            patch?: ("worship" | "museum" | "viewpoint" | "bar" | "market" | "nature" | "spa" | "beach" | "lodging" | "theme_park" | "venue" | "mall") | null;
+            patch?: ("worship" | "church" | "temple" | "museum" | "viewpoint" | "bar" | "market" | "nature" | "spa" | "beach" | "lodging" | "theme_park" | "venue" | "mall") | null;
         };
         /** DraftItinerary */
         DraftItinerary: {

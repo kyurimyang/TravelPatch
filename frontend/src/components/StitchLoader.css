@@ -1,5 +1,6 @@
 .stitch-loader {
-  --stitch-duration: 2.4s;
+  /* An airplane outline is long: slow enough to watch each stitch go in (2026-11-24). */
+  --stitch-duration: 4.2s;
 
   display: flex;
   flex-direction: column;
@@ -22,7 +23,6 @@
   width: 132px;
   height: 132px;
   overflow: visible;
-  transform: rotate(-3deg);
 }
 
 .stitch-loader--inline .stitch-loader__art {
@@ -71,9 +71,8 @@
   animation: stitch-reveal var(--stitch-duration) linear infinite;
 }
 
-/* the needle follows the same outline */
+/* the needle follows the same outline (offset-path is set inline from the PLANE path) */
 .stitch-loader__needle {
-  offset-path: path('M14 16 L106 12 L108 104 L12 108 Z');
   offset-rotate: auto;
   animation: stitch-needle var(--stitch-duration) linear infinite;
 }
@@ -131,8 +130,38 @@
   }
 }
 
+/* cabin windows: a short run of small stitches down the fuselage */
+.stitch-loader__windows {
+  fill: none;
+  stroke: var(--tp-indigo);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 6;
+  opacity: 0.55;
+}
+
+/* contrail: running stitch behind the tail, sewn again and again */
+.stitch-loader__trail path {
+  fill: none;
+  stroke: var(--tp-tan);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 4 4;
+  opacity: 0.6;
+  animation: stitch-trail 1.6s linear infinite;
+}
+
+@keyframes stitch-trail {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
 /* Reduced motion: the finished stitching, still. */
 @media (prefers-reduced-motion: reduce) {
+  .stitch-loader__trail path {
+    animation: none;
+  }
   .stitch-loader__reveal {
     animation: none;
     stroke-dashoffset: 0;

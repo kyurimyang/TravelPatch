@@ -18,6 +18,8 @@ MAX_TEXT_CHARS = 8000  # a few days of notes; longer pasted text is refused befo
 # Language-free on purpose (the service is worldwide): the model judges what the place is.
 PatchKind = Literal[
     "worship",
+    "church",
+    "temple",
     "museum",
     "viewpoint",
     "bar",
@@ -54,7 +56,8 @@ For every item give:
   "호텔 조식" is an activity.
 - category: meal, sightseeing, shopping, cafe, transport or other. Use other when unclear.
 - patch: what kind of place it is, judged from the name in any language, or null when the line
-  is none of these or you are not sure: worship (temple, shrine, church, mosque), museum
+  is none of these or you are not sure: church (church, cathedral, chapel, basilica), temple
+  (Buddhist temple, pagoda), worship (shrine, mosque, any other place of worship), museum
   (museum, gallery, aquarium), viewpoint (observation deck, tower, night view), bar (bar, pub,
   izakaya), market (market, night market), nature (park, garden, mountain, lake), spa (hot
   spring, spa, sauna), beach, lodging (hotel, check-in), theme_park (amusement park, theme park,

@@ -6,18 +6,12 @@ import { itemIcon } from '../lib/placeIcons'
 import type { Tier } from '../lib/tier'
 import { formatDate, formatTime, tripLength } from '../lib/time'
 import { deviceNow, needsCheck, nextItem } from '../lib/today'
+import { quilt } from '../lib/quilt'
 import { dayKept } from '../lib/kept'
 import { useTrip } from '../store/trip'
 import { StateCard } from '../components/StateCard'
 import './Main.css'
 
-// Hand-placed swatch slots (percent of the map box) for up to 4 stops, copied from the mockup.
-const SLOTS = [
-  { left: 3, top: 5, w: 36, h: 54, fabric: 'butterfloral' },
-  { left: 42, top: 5, w: 26, h: 44, fabric: 'stripe' },
-  { left: 71, top: 5, w: 26, h: 44, fabric: 'check' },
-  { left: 71, top: 53, w: 26, h: 42, fabric: 'dot' },
-] as const
 
 const TIER_LABEL: Record<Tier, string> = { must: '꼭 갈 곳', nice: '좋음', optional: '선택' }
 
@@ -51,7 +45,9 @@ export default function Main() {
   const day = trip.days[dayIndex]
   const isToday = dayIndex === todayIndex
   const next = nextItem(day, isToday, now.minutes)
-  const stops = day.items.filter((it) => !it.dropped).slice(0, SLOTS.length)
+  // Up to 6 pieces of the day on the quilt; its cut and cloth change every day (lib/quilt).
+  const stops = day.items.filter((it) => !it.dropped).slice(0, 6)
+  const pieces = quilt(stops.length, `${trip.id}:${day.date}`)
   const dayPatches = trip.patches.filter((p) => p.date === day.date)
   const status = (i: number) =>
     i === todayIndex ? '오늘' : now.date < trip.days[i].date ? '다가오는 날' : '지난 날'
@@ -100,41 +96,52 @@ export default function Main() {
         ))}
       </nav>
 
-      {/* Decorative fabric "map": positions are NOT real locations (real map = Leaflet later). */}
-      <section className="main-screen__map" aria-label="원단 지도">
-        {stops.map((it, i) => {
-          const s = SLOTS[i]
+      {/* Decorative fabric "map": positions are NOT real locations (real map = Leaflet later).
+          A quilt of the day's pieces: cut and cloth change every day (lib/quilt). No route line
+          drawn across it: it covered the labels (2026-11-24); the times give the order. */}
+      <section
+        className={`main-screen__map${stops.length > 4 ? ' main-screen__map--tall' : ''}`}
+        aria-label="원단 지도"
+      >
+        {pieces.map((p, pi) => {
+          const it = p.stop === null ? null : stops[p.stop]
+          const place = {
+            left: `${p.box.left}%`,
+            top: `${p.box.top}%`,
+            width: `${p.box.width}%`,
+            height: `${p.box.height}%`,
+          }
+          const cloth = (
+            <i style={{ background: `var(--tp-${p.fabric})`, transform: `rotate(${p.tilt}deg)` }} aria-hidden="true" />
+          )
+          if (!it) {
+            return (
+              <div key={`scrap-${pi}`} className="main-screen__swatch main-screen__swatch--scrap" style={place}>
+                {cloth}
+              </div>
+            )
+          }
           return (
             <div
               key={it.id}
-              className="tp-swatch main-screen__swatch"
-              style={{
-                left: `${s.left}%`,
-                top: `${s.top}%`,
-                width: `${s.w}%`,
-                height: `${s.h}%`,
-                background: `var(--tp-${s.fabric})`,
-              }}
+              className="main-screen__swatch"
+              data-next={it.id === next?.id ? 'true' : undefined}
+              style={place}
             >
-              <span>
-                {it.start != null && formatTime(it.start)} {it.title}
-                {it.id === next?.id && ' · 다음'}
+              {cloth}
+              <span className="main-screen__label">
+                {it.start != null && (
+                  <b>
+                    {formatTime(it.start)}
+                    {it.id === next?.id && ' · 다음'}
+                  </b>
+                )}
+                <span>{it.title}</span>
               </span>
               <img src={itemIcon(it)} alt="" aria-hidden="true" />
             </div>
           )
         })}
-        <svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <polyline
-            points={stops.map((_, i) => `${SLOTS[i].left + SLOTS[i].w / 2},${SLOTS[i].top + SLOTS[i].h / 2}`).join(' ')}
-            fill="none"
-            stroke="#f4efe4"
-            strokeWidth="3"
-            strokeDasharray="1 3"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
       </section>
 
       {next ? (
