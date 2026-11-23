@@ -89,8 +89,10 @@ export interface paths {
          * Parse
          * @description Step ①: pasted text -> draft the Confirm screen shows. Nothing is stored.
          *
+         *     A text with day headings is parsed one day per call, in parallel (services/itinerary_split).
          *     An LLM failure is not an HTTP error: the screen gets status "manual" and offers to type the
          *     plan in by hand (invariant 4: retry once inside the provider, then hand over to the user).
+         *     A day that could not be read leaves the rest standing, and `partial` says what is missing.
          */
         post: operations["parse_itineraries_parse_post"];
         delete?: never;
@@ -133,6 +135,27 @@ export interface paths {
          * @description One trip day (place_ids, times, tiers) -> engine input pieces. Nothing is stored.
          */
         post: operations["build_plans_build_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/add-place": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Place To Day
+         * @description "꼭 가고 싶은 곳": a picked place -> the MUST_VISIT event and the day's travel table with it,
+         *     ready for POST /recoveries. Nothing is stored.
+         */
+        post: operations["add_place_to_day_plans_add_place_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -199,6 +222,36 @@ export interface components {
             close_at?: number | null;
             /** Reservation Time */
             reservation_time?: number | null;
+        };
+        /** AddPlaceRequest */
+        AddPlaceRequest: {
+            plan: components["schemas"]["BuiltPlan"];
+            /** Place Id */
+            place_id: string;
+            /** Title */
+            title: string;
+            /** @default sightseeing */
+            category: components["schemas"]["Category"];
+            /** Duration */
+            duration: number;
+            /** Now */
+            now: number;
+            /**
+             * Location Id
+             * @default hotel
+             */
+            location_id: string;
+        };
+        /** AddPlaceResponse */
+        AddPlaceResponse: {
+            /**
+             * Hours
+             * @enum {string}
+             */
+            hours: "known" | "closed" | "unknown";
+            event: components["schemas"]["MustVisitEvent"] | null;
+            /** Travel */
+            travel: components["schemas"]["TravelTime"][];
         };
         /**
          * Blocker
@@ -1315,6 +1368,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BuiltPlan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_place_to_day_plans_add_place_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddPlaceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddPlaceResponse"];
                 };
             };
             /** @description Validation Error */

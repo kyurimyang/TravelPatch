@@ -14,6 +14,8 @@ export type RecoveryState = {
   chips?: string[]
   /** Ticked as already visited on Recover; the server takes them out (decision 2026-11-22). */
   visited?: string[]
+  /** MUST_VISIT: the Google place the user picked, so a stitched patch can add it to the trip. */
+  addedPlaceId?: string
 }
 
 /** Scenario A (Tokyo), with coordinates and travel times inside: works offline, for demos. */
@@ -45,6 +47,16 @@ const DAY_START_IDS = new Set([HOTEL_ID, START_ID])
  * after now", which skips a piece that should have started already (A2). */
 export function nextActivity<A extends { planned_end: number }>(activities: A[], now: number): A | undefined {
   return activities.find((a) => a.planned_end > now)
+}
+
+/** Where the plan says the user is at `now`: the last piece already started (in it, or just
+ * left it), else the day's start. At 17:00 the user is out on the day, not still at the hotel;
+ * the old default (always the hotel) made "늦어졌어요" read as "overslept" and left the
+ * morning's pieces unchecked, so the patch dropped places already visited. */
+export function whereNow(plan: BuiltPlan, now: number): string {
+  const started = plan.activities.filter((a) => a.planned_start <= now)
+  if (started.length > 0) return started.reduce((a, b) => (b.planned_start >= a.planned_start ? b : a)).id
+  return plan.day.start_lat != null ? START_ID : HOTEL_ID
 }
 
 /** Where the user most likely is when the alert says a piece is late: the piece planned before it,
@@ -81,10 +93,12 @@ export function defaultVisited(plan: BuiltPlan, event: DisruptionEvent): string[
 }
 
 /** Names by id for activities and (when the server added them) substitutes. */
-export function titlesOf(inp: Pick<RecoveryInput, 'activities' | 'substitutes'>): Map<string, string> {
+export function titlesOf(inp: Pick<RecoveryInput, 'activities' | 'substitutes'> & { event?: DisruptionEvent }): Map<string, string> {
+  const added = inp.event?.type === 'MUST_VISIT' ? [[inp.event.activity_id, inp.event.title] as const] : []
   return new Map([
     ...inp.activities.map((a) => [a.id, a.title] as const),
     ...(inp.substitutes ?? []).map((s) => [s.id, s.title] as const),
+    ...added,
   ])
 }
 

@@ -28,6 +28,9 @@ function ChangeLine({ change, substituteTitle }: { change: RecoveryChange; subst
       </span>
     )
   }
+  if (op === 'add' && after) {
+    return <span className="diff-row__change">새로 넣어요 · {formatSlot(after.start, after.end)}</span>
+  }
   if (op === 'substitute') {
     return (
       <span className="diff-row__change">

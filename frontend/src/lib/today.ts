@@ -28,3 +28,13 @@ export function needsCheck(trip: Trip): number {
     .flatMap((d) => d.items)
     .filter((it) => !it.dropped && (!it.placeId || it.start == null || it.end == null || it.end <= it.start)).length
 }
+
+/** The trip to open on "/" when none is chosen (a new device, the chosen one deleted): the one
+ *  being travelled, else the next one coming, else the one that ended last. null: no trips. */
+export function pickTrip<T extends Pick<Trip, 'id' | 'startDate' | 'endDate'>>(trips: T[], today: string): T | null {
+  const ongoing = trips.filter((t) => tripPhase(t, today) === 'ongoing')
+  if (ongoing.length) return ongoing.reduce((a, b) => (b.startDate > a.startDate ? b : a))
+  const upcoming = trips.filter((t) => tripPhase(t, today) === 'upcoming')
+  if (upcoming.length) return upcoming.reduce((a, b) => (b.startDate < a.startDate ? b : a))
+  return trips.length ? trips.reduce((a, b) => (b.endDate > a.endDate ? b : a)) : null
+}

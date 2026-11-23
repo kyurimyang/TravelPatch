@@ -272,6 +272,11 @@ function DiffViewScreen({ nav }: { nav: RecoveryState }) {
           state={{
             // To come back here with "실 풀기" (undo).
             back: nav,
+            // MUST_VISIT: the new piece to add to the trip when stitched (lib/patches).
+            added:
+              event.type === 'MUST_VISIT'
+                ? { title: event.title, category: event.category, placeId: nav.addedPlaceId ?? null }
+                : null,
             result,
             source,
             plan,

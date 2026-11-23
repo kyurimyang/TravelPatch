@@ -10,14 +10,31 @@ import { FlightFields } from '../components/FlightFields'
 import { TravelModePicker } from '../components/TravelModePicker'
 import { useFlowTitle } from '../layout/flowTitle'
 import { markFlowStart } from '../lib/nav'
-import { tripFromDraft } from '../lib/tripFromDraft'
-import { useTrip, type TripFlight } from '../store/trip'
+import { addDays, tripFromDraft } from '../lib/tripFromDraft'
+import { useTrip, type Trip, type TripFlight } from '../store/trip'
 import './Landing.css'
 
 // Problem codes from POST /itineraries/parse -> what to tell the user.
 const PARSE_PROBLEM: Record<string, string> = {
   LLM_FAILED: '일정을 읽지 못했어요. 잠시 뒤 다시 해 주세요.',
   NOTHING_FOUND: '일정을 찾지 못했어요. 한 줄에 하나씩, 시각과 장소를 적어 주세요.',
+}
+
+/** Days from `start` to `end`, both included ("2026-11-20".."2026-11-23" -> 4). */
+function daysBetween(start: string, end: string): number {
+  let n = 1
+  while (addDays(start, n - 1) < end && n < 60) n += 1
+  return n
+}
+
+/** Why the draft may not be the whole trip, in the user's words; [] when it looks complete. */
+export function shortfall(got: number, start: string, end: string, partial: { read: number; written: number } | null): string[] {
+  const lines: string[] = []
+  const wanted = daysBetween(start, end)
+  if (partial) lines.push(`일정에 적힌 시각 ${partial.written}개 중 ${partial.read}개만 읽었어요. 다시 읽으면 나머지도 읽을 수 있어요.`)
+  if (got < wanted) lines.push(`가는 날부터 오는 날까지 ${wanted}일인데, 일정은 ${got}일치만 읽었어요.`)
+  if (got > wanted) lines.push(`일정은 ${got}일치인데 날짜는 ${wanted}일이에요. 오는 날을 확인해 주세요.`)
+  return lines
 }
 
 export default function Landing() {
@@ -36,6 +53,9 @@ export default function Landing() {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
+  // Read, but not all of it (a day the model could not read, or fewer days than the dates):
+  // the user decides, instead of a 4-day trip quietly becoming a 1-day one (2026-11-23).
+  const [short, setShort] = useState<{ trip: Trip; lines: string[] } | null>(null)
 
   const canSubmit =
     city.trim() !== '' && start !== '' && end !== '' && start <= end && hotel !== null && text.trim() !== '' && !busy
@@ -45,6 +65,7 @@ export default function Landing() {
     if (!canSubmit || !hotel) return
     setBusy(true)
     setProblem(null)
+    setShort(null)
     try {
       const res = await parseItinerary(text)
       if (res.status !== 'ok' || !res.draft) {
@@ -60,7 +81,13 @@ export default function Landing() {
         arrival,
         departure,
       }
-      setTrip(tripFromDraft(res.draft, meta))
+      const made = tripFromDraft(res.draft, meta)
+      const lines = shortfall(res.draft.days.length, start, end, res.partial ?? null)
+      if (lines.length > 0) {
+        setShort({ trip: made, lines })
+        return
+      }
+      setTrip(made)
       navigate('/new/confirm')
     } catch (e) {
       setProblem(accessMessage(e) ?? '서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요.')
@@ -141,6 +168,28 @@ export default function Landing() {
           <p className="landing__problem" role="alert">
             {problem}
           </p>
+        )}
+        {short && (
+          <section className="landing__short" role="alert" aria-label="덜 읽은 일정">
+            {short.lines.map((l) => (
+              <p key={l}>{l}</p>
+            ))}
+            <div className="landing__short-actions">
+              <button type="submit" className="landing__short-btn landing__short-btn--main" disabled={busy}>
+                다시 읽기
+              </button>
+              <button
+                type="button"
+                className="landing__short-btn"
+                onClick={() => {
+                  setTrip(short.trip)
+                  navigate('/new/confirm')
+                }}
+              >
+                읽은 만큼 등록하기
+              </button>
+            </div>
+          </section>
         )}
         <button type="submit" className="tp-btn-primary tp-denim" disabled={!canSubmit}>
           {busy ? '재단하고 있어요…' : '원단 재단하기'}

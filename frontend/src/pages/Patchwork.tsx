@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { OP_LABEL } from '../components/DiffRow'
 import { CATEGORY_LABEL, categoryIcon } from '../lib/category'
+import { tripKept } from '../lib/kept'
 import type { SavedPatch } from '../lib/patches'
 import { tripLength } from '../lib/time'
 import { deviceNow, tripPhase } from '../lib/today'
@@ -27,15 +28,6 @@ const BADGES: Badge[] = [
 ]
 const BOOK: Category[] = ['sightseeing', 'meal', 'cafe', 'shopping', 'transport', 'other']
 
-/** Share of the plan kept over the whole trip: each day counts its last patch, an unpatched day 100%. */
-function keptShare(trip: Trip): number {
-  if (trip.days.length === 0) return 1
-  const perDay = trip.days.map((d) => {
-    const ps = trip.patches.filter((p) => p.date === d.date)
-    return ps.length ? ps[ps.length - 1].preservationRate : 1
-  })
-  return perDay.reduce((a, b) => a + b, 0) / perDay.length
-}
 
 function mainOp(p: SavedPatch): string {
   const op = OP_RANK.find((o) => p.changes.some((c) => c.op === o))
@@ -88,7 +80,8 @@ export default function Patchwork() {
         <div className="patchwork__stats">
           <div>
             <span>지킨 계획</span>
-            <b>{Math.floor(keptShare(t) * 100)}%</b>
+            {/* Against the original plan, days reached so far (lib/kept.ts). */}
+            <b>{Math.floor(tripKept(t, now.date) * 100)}%</b>
           </div>
           <div>
             <span>덧댄 패치</span>

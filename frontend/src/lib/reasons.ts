@@ -29,7 +29,8 @@ const SELF_BOUND = new Set(['past', 'closure', 'hours', 'weather', 'fatigue'])
 
 /** Whether "이건 원래대로 둘래요 (고정)" can work for this change (A4: it was shown where it never can). */
 export function canLock(change: RecoveryChange): boolean {
-  if (change.op === 'keep' || change.op === 'drop') return false
+  // An extension is the user's own ask: "leave it as it was" would undo the request itself.
+  if (change.op === 'keep' || change.op === 'drop' || change.op === 'extend' || change.op === 'add') return false
   const forced = change.reason_type === 'binding' ? (change.reason_data?.forced_by ?? []) : []
   return !forced.some((k) => SELF_BOUND.has(k))
 }

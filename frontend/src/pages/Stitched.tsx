@@ -5,8 +5,10 @@ import delayPatch from '../assets/patches/hole-delay.svg'
 import { OP_LABEL } from '../components/DiffRow'
 import { DEFAULT_ICON, iconsById } from '../lib/placeIcons'
 import { strategyLabel } from '../lib/strategy'
-import { patchFrom } from '../lib/patches'
+import { applyPatch, patchFrom } from '../lib/patches'
+import { dayKept } from '../lib/kept'
 import type { RecoverySource, RecoveryState } from '../lib/recovery'
+import type { PatchChange } from '../lib/patches'
 import { exitFlow } from '../lib/nav'
 import { ExitLink } from '../components/ExitLink'
 import { formatTime } from '../lib/time'
@@ -25,6 +27,7 @@ export default function Stitched() {
     patchId?: string
     titles?: Record<string, string>
     back?: RecoveryState
+    added?: PatchChange['added'] | null
   } | null
   const { trip, stitch, unstitch } = useTrip()
   const result = navState?.result
@@ -35,7 +38,7 @@ export default function Stitched() {
   // Stitch on arrival. Idempotent by patch id, so StrictMode's second run changes nothing.
   useEffect(() => {
     if (!saves || !result) return
-    stitch(patchFrom(navState!.patchId!, date!, result, navState?.chips ?? [], new Date().toISOString(), navState?.eventType ?? null))
+    stitch(patchFrom(navState!.patchId!, date!, result, navState?.chips ?? [], new Date().toISOString(), navState?.eventType ?? null, navState?.added ?? null))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -65,7 +68,12 @@ export default function Stitched() {
   }
 
   const shift = timeShift(result)
-  const rate = Math.floor(result.preservation_rate * 100)
+  // A saved trip: the share of the day's original plan left after this patch (lib/kept.ts), not
+  // the patch's own rate, which leaves out the places already visited and earlier patches.
+  // Computed with the patch applied here, so the number is right before the stitch effect runs.
+  const withPatch =
+    saves && trip ? applyPatch(trip, patchFrom(navState!.patchId!, date!, result, [], '', null, navState?.added ?? null)) : null
+  const rate = Math.floor((withPatch ? dayKept(withPatch, date!) : result.preservation_rate) * 100)
   const dropped = result.changes.filter((c) => c.op === 'drop').length
   const changed = result.changes.filter((c) => c.op !== 'keep' && c.op !== 'drop').length
   const rows = result.changes

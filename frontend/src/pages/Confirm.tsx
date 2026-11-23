@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { searchPlaces } from '../api/places'
 import type { PlaceOption } from '../api/types'
 import { PlaceSearch } from '../components/PlaceSearch'
@@ -10,6 +10,8 @@ import { formatDate, formatTime, parseTime, tripLength } from '../lib/time'
 import { useTrip, type DraftIssue, type TripItem } from '../store/trip'
 import { withJosa } from '../lib/josa'
 import { StateCard } from '../components/StateCard'
+import { ExitLink } from '../components/ExitLink'
+import { markFlowStart } from '../lib/nav'
 import './Confirm.css'
 
 // What the parser could not settle, in the user's words. Shown until the item has a usable range.
@@ -34,6 +36,12 @@ type Match = { status: 'ok'; options: PlaceOption[] } | { status: 'error' } | { 
 
 export default function Confirm() {
   const { trip, setTrip, updateItem, updateTrip } = useTrip()
+  // Opened later from Main or Recover (to settle what was left): this screen starts the flow,
+  // so "완성" returns there, not to wherever an old registration began.
+  const reopened = (useLocation().state as { reopened?: boolean } | null)?.reopened === true
+  useEffect(() => {
+    if (reopened) markFlowStart('new')
+  }, [reopened])
   const [dayIndex, setDayIndex] = useState(0)
   const [matches, setMatches] = useState<Record<string, Match>>({})
   // Google's name for each picked place, for this screen only (names are never saved).
@@ -118,7 +126,6 @@ export default function Confirm() {
   const totalItems = trip.days.reduce((n, d) => n + d.items.length, 0)
   const flightNeeds = trip.departure && trip.departureTimeGuessed ? 1 : 0
   const totalNeeds = trip.days.reduce((n, d) => n + needs(d.items), 0) + flightNeeds
-  const otherNeeds = totalNeeds - needs(day.items) - flightNeeds
   function pick(item: TripItem, place: PlaceOption) {
     // The user chose it themselves: no "far from the hotel" second look. Picking for an item
     // that shared another's place makes it its own; items sharing this one's place follow it.
@@ -398,16 +405,21 @@ export default function Confirm() {
       </div>
 
       <div className="confirm__bar tp-pinked-top">
-        {otherNeeds > 0 && <span>다른 날에 확인할 조각이 {otherNeeds}개 더 있어요</span>}
-        {totalNeeds === 0 ? (
-          <Link className="tp-btn-primary tp-denim" to="/new/grade">
-            다음: 중요도 정하기
-          </Link>
-        ) : (
-          <button type="button" className="tp-btn-primary tp-denim" disabled>
-            다음: 중요도 정하기
-          </button>
+        {/* Not a gate any more (2026-11-23): every item had to be settled before the trip existed,
+            so the first patch was far away. Unsettled items now wait; a day is only checked when
+            a patch is asked for it (planRequestFor says what is missing and links back here). */}
+        {totalNeeds > 0 && (
+          <span>
+            확인할 조각 {totalNeeds}개는 나중에 해도 돼요. 그날 패치를 찾기 전에만 끝내 주세요.
+          </span>
         )}
+        <Link className="tp-btn-primary tp-denim" to="/new/grade">
+          다음: 중요도 정하기
+        </Link>
+        {/* Tiers have defaults (booked = 꼭, else 좋음): finishing here is a real choice. */}
+        <ExitLink flow="new" className="tp-btn-quiet">
+          중요도는 기본값으로 두고 완성하기
+        </ExitLink>
       </div>
     </div>
   )

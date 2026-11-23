@@ -44,4 +44,8 @@ describe('canLock', () => {
     expect(canLock(forced('keep'))).toBe(false)
     expect(canLock(forced('drop', 'travel'))).toBe(false)
   })
+
+  it('is false for the extension the user asked for (locking it would undo the ask)', () => {
+    expect(canLock(forced('extend', 'travel'))).toBe(false)
+  })
 })

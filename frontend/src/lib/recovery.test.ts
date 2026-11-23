@@ -11,6 +11,7 @@ import {
   nextActivity,
   samplePlan,
   visitLocked,
+  whereNow,
 } from './recovery'
 
 const NOON = 12 * 60
@@ -84,5 +85,17 @@ describe('inputFor', () => {
     const inp = inputFor(plan, rainAtNoon, ['meiji', 'harajuku'])
     expect(inp.visited).toEqual(['meiji', 'harajuku'])
     expect(inp.activities).toHaveLength(plan.activities.length)
+  })
+})
+
+describe('whereNow', () => {
+  it('is out on the day once a piece has started, not still at the hotel', () => {
+    // Found 2026-11-23: at 17:00 the default was the hotel, so "늦어졌어요" read as "overslept",
+    // nothing was pre-checked and the patch dropped the morning's visited places.
+    expect(whereNow(samplePlan(), 17 * 60)).not.toBe('hotel')
+    expect(whereNow(samplePlan(), NOON)).toBe('omotesando') // 11:40–12:40, in it
+  })
+  it('is the day start before the first piece', () => {
+    expect(whereNow(samplePlan(), 8 * 60)).toBe('hotel')
   })
 })

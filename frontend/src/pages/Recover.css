@@ -57,6 +57,9 @@
 }
 
 .recover__quick {
+  /* A fieldset does not shrink below its content by default (min-inline-size: min-content):
+     with the place search inside, it grew past the screen and pushed "찾기" off it. */
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
@@ -70,13 +73,13 @@
   font-size: var(--text-lg);
 }
 
-.recover__quick > div {
+.recover__quick-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
 }
 
-.recover__quick button {
+.recover__quick-grid button {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -92,7 +95,7 @@
   cursor: pointer;
 }
 
-.recover__quick button img {
+.recover__quick-grid button img {
   flex: none;
   width: 36px;
   height: 36px;
@@ -103,7 +106,7 @@
 }
 
 /* Pressed: dashed indigo + bold text, so it is not color alone. */
-.recover__quick button[aria-pressed='true'] {
+.recover__quick-grid button[aria-pressed='true'] {
   border: 2px dashed var(--tp-indigo);
   background: var(--tp-lace);
   color: var(--tp-indigo);
@@ -324,4 +327,32 @@
   font: inherit;
   font-size: var(--text-md);
   color: var(--color-text);
+}
+
+/* The one choice under a quick button (how long / which place / from when). Scoped classes:
+   the quick-grid button look must not reach the place search inside "꼭 가고 싶은 곳". */
+.recover__ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.recover__ask > span {
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.recover__ask-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.recover__ask-options button {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-size: var(--text-base);
 }

@@ -12,6 +12,8 @@ export type PatchChange = {
   op: Op
   before: Slot | null
   after: Slot | null
+  /** op "add" (MUST_VISIT): the new piece itself, the user's words and Google place id only. */
+  added?: { title: string; category: TripItem['category']; placeId: string | null }
 }
 
 export type SavedPatch = {
@@ -36,6 +38,7 @@ export function patchFrom(
   chips: string[],
   savedAt: string,
   eventType: DisruptionEvent['type'] | null = null,
+  added: PatchChange['added'] | null = null,
 ): SavedPatch {
   return {
     id,
@@ -47,7 +50,13 @@ export function patchFrom(
     eventType,
     changes: result.changes
       .filter((c) => c.op !== 'keep')
-      .map((c) => ({ itemId: c.activity_id, op: c.op, before: c.before ?? null, after: c.after ?? null })),
+      .map((c) => ({
+        itemId: c.activity_id,
+        op: c.op,
+        before: c.before ?? null,
+        after: c.after ?? null,
+        ...(c.op === 'add' && added ? { added } : {}),
+      })),
   }
 }
 
@@ -72,7 +81,36 @@ export function applyPatch(trip: Trip, patch: SavedPatch): Trip {
       patched: true,
     }
   })
-  return { ...trip, days, patches: [...trip.patches, patch] }
+  // An added place (MUST_VISIT) becomes a piece of the day: a must, where the patch put it.
+  const adds = patch.changes.filter((c) => c.op === 'add' && c.after && c.added)
+  const withAdds = adds.length
+    ? days.map((d) =>
+        d.date !== patch.date
+          ? d
+          : {
+              ...d,
+              items: [
+                ...d.items,
+                ...adds.map(
+                  (c): TripItem => ({
+                    id: c.itemId,
+                    title: c.added!.title,
+                    category: c.added!.category,
+                    start: c.after!.start,
+                    end: c.after!.end,
+                    durationEstimated: false,
+                    reservationTime: null,
+                    note: null,
+                    placeId: c.added!.placeId,
+                    tier: 'must',
+                    patched: true,
+                  }),
+                ),
+              ].sort((a, b) => (a.start ?? 0) - (b.start ?? 0)),
+            },
+      )
+    : days
+  return { ...trip, days: withAdds, patches: [...trip.patches, patch] }
 }
 
 /** Take a patch back off: every changed item returns to its `before` slot. Only the latest patch
@@ -86,6 +124,7 @@ export function undoPatch(trip: Trip, patchId: string): Trip {
   const stillPatched = new Set(
     trip.patches.filter((p) => p.id !== patchId).flatMap((p) => p.changes.map((c) => c.itemId)),
   )
+  const addedIds = new Set(patch.changes.filter((c) => c.op === 'add').map((c) => c.itemId))
   const days = mapDay(trip, patch.date, (it) => {
     const c = byItem.get(it.id)
     if (!c || !c.before) return it
@@ -98,5 +137,6 @@ export function undoPatch(trip: Trip, patchId: string): Trip {
       patched: stillPatched.has(it.id),
     }
   })
-  return { ...trip, days, patches: trip.patches.filter((p) => p.id !== patchId) }
+  const without = days.map((d) => (d.date === patch.date ? { ...d, items: d.items.filter((it) => !addedIds.has(it.id)) } : d))
+  return { ...trip, days: without, patches: trip.patches.filter((p) => p.id !== patchId) }
 }

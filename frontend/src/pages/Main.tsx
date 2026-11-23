@@ -5,7 +5,8 @@ import { CATEGORY_LABEL } from '../lib/category'
 import { itemIcon } from '../lib/placeIcons'
 import type { Tier } from '../lib/tier'
 import { formatDate, formatTime, tripLength } from '../lib/time'
-import { deviceNow, nextItem } from '../lib/today'
+import { deviceNow, needsCheck, nextItem } from '../lib/today'
+import { dayKept } from '../lib/kept'
 import { useTrip } from '../store/trip'
 import { StateCard } from '../components/StateCard'
 import './Main.css'
@@ -66,6 +67,14 @@ export default function Main() {
         </div>
         <h1>{isToday ? '오늘의 원단' : `DAY ${dayIndex + 1}의 원단`}</h1>
       </div>
+
+      {/* Settling places/times can wait past registration (Confirm, 2026-11-23); say what is left. */}
+      {needsCheck(trip) > 0 && (
+        <Link className="main-screen__todo tp-fabric" to="/new/confirm" state={{ reopened: true }}>
+          <span>확인 안 한 조각 {needsCheck(trip)}개</span>
+          <b>일정 확인하기</b>
+        </Link>
+      )}
 
       {isToday && isLate(next, now.minutes) && (
         <HoleAlert
@@ -155,8 +164,8 @@ export default function Main() {
         <h2>{isToday ? '오늘의 조각' : '이날의 조각'}</h2>
         {dayPatches.length > 0 && (
           <p className="main-screen__patched">
-            덧댄 패치 {dayPatches.length}개 · 마지막 패치로 원래 계획의{' '}
-            {Math.floor(dayPatches[dayPatches.length - 1].preservationRate * 100)}%를 지켰어요
+            {/* Against the day as first planned, not the last patch's own rate (lib/kept.ts). */}
+            덧댄 패치 {dayPatches.length}개 · 이날 원래 계획의 {Math.floor(dayKept(trip, day.date) * 100)}%가 남아 있어요
           </p>
         )}
         <ul>

@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { interpretDisruption } from '../api/disruptions'
 import { accessMessage, ApiError } from '../api/http'
-import { buildPlan } from '../api/plans'
-import type { BuiltPlan, InterpretResponse } from '../api/types'
+import { addPlace, buildPlan } from '../api/plans'
+import type { BuiltPlan, InterpretResponse, PlaceOption, TravelTime } from '../api/types'
+import addArt from '../assets/patches/place-sight.svg'
+import { PlaceSearch } from '../components/PlaceSearch'
 import closed from '../assets/patches/hole-closed.svg'
 import delay from '../assets/patches/hole-delay.svg'
 import late from '../assets/patches/hole-late.svg'
@@ -15,6 +17,7 @@ import {
   HOTEL_ID,
   holeEvent,
   holeLocation,
+  whereNow,
   nextActivity,
   planRequestFor,
   START_ID,
@@ -27,17 +30,20 @@ import { formatTime, parseTime } from '../lib/time'
 import { deviceNow } from '../lib/today'
 import { markFlowStart } from '../lib/nav'
 import { ExitLink } from '../components/ExitLink'
+import { closable, minutesLabel, QUICK_ASK, quickResponse, type QuickKind } from '../lib/quick'
 import { useTrip } from '../store/trip'
 import './Recover.css'
 
-// Quick buttons only fill the sentence box; they go through the same interpret call as typed text.
-const QUICK = [
-  { id: 'delay', label: '열차·버스 지연', icon: delay, text: '열차가 한 시간쯤 늦게 와요' },
-  { id: 'closed', label: '휴무·영업 종료', icon: closed, text: '저녁 먹을 곳이 임시휴무래요' },
-  { id: 'rain', label: '비·날씨', icon: rain, text: '12시부터 비가 와요' },
-  { id: 'late', label: '출발이 늦어졌어요', icon: late, text: '늦잠 자서 두 시간 뒤에 출발해요' },
-  { id: 'tired', label: '지쳤어요 · 쉬고 싶어요', icon: tired, text: '일행이 지쳐서 많이 걷기 힘들어요' },
-] as const
+// Quick buttons build the event by rules, after at most one choice (lib/quick.ts): no LLM call.
+// A typed sentence goes through the interpret call as before.
+const QUICK: { id: QuickKind; label: string; icon: string }[] = [
+  { id: 'delay', label: '열차·버스 지연', icon: delay },
+  { id: 'closed', label: '휴무·영업 종료', icon: closed },
+  { id: 'rain', label: '비·날씨', icon: rain },
+  { id: 'late', label: '출발이 늦어졌어요', icon: late },
+  { id: 'tired', label: '지쳤어요 · 쉬고 싶어요', icon: tired },
+  { id: 'add', label: '꼭 가고 싶은 곳 추가', icon: addArt },
+]
 
 type Phase =
   | { kind: 'idle' }
@@ -76,7 +82,10 @@ export default function Recover() {
   useEffect(() => markFlowStart('recover'), [])
   // `sample`: opened from the intro's "try the example" (no trip needed).
   const navIn = useLocation().state as { dayIndex?: number; hole?: string; sample?: boolean } | null
-  const dayIndex = navIn?.dayIndex ?? 0
+  // Opened without a day (typed URL, or sent back here from a screen that lost its state):
+  // the day being travelled, not always the first day of the trip.
+  const todayIndex = trip ? trip.days.findIndex((d) => d.date === deviceNow().date) : -1
+  const dayIndex = navIn?.dayIndex ?? Math.max(0, todayIndex)
   const hole = navIn?.hole ?? null
 
   // Why the trip day cannot be sent yet (derived, not stored): no trip, or unconfirmed items.
@@ -88,7 +97,10 @@ export default function Recover() {
   // null = not chosen yet: the day's start (airport on an arrival day, else the hotel).
   const [locationId, setLocationId] = useState<string | null>(null)
   const [text, setText] = useState('')
-  const [quick, setQuick] = useState<string | null>(null)
+  const [quick, setQuick] = useState<QuickKind | null>(null)
+  // "꼭 가고 싶은 곳": the picked place, then the server's travel table with it (MUST_VISIT).
+  const [addPick, setAddPick] = useState<{ option: PlaceOption; title: string } | null>(null)
+  const [added, setAdded] = useState<{ placeId: string; travel: TravelTime[] } | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
   // Already visited, left out of the recovery (A1): the user's taps over the pre-checked default.
   // Cleared whenever the event changes, so the default follows the new event.
@@ -137,7 +149,7 @@ export default function Recover() {
             <section className="recover__blocked tp-fabric">
               <p>{day.message}</p>
               {trip && (
-                <Link className="tp-btn-quiet" to="/new/confirm">
+                <Link className="tp-btn-quiet" to="/new/confirm" state={{ reopened: true }}>
                   일정 확인으로 가기
                 </Link>
               )}
@@ -159,7 +171,7 @@ export default function Recover() {
   const activities = plan.activities
   const nowMin = now ?? defaultNow(plan)
   const where =
-    locationId ?? (hole ? holeLocation(plan, hole) : hasStart(plan) ? START_ID : HOTEL_ID)
+    locationId ?? (hole ? holeLocation(plan, hole) : whereNow(plan, nowMin))
   const departureDay =
     source === 'trip' && !!trip?.departure && trip.days[dayIndex]?.date === trip.endDate
   const next = nextActivity(activities, nowMin)
@@ -202,6 +214,7 @@ export default function Recover() {
   const response = phase.kind === 'result' ? phase.response : fromHole
   const ready = response?.status === 'ok' && response.event !== null
   const reset = () => {
+    setAdded(null)
     setPhase({ kind: 'idle' })
     setVisitEdits({})
   }
@@ -266,7 +279,7 @@ export default function Recover() {
             >
               {hasStart(plan) && <option value={START_ID}>도착 공항</option>}
               {/* On a departure day the backend puts the airport in the hotel node (the day's end). */}
-              <option value="hotel">{departureDay ? '출발 공항' : '숙소'}</option>
+              <option value={HOTEL_ID}>{departureDay ? '출발 공항' : '숙소'}</option>
               {activities.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.title}
@@ -289,17 +302,25 @@ export default function Recover() {
 
         <fieldset className="recover__quick">
           <legend>빠르게 고르기</legend>
-          <div>
+          <div className="recover__quick-grid">
             {QUICK.map((q) => (
               <button
                 key={q.id}
                 type="button"
                 aria-pressed={quick === q.id}
-                className={q.id === 'tired' ? 'recover__quick-wide' : undefined}
+                className={q.id === 'tired' || q.id === 'add' ? 'recover__quick-wide' : undefined}
                 onClick={() => {
                   setQuick(q.id)
-                  setText(q.text)
-                  setPhase({ kind: 'idle' })
+                  setText('')
+                  setVisitEdits({})
+                  setAdded(null)
+                  setAddPick(null)
+                  // Nothing to choose (tired): the event is ready at once.
+                  setPhase(
+                    QUICK_ASK[q.id] === null
+                      ? { kind: 'result', response: quickResponse(q.id, null, nowMin, where, titleOf) }
+                      : { kind: 'idle' },
+                  )
                 }}
               >
                 <img src={q.icon} alt="" aria-hidden="true" />
@@ -307,6 +328,102 @@ export default function Recover() {
               </button>
             ))}
           </div>
+          {quick === 'add' && (
+            <div className="recover__ask" role="group" aria-label="꼭 가고 싶은 곳">
+              <span>어디를 넣을까요?</span>
+              <PlaceSearch
+                inputId="recover-add"
+                city={source === 'sample' ? '도쿄' : (trip?.city ?? '')}
+                placeholder="예: 팀랩 플래닛"
+                picked={addPick?.option ?? null}
+                onPick={(option, title) => {
+                  setAddPick({ option, title })
+                  setPhase({ kind: 'idle' })
+                }}
+              />
+              {addPick && (
+                <>
+                  <span>얼마나 머물까요?</span>
+                  <div className="recover__ask-options">
+                    {(QUICK_ASK.add as { options: number[] }).options.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        disabled={phase.kind === 'loading'}
+                        onClick={async () => {
+                          setVisitEdits({})
+                          setPhase({ kind: 'loading' })
+                          try {
+                            const res = await addPlace({
+                              plan,
+                              place_id: addPick.option.place_id,
+                              title: addPick.title,
+                              category: 'sightseeing',
+                              duration: m,
+                              now: nowMin,
+                              location_id: where,
+                            })
+                            if (!res.event) {
+                              setPhase({ kind: 'error', message: `${addPick.title}은(는) 이날 문을 닫는 곳으로 나와요.` })
+                              return
+                            }
+                            setAdded({ placeId: addPick.option.place_id, travel: res.travel })
+                            const unknown = res.hours === 'unknown' ? ' · 영업시간 확인 필요' : ''
+                            setPhase({
+                              kind: 'result',
+                              response: {
+                                status: 'ok',
+                                interpretation: null,
+                                event: res.event,
+                                chips: [`${addPick.title} · ${minutesLabel(m)} 넣기${unknown}`],
+                                problem: null,
+                              },
+                            })
+                          } catch (e) {
+                            setPhase({ kind: 'error', message: accessMessage(e) ?? '장소 정보를 불러오지 못했어요. 잠시 뒤 다시 해 주세요.' })
+                          }
+                        }}
+                      >
+                        {minutesLabel(m)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          {quick && quick !== 'add' && QUICK_ASK[quick] && (
+            <div className="recover__ask" role="group" aria-label={QUICK_ASK[quick]!.label}>
+              <span>{QUICK_ASK[quick]!.label}</span>
+              <div className="recover__ask-options">
+                {QUICK_ASK[quick]!.kind === 'place'
+                  ? closable(plan, nowMin).map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => {
+                          setVisitEdits({})
+                          setPhase({ kind: 'result', response: quickResponse(quick, a.id, nowMin, where, titleOf) })
+                        }}
+                      >
+                        {formatTime(a.planned_start)} {a.title}
+                      </button>
+                    ))
+                  : (QUICK_ASK[quick] as { options: number[] }).options.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          setVisitEdits({})
+                          setPhase({ kind: 'result', response: quickResponse(quick, m, nowMin, where, titleOf) })
+                        }}
+                      >
+                        {QUICK_ASK[quick]!.kind === 'from' && m > 0 ? `${minutesLabel(m)} 뒤` : minutesLabel(m)}
+                      </button>
+                    ))}
+              </div>
+            </div>
+          )}
         </fieldset>
 
         <div className="recover__field">
@@ -346,7 +463,9 @@ export default function Recover() {
                 <span className="recover__hint">
                   {fromHole
                     ? '더 늦어질 것 같다면 한 줄로 적어 주세요. 예: 20분 더 걸려요'
-                    : '다르게 이해했다면 문장을 고쳐서 다시 확인해 주세요.'}
+                    : quick
+                      ? '다른 상황이면 버튼을 다시 고르거나 한 줄로 적어 주세요.'
+                      : '다르게 이해했다면 문장을 고쳐서 다시 확인해 주세요.'}
                 </span>
                 {visitable.length > 0 && (
                   <fieldset className="recover__visited">
@@ -392,8 +511,10 @@ export default function Recover() {
             onClick={() => {
               // The whole day goes on; the server takes the ticked places out (2026-11-22).
               const state: RecoveryState = {
-                plan,
+                // An added place brings its travel times with it (POST /plans/add-place).
+                plan: added ? { ...plan, travel: added.travel } : plan,
                 source,
+                addedPlaceId: added?.placeId,
                 event: response!.event!,
                 chips: response!.chips,
                 visited: activities.filter((a) => isVisited(a.id)).map((a) => a.id),

@@ -301,3 +301,22 @@
     animation: none;
   }
 }
+
+/* Pieces left unsettled at registration: a way back to Confirm. */
+.main-screen__todo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border: 1.5px dashed var(--tp-copper);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  text-decoration: none;
+}
+
+.main-screen__todo b {
+  color: var(--tp-denim-deep);
+}

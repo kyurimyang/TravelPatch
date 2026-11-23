@@ -283,3 +283,49 @@
   color: var(--tp-indigo);
   font-weight: 700;
 }
+
+/* Read, but not all of it: the user decides (Landing `short`). */
+.landing__short {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px dashed var(--tp-copper);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.landing__short p {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.landing__short-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.landing__short-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.landing__short-btn--main {
+  border-color: var(--tp-indigo);
+  background: var(--tp-indigo);
+  color: #ffffff;
+}
