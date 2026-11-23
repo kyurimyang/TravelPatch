@@ -173,7 +173,7 @@
   min-height: 36px;
   padding: 0 var(--space-3);
   border: 1.5px dashed var(--tp-hemp);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   font: inherit;
   font-size: var(--text-sm);

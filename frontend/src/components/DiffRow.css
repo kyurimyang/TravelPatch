@@ -113,17 +113,16 @@
   flex: none;
   padding: 0 var(--space-3);
   border: 1.5px dashed var(--row-edge);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--row-bg);
   color: var(--row-fg);
   font-family: var(--font-label);
   font-size: var(--text-md);
   font-weight: 700;
-  transform: rotate(-2deg);
 }
 
 .diff-row[data-op='keep'] .diff-row__chip {
-  border-style: solid;
+  border-style: dashed;
   border-color: var(--tp-hemp);
   background: transparent;
   color: var(--color-text-muted);
@@ -169,7 +168,7 @@
   min-height: 32px;
   padding: 0 var(--space-3);
   border: 1.5px dashed var(--row-edge);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--row-fg);

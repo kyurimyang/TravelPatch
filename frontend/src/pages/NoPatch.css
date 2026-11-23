@@ -32,7 +32,7 @@
 .no-patch__tag {
   align-self: flex-start;
   padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--tp-thread-loose);
   color: #ffffff;
   font-family: var(--font-label);

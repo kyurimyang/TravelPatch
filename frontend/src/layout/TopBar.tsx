@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router'
+import type { MouseEvent } from 'react'
 import wordmark from '../assets/wordmark.webp'
 import { goBack, loginPath } from '../lib/nav'
 import { useAuth } from '../store/auth'
@@ -14,12 +15,20 @@ export default function TopBar({ variant, title, aside }: Props) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { pathname, search } = useLocation()
+  // The wordmark always goes home; already there, it goes back to the top (a link to the page
+  // you are on otherwise does nothing).
+  const home = (e: MouseEvent) => {
+    if (pathname === '/' && !search) {
+      e.preventDefault()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
 
   return (
     <header className="top-bar tp-pinked-bottom">
       {variant === 'tab' ? (
         <>
-          <Link className="top-bar__home" to="/" aria-label="홈으로">
+          <Link className="top-bar__home" to="/" aria-label="홈으로" onClick={home}>
             <img className="top-bar__logo" src={wordmark} alt="TravelPatch" />
           </Link>
           <Link className="top-bar__account" to={user ? '/settings' : loginPath(pathname + search)} aria-label={user ? '설정' : '로그인'}>
@@ -39,6 +48,10 @@ export default function TopBar({ variant, title, aside }: Props) {
           </button>
           {title && <h1 className="top-bar__title">{title}</h1>}
           {aside && <span className="top-bar__aside">{aside}</span>}
+          {/* Inside a flow too: the wordmark is the way home (2026-11-24). */}
+          <Link className="top-bar__home top-bar__home--small" to="/" aria-label="홈으로">
+            <img className="top-bar__logo" src={wordmark} alt="" />
+          </Link>
         </>
       )}
     </header>

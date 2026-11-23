@@ -41,7 +41,6 @@
   border-radius: var(--radius-xs);
   outline: 1.5px dashed var(--tp-copper);
   outline-offset: -5px;
-  transform: rotate(-1.5deg);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
 }
 

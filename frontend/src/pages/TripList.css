@@ -87,7 +87,7 @@
 
 .trip-card__today {
   padding: 0 var(--space-2);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--tp-indigo);
   color: #ffffff;
   font-family: var(--font-label);

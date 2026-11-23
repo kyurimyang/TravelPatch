@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { QUILT_FABRICS, quilt } from './quilt'
+import { QUILT_FABRICS, QUILT_WIDTH, bridges, mapTitle, quilt, quiltLayout } from './quilt'
 
 describe('quilt', () => {
   it('is the same for the same day and differs between days', () => {
@@ -27,5 +27,51 @@ describe('quilt', () => {
     const area = q.reduce((s, p) => s + p.box.width * p.box.height, 0)
     expect(area).toBeLessThan(100 * 100)
     expect(area).toBeGreaterThan(100 * 100 * 0.55) // seams take the rest
+  })
+})
+
+describe('bridges', () => {
+  it('only joins consecutive stops that share a seam, and never crosses a piece', () => {
+    for (const n of [2, 3, 4, 5, 6]) {
+      for (const k of ['a', 'b', 'c', 'd']) {
+        const q = quilt(n, `${k}${n}`)
+        for (const s of bridges(q)) {
+          const mid = [(s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2]
+          const inside = q.some(
+            (p) =>
+              mid[0] > p.box.left && mid[0] < p.box.left + p.box.width &&
+              mid[1] > p.box.top && mid[1] < p.box.top + p.box.height,
+          )
+          expect(inside).toBe(false)
+        }
+      }
+    }
+  })
+
+  it('finds the seam between two neighbours', () => {
+    const q = quilt(3, 'seam')
+    expect(bridges(q).length).toBeGreaterThan(0)
+  })
+})
+
+describe('quiltLayout', () => {
+  it('never cuts a piece too small for its label, growing the map instead', () => {
+    for (const n of [1, 2, 3, 4, 5, 6]) {
+      for (const k of ['p', 'q', 'r', 's', 't']) {
+        const { pieces, height } = quiltLayout(n, `${k}${n}`)
+        for (const p of pieces) {
+          expect((p.box.width / 100) * QUILT_WIDTH).toBeGreaterThanOrEqual(117.9)
+          expect((p.box.height / 100) * height).toBeGreaterThanOrEqual(97.9)
+        }
+      }
+    }
+  })
+})
+
+describe('mapTitle', () => {
+  it('keeps the Korean half of "English (한국어)"', () => {
+    expect(mapTitle('National Museum (체코 국립박물관)')).toBe('체코 국립박물관')
+    expect(mapTitle('바츨라프 광장 (Wenceslas Square)')).toBe('바츨라프 광장')
+    expect(mapTitle('마지막 쇼핑 및 카페 방문')).toBe('마지막 쇼핑 및 카페 방문')
   })
 })

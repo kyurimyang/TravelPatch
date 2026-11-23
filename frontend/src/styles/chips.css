@@ -1,4 +1,5 @@
-/* Patch chips ("이동", "패치", ...): one look everywhere. Fixed height + flex centring, never
+/* Patch chips ("이동", "패치", ...): one look everywhere, a little sewn-on cloth tag like the
+   day tabs: handwritten label, dashed thread edge. Fixed height + flex centring, never
    padding-made height: with padding the Korean glyphs sit a pixel or two off centre.
    The page classes stay on the elements for their own spacing only. */
 .tp-chip,
@@ -9,13 +10,15 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  height: 22px;
+  height: 26px;
   padding: 0 var(--space-2);
   border: 1.5px dashed var(--op-move-edge);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   background: var(--op-move-bg);
+  box-shadow: 0 1px 0 rgba(36, 49, 77, 0.12);
   color: var(--op-move-fg);
-  font-size: var(--text-xs);
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;

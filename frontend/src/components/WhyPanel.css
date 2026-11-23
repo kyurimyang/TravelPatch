@@ -41,7 +41,7 @@
   min-height: 44px;
   padding: 0 var(--space-4);
   border: 0;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--tp-indigo);
   outline: 1.5px dashed var(--tp-copper);
   outline-offset: -4px;

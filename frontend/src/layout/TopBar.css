@@ -26,7 +26,9 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  margin-left: calc(var(--space-3) * -1);
+  /* Optical alignment: the chevron is drawn 19px inside this 44px tap box, so pull the box out
+     by that much and the arrow starts on the page's left edge, like every heading under it. */
+  margin-left: -19px;
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
@@ -39,4 +41,19 @@
   font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: 700;
+}
+
+/* The small wordmark at the right of a flow bar: home from anywhere. */
+.top-bar__home--small {
+  flex: none;
+  margin-left: auto;
+}
+
+.top-bar__aside + .top-bar__home--small {
+  margin-left: 0;
+}
+
+.top-bar__home--small .top-bar__logo {
+  height: 46px;
+  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0;
 }

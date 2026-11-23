@@ -11,30 +11,32 @@
   --color-text-muted: #5b626b;
   --color-border: #d9dce0;
 
-  /* change types: bg / fg / edge */
-  --op-keep-bg: #f1f2f4;
-  --op-keep-fg: #3d4148;
-  --op-keep-edge: #9aa0a8;
+  /* change types: bg / fg / edge. Cloth and thread from the patchwork palette (2026-11-24: the
+     stock UI blue / amber / red read as generated): a pale wash of the cloth on linen, the text in
+     dark thread, the edge in the thread colour. Contrast fg on bg stays above 7:1. */
+  --op-keep-bg: #f1ebdd;
+  --op-keep-fg: #4a4236;
+  --op-keep-edge: #b9a888;
 
-  --op-move-bg: #dbeafe;
-  --op-move-fg: #1e3a8a;
-  --op-move-edge: #3b82f6;
+  --op-move-bg: #e4e9f1;
+  --op-move-fg: #24314d;
+  --op-move-edge: #2f4a75;
 
-  --op-shrink-bg: #fef3c7;
-  --op-shrink-fg: #78350f;
-  --op-shrink-edge: #d97706;
+  --op-shrink-bg: #f7ebc9;
+  --op-shrink-fg: #5f4210;
+  --op-shrink-edge: #c28a1f;
 
-  --op-drop-bg: #fee2e2;
-  --op-drop-fg: #7f1d1d;
-  --op-drop-edge: #dc2626;
+  --op-drop-bg: #f5e0d9;
+  --op-drop-fg: #6e1f1a;
+  --op-drop-edge: #c2362f;
 
-  --op-substitute-bg: #ede9fe;
-  --op-substitute-fg: #4c1d95;
-  --op-substitute-edge: #7c3aed;
+  --op-substitute-bg: #f5e3e6;
+  --op-substitute-fg: #612a35;
+  --op-substitute-edge: #b9677a;
 
-  --op-extend-bg: #dcfce7;
-  --op-extend-fg: #14532d;
-  --op-extend-edge: #16a34a;
+  --op-extend-bg: #e4eedb;
+  --op-extend-fg: #284720;
+  --op-extend-edge: #5f9a4e;
 
   /* ADD (a must-visit inserted by the event) shares extend's green for now */
   --op-add-bg: var(--op-extend-bg);

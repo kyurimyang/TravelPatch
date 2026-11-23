@@ -6,7 +6,7 @@ import { itemIcon } from '../lib/placeIcons'
 import type { Tier } from '../lib/tier'
 import { formatDate, formatTime, tripLength } from '../lib/time'
 import { deviceNow, needsCheck, nextItem } from '../lib/today'
-import { quilt } from '../lib/quilt'
+import { QUILT_WIDTH, bridges, mapTitle, quiltLayout } from '../lib/quilt'
 import { dayKept } from '../lib/kept'
 import { useTrip } from '../store/trip'
 import { StateCard } from '../components/StateCard'
@@ -47,7 +47,7 @@ export default function Main() {
   const next = nextItem(day, isToday, now.minutes)
   // Up to 6 pieces of the day on the quilt; its cut and cloth change every day (lib/quilt).
   const stops = day.items.filter((it) => !it.dropped).slice(0, 6)
-  const pieces = quilt(stops.length, `${trip.id}:${day.date}`)
+  const { pieces, height: mapHeight } = quiltLayout(stops.length, `${trip.id}:${day.date}`)
   const dayPatches = trip.patches.filter((p) => p.date === day.date)
   const status = (i: number) =>
     i === todayIndex ? '오늘' : now.date < trip.days[i].date ? '다가오는 날' : '지난 날'
@@ -97,12 +97,10 @@ export default function Main() {
       </nav>
 
       {/* Decorative fabric "map": positions are NOT real locations (real map = Leaflet later).
-          A quilt of the day's pieces: cut and cloth change every day (lib/quilt). No route line
-          drawn across it: it covered the labels (2026-11-24); the times give the order. */}
-      <section
-        className={`main-screen__map${stops.length > 4 ? ' main-screen__map--tall' : ''}`}
-        aria-label="원단 지도"
-      >
+          A quilt of the day's pieces: cut and cloth change every day (lib/quilt). Consecutive stops
+          are joined by a few stitches across the seam they share, never a line over the pieces
+          (that covered the labels, 2026-11-24). */}
+      <section className="main-screen__map" style={{ height: mapHeight }} aria-label="원단 지도">
         {pieces.map((p, pi) => {
           const it = p.stop === null ? null : stops[p.stop]
           const place = {
@@ -130,18 +128,35 @@ export default function Main() {
             >
               {cloth}
               <span className="main-screen__label">
-                {it.start != null && (
-                  <b>
-                    {formatTime(it.start)}
-                    {it.id === next?.id && ' · 다음'}
-                  </b>
-                )}
-                <span>{it.title}</span>
+                <span className="main-screen__label-top">
+                  <img src={itemIcon(it)} alt="" aria-hidden="true" />
+                  {it.start != null && (
+                    <b data-next={it.id === next?.id ? 'true' : undefined}>
+                      {formatTime(it.start)}
+                      {it.id === next?.id && <span className="sr-only"> 다음 일정</span>}
+                    </b>
+                  )}
+                </span>
+                <span className="main-screen__label-name" title={it.title}>
+                  {mapTitle(it.title)}
+                </span>
               </span>
-              <img src={itemIcon(it)} alt="" aria-hidden="true" />
             </div>
           )
         })}
+        <svg className="main-screen__seams" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {bridges(pieces).map((s, si) => {
+            // One thread from this piece's running stitch (6px inside its edge) across the seam
+            // into the next piece's, so the stitching reads as one line through the day.
+            const rx = (6 / QUILT_WIDTH) * 100
+            const ry = (6 / mapHeight) * 100
+            return s.across === 'x' ? (
+              <line key={si} x1={s.x1 - rx} x2={s.x2 + rx} y1={s.y1} y2={s.y2} />
+            ) : (
+              <line key={si} x1={s.x1} x2={s.x2} y1={s.y1 - ry} y2={s.y2 + ry} />
+            )
+          })}
+        </svg>
       </section>
 
       {next ? (

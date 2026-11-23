@@ -144,7 +144,7 @@
 
 .stitched__chip {
   padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--tp-thread-stitch);
   color: #1f2328;
   font-family: var(--font-label);
