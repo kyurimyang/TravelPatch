@@ -92,10 +92,17 @@ const flight = (f: TripFlight | null) =>
   f ? { time: f.time, airport_place_id: f.airport.placeId, buffer_minutes: f.bufferMinutes } : null
 
 /** The trip day as the server wants it, or why it cannot be sent yet. */
+/** Most pieces one day may send to the server (backend MAX_ACTIVITIES). */
+export const MAX_DAY_ITEMS = 16
+
 export function planRequestFor(trip: Trip, dayIndex: number): PlanRequest | { problem: string } {
   const day = trip.days[dayIndex]
   const items = day?.items.filter((it) => !it.dropped) ?? []
   if (items.length === 0) return { problem: '이날에는 남은 일정이 없어요.' }
+  // Same cap as the server (backend schemas/models.py MAX_ACTIVITIES): say it here, not as a 422.
+  if (items.length > MAX_DAY_ITEMS) {
+    return { problem: `하루에 조각이 ${MAX_DAY_ITEMS}개를 넘으면 패치를 찾을 수 없어요. 빼도 되는 조각을 '빼기'로 정리해 주세요.` }
+  }
   if (!trip.hotel) return { problem: '숙소가 정해지지 않았어요.' }
   const notReady = items.filter((it) => !it.placeId || it.start == null || it.end == null || it.end <= it.start)
   if (notReady.length > 0) {

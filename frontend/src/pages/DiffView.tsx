@@ -13,11 +13,13 @@ import { SummaryBar } from '../components/SummaryBar'
 import { WhyPanel } from '../components/WhyPanel'
 import { StateCard } from '../components/StateCard'
 import { StitchLoader } from '../components/StitchLoader'
+import { ExitLink } from '../components/ExitLink'
 import { useFlowTitle } from '../layout/flowTitle'
 import { iconsById } from '../lib/placeIcons'
-import { inputFor, samplePlan, titlesOf, type RecoveryState } from '../lib/recovery'
+import { inputFor, titlesOf, type RecoveryState } from '../lib/recovery'
 import { strategyLabel } from '../lib/strategy'
 import { withJosa } from '../lib/josa'
+import { shiftLabel, timeShift } from '../lib/shift'
 import sample from '../mocks/scenarioAInput.json'
 import { useTrip } from '../store/trip'
 import './DiffView.css'
@@ -45,12 +47,19 @@ type State =
   | { status: 'error'; message: string }
   | { status: 'done'; response: RecoveryResponse }
 
+// The day to patch comes from Recover in router state. Opened without it (refresh, typed URL,
+// reopened tab) there is nothing to patch: start over on Recover. Never show the sample day in
+// place of the user's own (it used to fall back to scenario A here).
 export default function DiffView() {
   const nav = useLocation().state as RecoveryState | null
+  if (!nav?.plan) return <Navigate to="/recover" replace />
+  return <DiffViewScreen nav={nav} />
+}
+
+function DiffViewScreen({ nav }: { nav: RecoveryState }) {
   const { trip } = useTrip()
-  // Opening this URL directly falls back to the sample day and its own event (scenario A).
-  const plan = nav?.plan ?? samplePlan()
-  const source = nav?.source ?? 'sample'
+  const plan = nav.plan
+  const source = nav.source
   const event = nav?.event ?? (sample as unknown as RecoveryInput).event
   const chips = nav?.chips ?? []
   const baseInput = inputFor(plan, event, nav?.visited ?? [])
@@ -107,9 +116,9 @@ export default function DiffView() {
             >
               다시 시도
             </button>
-            <Link className="tp-btn-quiet" to="/">
+            <ExitLink flow="recover" className="tp-btn-quiet">
               원래 일정 그대로 두기
-            </Link>
+            </ExitLink>
           </>
         }
       >
@@ -119,14 +128,14 @@ export default function DiffView() {
     )
   }
 
-  const { candidates, blockers } = state.response
-  // No plan at all: the blocker screen explains why.
+  const { candidates, blockers, relaxations } = state.response
+  // No plan at all: the blocker screen explains why, and offers the musts to loosen.
   if (candidates.length === 0) {
     return (
       <Navigate
         to="/recover/blocked"
         replace
-        state={{ blockers, chips, titles: Object.fromEntries(titlesOf(baseInput)) }}
+        state={{ blockers, relaxations, chips, titles: Object.fromEntries(titlesOf(baseInput)), back: nav }}
       />
     )
   }
@@ -212,7 +221,10 @@ export default function DiffView() {
             >
               <span>{strategyLabel(c.strategy)}</span>
               {/* Round down, same as SummaryBar: a plan that changed something must not read 100%. */}
-              <span>보존율 {Math.floor(c.preservation_rate * 100)}%</span>
+              <span>
+                보존율 {Math.floor(c.preservation_rate * 100)}%
+                {shiftLabel(timeShift(c)) ? ` · ${shiftLabel(timeShift(c))}` : ''}
+              </span>
             </button>
           ))}
         </div>
@@ -255,7 +267,11 @@ export default function DiffView() {
         <Link
           className="tp-btn-primary tp-denim"
           to="/recover/done"
+          // replace: once stitched, back must not reopen the patch choice.
+          replace
           state={{
+            // To come back here with "실 풀기" (undo).
+            back: nav,
             result,
             source,
             plan,
@@ -268,9 +284,9 @@ export default function DiffView() {
         >
           이 패치로 박음질하기
         </Link>
-        <Link className="tp-btn-quiet" to="/">
+        <ExitLink flow="recover" className="tp-btn-quiet">
           그대로 둘게요
-        </Link>
+        </ExitLink>
       </div>
     </div>
   )

@@ -25,6 +25,8 @@ import {
 } from '../lib/recovery'
 import { formatTime, parseTime } from '../lib/time'
 import { deviceNow } from '../lib/today'
+import { markFlowStart } from '../lib/nav'
+import { ExitLink } from '../components/ExitLink'
 import { useTrip } from '../store/trip'
 import './Recover.css'
 
@@ -71,7 +73,9 @@ export default function Recover() {
   const navigate = useNavigate()
   const { trip } = useTrip()
   // `hole`: the id of the piece the hole alert said is late (A2).
-  const navIn = useLocation().state as { dayIndex?: number; hole?: string } | null
+  useEffect(() => markFlowStart('recover'), [])
+  // `sample`: opened from the intro's "try the example" (no trip needed).
+  const navIn = useLocation().state as { dayIndex?: number; hole?: string; sample?: boolean } | null
   const dayIndex = navIn?.dayIndex ?? 0
   const hole = navIn?.hole ?? null
 
@@ -79,7 +83,7 @@ export default function Recover() {
   const req = useMemo(() => (trip ? planRequestFor(trip, dayIndex) : null), [trip, dayIndex])
   const notReady = !req ? '등록한 여행이 없어요.' : 'problem' in req ? req.problem : null
   const [fetched, setFetched] = useState<DayState | null>(null)
-  const [useSample, setUseSample] = useState(false)
+  const [useSample, setUseSample] = useState(navIn?.sample === true)
   const [now, setNow] = useState<number | null>(null)
   // null = not chosen yet: the day's start (airport on an arrival day, else the hotel).
   const [locationId, setLocationId] = useState<string | null>(null)
@@ -409,9 +413,9 @@ export default function Recover() {
             {phase.kind === 'loading' ? '읽는 중…' : '이렇게 이해했는지 확인'}
           </button>
         )}
-        <Link className="tp-btn-quiet" to="/">
+        <ExitLink flow="recover" className="tp-btn-quiet">
           그대로 둘게요
-        </Link>
+        </ExitLink>
       </div>
     </div>
   )

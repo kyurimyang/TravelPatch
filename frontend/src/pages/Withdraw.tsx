@@ -1,42 +1,53 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
+import { deleteRequest } from '../api/http'
 import { StateCard } from '../components/StateCard'
+import { loginPath } from '../lib/nav'
 import { useAuth } from '../store/auth'
-import { useTrip } from '../store/trip'
 import './Account.css'
 import './Settings.css'
 
 const REASONS = ['당분간 여행 계획이 없어요', '패치가 기대와 달랐어요', '기타']
 
-// Deleting the account itself needs the service key on the server (C on hold, 2026-11-18).
-// Until then this clears what this device holds and signs out, and says the rest is pending.
+// DELETE /me deletes the account on the server (2026-11-23); the database cascades to every
+// trip, patch and consent. Then this device signs out.
 export default function Withdraw() {
   const navigate = useNavigate()
   const auth = useAuth()
-  const { trips, deleteTrip } = useTrip()
   const [reason, setReason] = useState<string | null>(null)
   const [agreed, setAgreed] = useState(false)
   const [done, setDone] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  if (auth.ready && !auth.user && !done) return <Navigate to="/login" replace />
+  if (auth.ready && !auth.user && !done) return <Navigate to={loginPath('/settings/withdraw')} replace />
   if (done) {
     return (
       <StateCard
         kind="empty"
-        title="이 기기의 기록을 지웠어요"
+        title="계정을 지웠어요"
         actions={
           <Link className="tp-btn-primary tp-denim" to="/">
             처음으로
           </Link>
         }
       >
-        <p>계정 자체를 지우는 기능은 준비 중이에요. 준비되면 계정과 서버의 기록도 함께 지울 수 있어요.</p>
+        <p>계정과 여행 일정, 패치 기록을 모두 지웠어요. 그동안 써 주셔서 고마워요.</p>
       </StateCard>
     )
   }
 
   async function withdraw() {
-    for (const t of trips) deleteTrip(t.id)
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteRequest('/me')
+    } catch {
+      // Nothing was deleted: the account is as it was and the user can try again.
+      setError('계정을 지우지 못했어요. 잠시 뒤 다시 해 주세요.')
+      setBusy(false)
+      return
+    }
     await auth.signOut()
     setDone(true)
     navigate('/settings/withdraw', { replace: true })
@@ -57,7 +68,7 @@ export default function Withdraw() {
           <li>패치워크와 배지</li>
           <li>연결된 Google 로그인</li>
         </ul>
-        <p className="account__hint">법령에 따라 따로 보관하는 정보는 없어요. 계정과 서버 기록까지 지우려면 kyurim1006@gmail.com으로 요청해 주세요.</p>
+        <p className="account__hint">법령에 따라 따로 보관하는 정보는 없어요.</p>
       </section>
 
       <fieldset className="settings__group withdraw__reasons">
@@ -75,16 +86,18 @@ export default function Withdraw() {
         동의해요
       </label>
 
-      <p className="account__msg account__msg--info">
-        지금은 계정 삭제 기능을 준비 중이라, 이 기기에 저장된 여행을 지우고 로그아웃해요.
-      </p>
+      {error && (
+        <p className="account__msg account__msg--error" role="alert">
+          {error}
+        </p>
+      )}
 
       <div className="withdraw__actions">
         <Link className="tp-btn-quiet" to="/settings">
           취소
         </Link>
-        <button type="button" className="tp-btn-primary withdraw__go" disabled={!agreed} onClick={withdraw}>
-          탈퇴하기
+        <button type="button" className="tp-btn-primary withdraw__go" disabled={!agreed || busy} onClick={withdraw}>
+          {busy ? '지우고 있어요…' : '탈퇴하기'}
         </button>
       </div>
     </div>

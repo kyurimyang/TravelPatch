@@ -110,15 +110,6 @@
   flex-wrap: wrap;
 }
 
-.trip-card__chip {
-  padding: 1px var(--space-2);
-  border: 1.5px dashed var(--op-move-edge);
-  border-radius: var(--radius-sm);
-  background: var(--op-move-bg);
-  color: var(--op-move-fg);
-  font-size: var(--text-xs);
-  font-weight: 700;
-}
 
 .trip-card__chip--warn {
   border-color: var(--op-shrink-edge);

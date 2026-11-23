@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
+import { loginPath } from '../lib/nav'
 import { useAuth } from '../store/auth'
 import './Account.css'
 import './Settings.css'
@@ -16,7 +17,7 @@ export default function Settings() {
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState<{ kind: 'error' | 'info'; text: string } | null>(null)
 
-  if (auth.ready && !auth.user) return <Navigate to="/login" replace />
+  if (auth.ready && !auth.user) return <Navigate to={loginPath('/settings')} replace />
   const google = auth.user?.app_metadata?.providers?.includes('google') ?? false
 
   async function saveNickname() {
@@ -92,7 +93,7 @@ export default function Settings() {
           className="tp-btn-quiet"
           onClick={async () => {
             await auth.signOut()
-            navigate('/')
+            navigate('/', { replace: true })
           }}
         >
           로그아웃

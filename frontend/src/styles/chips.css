@@ -1,0 +1,22 @@
+/* Patch chips ("이동", "패치", ...): one look everywhere. Fixed height + flex centring, never
+   padding-made height: with padding the Korean glyphs sit a pixel or two off centre.
+   The page classes stay on the elements for their own spacing only. */
+.tp-chip,
+.main-screen__patch-tag,
+.trip-card__chip,
+.patchwork__op {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 22px;
+  padding: 0 var(--space-2);
+  border: 1.5px dashed var(--op-move-edge);
+  border-radius: var(--radius-sm);
+  background: var(--op-move-bg);
+  color: var(--op-move-fg);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}

@@ -6,6 +6,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   background: var(--tp-tex-linen), var(--tp-linen);
   border-top: 2px dashed var(--tp-hemp);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .tab-bar__item {

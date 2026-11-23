@@ -38,7 +38,8 @@ async function authHeader(): Promise<Record<string, string>> {
 /** What to tell the user for the two answers about who is calling, or null for any other error. */
 export function accessMessage(e: unknown): string | null {
   if (!(e instanceof ApiError)) return null
-  if (e.status === 429) return '오늘 게스트로 쓸 수 있는 횟수를 다 썼어요. 로그인하면 계속 쓸 수 있어요.'
+  // Signed-in users have a daily limit too (2026-11-23), only a larger one.
+  if (e.status === 429) return '오늘 쓸 수 있는 횟수를 다 썼어요. 내일 다시 쓸 수 있고, 게스트라면 로그인하면 더 쓸 수 있어요.'
   if (e.status === 401) return '로그인이 만료됐어요. 다시 로그인해 주세요.'
   return null
 }
@@ -71,6 +72,12 @@ async function readJson<T>(res: Response): Promise<T> {
 export async function postJson<T>(path: string, body: unknown, opts: RequestOptions = {}): Promise<T> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
   return readJson<T>(await fetchWithTimeout(path, init, opts.timeoutMs ?? DEFAULT_TIMEOUT_MS))
+}
+
+/** DELETE; resolves on any 2xx (the server answers 204 with no body). */
+export async function deleteRequest(path: string, opts: RequestOptions = {}): Promise<void> {
+  const res = await fetchWithTimeout(path, { method: 'DELETE' }, opts.timeoutMs ?? DEFAULT_TIMEOUT_MS)
+  if (!res.ok) await readJson<never>(res)
 }
 
 export async function getJson<T>(

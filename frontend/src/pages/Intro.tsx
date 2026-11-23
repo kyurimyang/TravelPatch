@@ -40,6 +40,10 @@ export default function Intro() {
         <Link className="tp-btn-primary tp-denim" to="/new">
           여행 일정 등록하기
         </Link>
+        {/* See a patch before typing anything: the Tokyo example day, straight to "where is the hole". */}
+        <Link className="tp-btn-quiet" to="/recover" state={{ sample: true }}>
+          등록 없이 예시 여행으로 먼저 보기
+        </Link>
       </section>
 
       <section className="landing__features" aria-label="이렇게 도와드려요">

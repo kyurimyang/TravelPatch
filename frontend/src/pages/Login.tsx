@@ -1,12 +1,15 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { StateCard } from '../components/StateCard'
+import { holdNext, loginPath, safeNext } from '../lib/nav'
 import { useAuth } from '../store/auth'
 import './Account.css'
 
 export default function Login() {
   const navigate = useNavigate()
   const auth = useAuth()
+  // Where to go once signed in (a protected screen sent the user here); home by default.
+  const next = safeNext(useSearchParams()[0].get('next'))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -20,6 +23,9 @@ export default function Login() {
     )
   }
 
+  // Already signed in (e.g. came back with the browser's back button): nothing to do here.
+  if (auth.ready && auth.user) return <Navigate to={next} replace />
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true)
@@ -27,10 +33,12 @@ export default function Login() {
     const error = await auth.signIn(email.trim(), password)
     setBusy(false)
     if (error) setMessage({ kind: 'error', text: error })
-    else navigate('/')
+    // replace: back after signing in must not show the login form again.
+    else navigate(next, { replace: true })
   }
 
   async function google() {
+    holdNext(next)
     const error = await auth.signInWithGoogle()
     if (error) setMessage({ kind: 'error', text: error })
   }
@@ -87,7 +95,7 @@ export default function Login() {
       </form>
 
       <p className="account__switch">
-        처음이신가요? <Link to="/signup">회원가입</Link>
+        처음이신가요? <Link to={loginPath(next, '/signup')} replace>회원가입</Link>
       </p>
       <p className="account__switch">
         <Link to="/">로그인 없이 둘러보기</Link>

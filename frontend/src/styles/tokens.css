@@ -99,7 +99,9 @@
   --font-sans: 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Segoe UI', 'Noto Sans KR', sans-serif;
   /* 16px and up for anything typed into: smaller inputs make iOS zoom the page on focus */
   --text-xs: 12px; /* fine print, badges */
-  --text-sm: 13px; /* hints, chips, secondary lines */
+  /* 13px is gone (2026-11-23): next to 12 and 14 it read as misalignment, not a level.
+     Secondary lines are told apart by colour (--color-text-muted) and weight instead. */
+  --text-sm: var(--text-base); /* hints, secondary lines */
   --text-base: 14px; /* body text */
   --text-md: 16px; /* inputs, buttons, emphasized body */
   --text-lg: 18px; /* card titles, section headings */

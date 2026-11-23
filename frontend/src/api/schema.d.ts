@@ -139,6 +139,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Me
+         * @description Withdraw: delete the signed-in caller's account and all their data. Only ever their own:
+         *     the id comes from the verified token, never from the request.
+         */
+        delete: operations["delete_me_me_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -642,6 +663,18 @@ export interface components {
             status: "ok" | "manual";
             draft: components["schemas"]["DraftItinerary"] | null;
             problem?: components["schemas"]["ParseProblem"] | null;
+            partial?: components["schemas"]["PartialRead"] | null;
+        };
+        /**
+         * PartialRead
+         * @description The draft covers only part of the text, even after asking twice: `read` timed items came
+         *     back for `written` time lines. The screen tells the user what is missing.
+         */
+        PartialRead: {
+            /** Read */
+            read: number;
+            /** Written */
+            written: number;
         };
         /**
          * PlaceOption
@@ -850,7 +883,8 @@ export interface components {
         };
         /**
          * RecoveryResponse
-         * @description What the API returns: the candidates, or, when none exists, the blockers explaining why.
+         * @description What the API returns: the candidates, or, when none exists, the blockers explaining why
+         *     and the relaxations that would make a plan possible.
          */
         RecoveryResponse: {
             /** Candidates */
@@ -860,6 +894,11 @@ export interface components {
              * @default []
              */
             blockers: components["schemas"]["Blocker"][];
+            /**
+             * Relaxations
+             * @default []
+             */
+            relaxations: components["schemas"]["Relaxation"][];
             used_input?: components["schemas"]["RecoveryInput"] | null;
         };
         /** RecoveryResult */
@@ -877,6 +916,18 @@ export interface components {
             violations: number;
             /** Solver Ms */
             solver_ms: number;
+        };
+        /**
+         * Relaxation
+         * @description With no plan at all: one "꼭" (must) activity that, taken down to "좋음" (nice), lets a
+         *     valid plan exist. Only a suggestion: the client asks again with that tier, so the plan the
+         *     user sees still comes from the normal solve + validate path.
+         */
+        Relaxation: {
+            /** Activity Id */
+            activity_id: string;
+            /** Preservation Rate */
+            preservation_rate: number;
         };
         /** ReservationChangeEvent */
         ReservationChangeEvent: {
@@ -1265,6 +1316,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BuiltPlan"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_me_me_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

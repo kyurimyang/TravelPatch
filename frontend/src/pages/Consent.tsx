@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { allAgreed, ConsentList, NO_CONSENT } from '../components/ConsentList'
+import { loginPath } from '../lib/nav'
 import { useAuth } from '../store/auth'
 import './Account.css'
 
@@ -14,7 +15,7 @@ export default function Consent() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (auth.ready && !auth.user) return <Navigate to="/login" replace />
+  if (auth.ready && !auth.user) return <Navigate to={loginPath('/consent')} replace />
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()

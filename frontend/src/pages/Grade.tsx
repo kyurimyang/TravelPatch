@@ -6,6 +6,7 @@ import { itemIcon } from '../lib/placeIcons'
 import { formatDate, formatTime } from '../lib/time'
 import { useTrip } from '../store/trip'
 import { StateCard } from '../components/StateCard'
+import { ExitLink } from '../components/ExitLink'
 import './Grade.css'
 
 const LEGEND: { cls: string; label: string; text: string }[] = [
@@ -114,9 +115,10 @@ export default function Grade() {
 
       <div className="grade__bar tp-pinked-top">
         <span>나중에 일정 화면에서도 바꿀 수 있어요</span>
-        <Link className="tp-btn-primary tp-denim" to="/">
+        {/* Registering is done: leave the flow, so back does not walk through its steps again. */}
+        <ExitLink flow="new" className="tp-btn-primary tp-denim">
           원단 완성하기
-        </Link>
+        </ExitLink>
       </div>
     </div>
   )

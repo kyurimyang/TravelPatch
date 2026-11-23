@@ -48,7 +48,7 @@
 .landing__lead {
   margin: 0;
   font-size: var(--text-md);
-  line-height: 1.65;
+  line-height: 1.5;
   color: #3d4148;
   text-align: center;
 }
@@ -92,7 +92,7 @@
 
 .landing__feature span {
   font-size: var(--text-base);
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--color-text-muted);
 }
 
@@ -162,7 +162,12 @@
 
 .landing__steps small {
   align-self: flex-start;
-  padding: 1px var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 22px;
+  padding: 0 var(--space-2);
+  line-height: 1;
   border-radius: var(--radius-xs);
   background: var(--tp-indigo);
   color: var(--tp-lace);
@@ -178,7 +183,7 @@
 
 .landing__steps span {
   font-size: var(--text-base);
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--color-text-muted);
 }
 
@@ -196,7 +201,7 @@
 .landing__form p {
   margin: 0;
   font-size: var(--text-base);
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--color-text-muted);
 }
 
@@ -232,7 +237,7 @@
 }
 
 .landing__field textarea {
-  line-height: 1.6;
+  line-height: 1.5;
   resize: vertical;
 }
 

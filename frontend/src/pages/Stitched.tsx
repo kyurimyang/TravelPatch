@@ -6,8 +6,11 @@ import { OP_LABEL } from '../components/DiffRow'
 import { DEFAULT_ICON, iconsById } from '../lib/placeIcons'
 import { strategyLabel } from '../lib/strategy'
 import { patchFrom } from '../lib/patches'
-import type { RecoverySource } from '../lib/recovery'
+import type { RecoverySource, RecoveryState } from '../lib/recovery'
+import { exitFlow } from '../lib/nav'
+import { ExitLink } from '../components/ExitLink'
 import { formatTime } from '../lib/time'
+import { shiftSentence, timeShift } from '../lib/shift'
 import { useTrip } from '../store/trip'
 import './Stitched.css'
 
@@ -21,6 +24,7 @@ export default function Stitched() {
     eventType?: DisruptionEvent['type']
     patchId?: string
     titles?: Record<string, string>
+    back?: RecoveryState
   } | null
   const { trip, stitch, unstitch } = useTrip()
   const result = navState?.result
@@ -37,7 +41,9 @@ export default function Stitched() {
 
   function undo() {
     if (saves) unstitch(navState!.patchId!)
-    navigate(-1)
+    // Back to choosing a patch for the same hole (this screen replaced that one).
+    if (navState?.back) navigate('/recover/patch', { replace: true, state: navState.back })
+    else exitFlow(navigate, 'recover')
   }
   const titles = navState?.titles ?? {}
   const activities = new Map((navState?.plan?.activities ?? []).map((a) => [a.id, a]))
@@ -50,7 +56,7 @@ export default function Stitched() {
         <header className="stitched__head tp-pinked-bottom">박음질 완료</header>
         <div className="stitched__body">
           <p>박음질한 패치가 없어요.</p>
-          <Link className="tp-btn-primary tp-denim" to="/">
+          <Link className="tp-btn-primary tp-denim" to="/" replace>
             오늘 일정으로
           </Link>
         </div>
@@ -58,6 +64,8 @@ export default function Stitched() {
     )
   }
 
+  const shift = timeShift(result)
+  const rate = Math.floor(result.preservation_rate * 100)
   const dropped = result.changes.filter((c) => c.op === 'drop').length
   const changed = result.changes.filter((c) => c.op !== 'keep' && c.op !== 'drop').length
   const rows = result.changes
@@ -72,12 +80,22 @@ export default function Stitched() {
         <div className="stitched__hero">
           <img src={delayPatch} alt="" aria-hidden="true" />
           {/* Round down, same as everywhere else: a plan that changed something must not read 100%. */}
-          <h1>
-            원래 계획의 {Math.floor(result.preservation_rate * 100)}%를
-            <br />
-            지켰어요
-          </h1>
+          {/* "100%" alone reads as "nothing changed": a day pushed back says so instead. */}
+          {rate === 100 && shift ? (
+            <h1>
+              빠진 조각 없이
+              <br />
+              다시 박음질했어요
+            </h1>
+          ) : (
+            <h1>
+              원래 계획의 {rate}%를
+              <br />
+              지켰어요
+            </h1>
+          )}
           <p>‘{strategyLabel(result.strategy)}’ 패치로 오늘의 원단을 박음질했어요.</p>
+          {shiftSentence(shift) && <p>{shiftSentence(shift)}</p>}
         </div>
 
         <div className="stitched__stats">
@@ -129,9 +147,9 @@ export default function Stitched() {
         <button type="button" className="stitched__undo" onClick={undo}>
           실 풀기
         </button>
-        <Link className="tp-btn-primary tp-denim" to="/">
+        <ExitLink flow="recover" className="tp-btn-primary tp-denim">
           오늘 일정으로
-        </Link>
+        </ExitLink>
       </div>
     </div>
   )

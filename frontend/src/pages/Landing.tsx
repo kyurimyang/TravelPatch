@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { accessMessage } from '../api/http'
 import { parseItinerary } from '../api/itineraries'
@@ -9,6 +9,7 @@ import { StitchLoader } from '../components/StitchLoader'
 import { FlightFields } from '../components/FlightFields'
 import { TravelModePicker } from '../components/TravelModePicker'
 import { useFlowTitle } from '../layout/flowTitle'
+import { markFlowStart } from '../lib/nav'
 import { tripFromDraft } from '../lib/tripFromDraft'
 import { useTrip, type TripFlight } from '../store/trip'
 import './Landing.css'
@@ -23,6 +24,7 @@ export default function Landing() {
   const navigate = useNavigate()
   const { setTrip } = useTrip()
   useFlowTitle('여행 일정 등록하기')
+  useEffect(() => markFlowStart('new'), [])
   const [city, setCity] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')

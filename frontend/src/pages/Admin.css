@@ -24,7 +24,7 @@
 .admin__note {
   margin: var(--space-1) 0 0;
   font-size: var(--text-sm);
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--color-text-muted);
 }
 

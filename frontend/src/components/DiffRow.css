@@ -163,6 +163,7 @@
 }
 
 .diff-row__why summary {
+  position: relative;
   display: inline-flex;
   align-items: center;
   min-height: 32px;
@@ -174,6 +175,13 @@
   color: var(--row-fg);
   cursor: pointer;
   list-style: none;
+}
+
+/* The pill stays 32px to look light; the finger gets 44px. */
+.diff-row__why summary::after {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
 }
 
 .diff-row__why summary::-webkit-details-marker {

@@ -1,5 +1,6 @@
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import wordmark from '../assets/wordmark.webp'
+import { goBack, loginPath } from '../lib/nav'
 import { useAuth } from '../store/auth'
 import './TopBar.css'
 import './TopBarAccount.css'
@@ -12,6 +13,7 @@ type Props = { variant: 'tab' | 'flow'; title?: string; aside?: string }
 export default function TopBar({ variant, title, aside }: Props) {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { pathname, search } = useLocation()
 
   return (
     <header className="top-bar tp-pinked-bottom">
@@ -20,7 +22,7 @@ export default function TopBar({ variant, title, aside }: Props) {
           <Link className="top-bar__home" to="/" aria-label="홈으로">
             <img className="top-bar__logo" src={wordmark} alt="TravelPatch" />
           </Link>
-          <Link className="top-bar__account" to={user ? '/settings' : '/login'} aria-label={user ? '설정' : '로그인'}>
+          <Link className="top-bar__account" to={user ? '/settings' : loginPath(pathname + search)} aria-label={user ? '설정' : '로그인'}>
             <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" />
@@ -29,8 +31,8 @@ export default function TopBar({ variant, title, aside }: Props) {
         </>
       ) : (
         <>
-          {/* navigate(-1) = browser "back". Fine inside a flow; entering a flow URL directly has no history to go back to. */}
-          <button type="button" className="top-bar__back" aria-label="뒤로가기" onClick={() => navigate(-1)}>
+          {/* One step back; home when this tab opened on this screen (a shared link), never out of the app. */}
+          <button type="button" className="top-bar__back" aria-label="뒤로가기" onClick={() => goBack(navigate)}>
             <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 18l-6-6 6-6" />
             </svg>

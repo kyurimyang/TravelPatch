@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Link, Navigate } from 'react-router'
+import { Link, Navigate, useSearchParams } from 'react-router'
 import { allAgreed, ConsentList, NO_CONSENT } from '../components/ConsentList'
 import { StateCard } from '../components/StateCard'
+import { loginPath, safeNext } from '../lib/nav'
 import { useAuth } from '../store/auth'
 import './Account.css'
 
@@ -10,6 +11,7 @@ const strongEnough = (p: string) => p.length >= 8 && /[A-Za-z]/.test(p) && /\d/.
 
 export default function Signup() {
   const auth = useAuth()
+  const next = safeNext(useSearchParams()[0].get('next'))
   const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,14 +30,14 @@ export default function Signup() {
   }
   // With "Confirm email" off (decision 2026-11-22) sign-up signs the user in at once: go home.
   // With it on, there is no session yet and the mail screen below is the right answer.
-  if (auth.user) return <Navigate to="/" replace />
+  if (auth.user) return <Navigate to={next} replace />
   if (sent) {
     return (
       <StateCard
         kind="empty"
         title="메일함을 확인해 주세요"
         actions={
-          <Link className="tp-btn-primary tp-denim" to="/login">
+          <Link className="tp-btn-primary tp-denim" to={loginPath(next)} replace>
             로그인으로
           </Link>
         }
@@ -109,7 +111,7 @@ export default function Signup() {
       </form>
 
       <p className="account__switch">
-        이미 계정이 있나요? <Link to="/login">로그인</Link>
+        이미 계정이 있나요? <Link to={loginPath(next)} replace>로그인</Link>
       </p>
     </div>
   )

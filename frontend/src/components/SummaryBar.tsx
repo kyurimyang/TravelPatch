@@ -1,4 +1,5 @@
 import type { Op, RecoveryResult } from '../api/types'
+import { shiftLabel, timeShift } from '../lib/shift'
 import './SummaryBar.css'
 
 // Count changes per op in one pass; missing ops stay 0.
@@ -20,11 +21,14 @@ export function SummaryBar({ result }: { result: RecoveryResult }) {
   const counts = countOps(result)
   // Round down: a plan that changed something must never read as "100%".
   const preservation = Math.floor(result.preservation_rate * 100)
+  const shift = shiftLabel(timeShift(result))
   return (
     <p className="summary-bar">
       <strong>보존율 {preservation}%</strong>
       <span>삭제 {counts.drop}</span>
       <span>단축 {counts.shrink}</span>
+      {/* The rate ignores time moves: say them, or "100%" overstates an unchanged day. */}
+      {shift && <span>{shift}</span>}
       <span>위반 {result.violations}</span>
     </p>
   )
