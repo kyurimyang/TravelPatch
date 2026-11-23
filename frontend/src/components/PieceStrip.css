@@ -1,0 +1,71 @@
+.piece-strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.piece-strip ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One piece of the day: a small square of cloth, sewn edge. */
+.piece-strip li {
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--tp-hemp);
+  border-radius: var(--radius-xs);
+  background: var(--tp-lace);
+}
+
+/* Patched pieces: real fabric, copper topstitch. */
+.piece-strip li:not([data-op='keep']):not([data-op='drop']) {
+  border: 0;
+  outline: 1.5px dashed var(--tp-copper);
+  outline-offset: -3px;
+  box-shadow: 0 1px 0 rgba(36, 49, 77, 0.25);
+}
+
+.piece-strip li[data-op='move'] {
+  background: var(--tp-check);
+}
+
+.piece-strip li[data-op='shrink'] {
+  background: var(--tp-stripe);
+}
+
+.piece-strip li[data-op='substitute'] {
+  background: var(--tp-plaid);
+}
+
+.piece-strip li[data-op='extend'],
+.piece-strip li[data-op='add'] {
+  background: var(--tp-butterfloral);
+}
+
+/* Taken out: a hole where the piece was, edged with the loose red thread. */
+.piece-strip li[data-op='drop'] {
+  border: 1.5px dashed var(--tp-thread-loose);
+  background: transparent;
+}
+
+.piece-strip p {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.piece-strip .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -19,10 +19,14 @@ import { iconsById } from '../lib/placeIcons'
 import { inputFor, titlesOf, type RecoveryState } from '../lib/recovery'
 import { strategyLabel } from '../lib/strategy'
 import { withJosa } from '../lib/josa'
-import { shiftLabel, timeShift } from '../lib/shift'
+import { tabLine } from '../lib/patchText'
+import { PieceStrip } from '../components/PieceStrip'
 import sample from '../mocks/scenarioAInput.json'
 import { useTrip } from '../store/trip'
 import './DiffView.css'
+
+// Cloth for each candidate's swatch, in candidate order.
+const SWATCHES = ['check', 'stripe', 'plaid'] as const
 
 // The hole patch that shows what kind of thing broke the day.
 const HOLE_ART: Record<string, string> = {
@@ -181,7 +185,6 @@ function DiffViewScreen({ nav }: { nav: RecoveryState }) {
       setBusy(false)
     }
   }
-  const changed = result.changes.filter((c) => c.op !== 'keep').length
 
   return (
     <div className="diff-view">
@@ -197,16 +200,7 @@ function DiffViewScreen({ nav }: { nav: RecoveryState }) {
               ))}
             </ul>
           )}
-          <div className="diff-view__stats">
-            <div>
-              <span>바뀌는 조각</span>
-              <b>{changed}개</b>
-            </div>
-            <div>
-              <span>그대로인 조각</span>
-              <b>{result.changes.length - changed}개</b>
-            </div>
-          </div>
+          <PieceStrip changes={result.changes} titleOf={(id) => titleOf.get(id) ?? id} />
         </section>
 
         <div role="tablist" aria-label="패치 후보" className="diff-view__tabs">
@@ -216,14 +210,13 @@ function DiffViewScreen({ nav }: { nav: RecoveryState }) {
               type="button"
               role="tab"
               aria-selected={i === picked}
-              className="tp-fabric"
               onClick={() => setPicked(i)}
             >
-              <span>{strategyLabel(c.strategy)}</span>
-              {/* Round down, same as SummaryBar: a plan that changed something must not read 100%. */}
-              <span>
-                보존율 {Math.floor(c.preservation_rate * 100)}%
-                {shiftLabel(timeShift(c)) ? ` · ${shiftLabel(timeShift(c))}` : ''}
+              {/* A cloth sample per candidate, like swatches pinned to a card. */}
+              <span className="diff-view__swatch" style={{ background: `var(--tp-${SWATCHES[i % SWATCHES.length]})` }} aria-hidden="true" />
+              <span className="diff-view__tab-text">
+                <b>{strategyLabel(c.strategy)}</b>
+                <span>{tabLine(c)}</span>
               </span>
             </button>
           ))}
