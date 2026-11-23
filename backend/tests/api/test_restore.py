@@ -59,13 +59,23 @@ def test_a_strategy_with_no_candidate_is_not_found() -> None:
     assert res.status_code == 404
 
 
-def test_an_unsupported_event_is_still_answered_with_501() -> None:
-    body = {
-        "input": scenario_a_with_unsupported_event("MUST_VISIT").model_dump(mode="json"),
-        "strategy": "balanced",
-        "activity_id": "omotesando",
-    }
-    assert client.post("/recoveries/restore", json=body).status_code == 501
+def test_restore_works_on_a_day_with_an_added_place() -> None:
+    # MUST_VISIT is solved since 2026-11-23 (it was a 501): "what if I keep X" works there too.
+    inp = scenario_a_with_unsupported_event("MUST_VISIT").model_dump(mode="json")
+    cands = client.post("/recoveries", json=inp).json()["candidates"]
+    dropped = next(
+        (
+            (c["strategy"], x["activity_id"])
+            for c in cands
+            for x in c["changes"]
+            if x["op"] == "drop"
+        ),
+        None,
+    )
+    if dropped is None:
+        return  # nothing dropped on this day: nothing to restore
+    body = {"input": inp, "strategy": dropped[0], "activity_id": dropped[1]}
+    assert client.post("/recoveries/restore", json=body).status_code == 200
 
 
 def test_when_no_valid_plan_keeps_it_the_answer_is_null_not_an_error() -> None:

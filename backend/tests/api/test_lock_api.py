@@ -30,3 +30,16 @@ def test_locking_something_already_past_says_why():
 
 def test_unknown_activity_is_422():
     assert _lock(["nope"]).status_code == 422
+
+
+def test_the_activity_being_extended_cannot_be_locked():
+    # "Leave it as it was" would undo the user's own ask; before this the extension silently won
+    # and the "locked" piece came back extended (found by the 2026-11-23 property run).
+    from tests.engine.generators import random_instance
+
+    inp = random_instance(0)
+    assert inp.event.type == "EXTEND"
+    body = {"input": inp.model_dump(mode="json"), "activity_ids": [inp.event.activity_id]}
+    res = client.post("/recoveries/lock", json=body)
+    assert res.status_code == 422
+    assert "extended" in res.json()["detail"]

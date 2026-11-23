@@ -17,6 +17,10 @@ def lock_in_place(inp: RecoveryInput, activity_ids: Iterable[str]) -> RecoveryIn
     unknown = ids - {a.id for a in inp.activities}
     if unknown:
         raise ValueError(f"unknown activity: {sorted(unknown)}")
+    # The piece the user asked more time at: "as it was" would contradict the request, and the
+    # extension wins in the solver anyway, so the lock would silently not hold.
+    if inp.event.type == "EXTEND" and inp.event.activity_id in ids:
+        raise ValueError(f"cannot lock the activity being extended: {inp.event.activity_id}")
     data = inp.model_dump()
     for a in data["activities"]:
         if a["id"] in ids:

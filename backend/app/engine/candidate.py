@@ -4,7 +4,7 @@ from app.engine.optimizer_dp import solve_fixed_order
 from app.engine.presets import Strategy
 from app.engine.validator import Violation, validate
 from app.schemas.enums import EventType
-from app.schemas.events import FatigueEvent
+from app.schemas.events import FatigueEvent, MustVisitEvent
 from app.schemas.models import _Frozen
 from app.schemas.recovery import RecoveryChange, RecoveryInput, RecoveryResult
 
@@ -26,8 +26,8 @@ class Discard(_Frozen):
     violations: tuple[Violation, ...]
 
 
-# Events the solver and validator actually handle. MUST_VISIT exists in the schema but is not
-# implemented yet: it must be refused, not silently ignored.
+# Events the solver and validator actually handle (MUST_VISIT since 2026-11-23). Anything else
+# must be refused, not silently ignored.
 SUPPORTED_EVENTS = frozenset(
     {
         EventType.DELAY,
@@ -36,6 +36,7 @@ SUPPORTED_EVENTS = frozenset(
         EventType.FATIGUE,
         EventType.EXTEND,
         EventType.RESERVATION_CHANGE,
+        EventType.MUST_VISIT,
     }
 )
 
@@ -112,9 +113,12 @@ def solve_candidate(
         if discards is not None:
             discards.append(Discard(strategy=strategy.name, violations=tuple(violations)))
         return None
-    # Changes always come out in the original order, whatever order the solver walked.
+    # Changes always come out in the original order, whatever order the solver walked; an added
+    # place (MUST_VISIT) comes after the planned ones.
     position = {act_id: n for n, act_id in enumerate(original_order(inp))}
-    changes = tuple(sorted(solution.changes, key=lambda c: position[c.activity_id]))
+    changes = tuple(
+        sorted(solution.changes, key=lambda c: position.get(c.activity_id, len(position)))
+    )
     cost = compute_cost(inp, changes, strategy.weights)
     return RecoveryResult(
         strategy=strategy.name,
@@ -129,3 +133,28 @@ def solve_candidate(
 
 def original_order(inp: RecoveryInput) -> tuple[str, ...]:
     return tuple(a.id for a in sorted(inp.activities, key=lambda a: (a.planned_start, a.id)))
+
+
+def candidate_orders(inp: RecoveryInput) -> list[tuple[str, ...]]:
+    """The orders to solve: the original one, or for MUST_VISIT the original with the new place
+    at every position (n + 1 orders: the DP needs a fixed order, the new place has none)."""
+    base = original_order(inp)
+    if isinstance(inp.event, MustVisitEvent):
+        new = inp.event.activity_id
+        return [(*base[:i], new, *base[i:]) for i in range(len(base) + 1)]
+    return [base]
+
+
+def solve_best(
+    inp: RecoveryInput,
+    strategy: Strategy,
+    no_drop: frozenset[str] = frozenset(),
+    discards: list[Discard] | None = None,
+) -> RecoveryResult | None:
+    """solve_candidate over candidate_orders(), the lowest cost kept (ties: the earlier order)."""
+    best: RecoveryResult | None = None
+    for order in candidate_orders(inp):
+        result = solve_candidate(inp, strategy, order, no_drop, discards)
+        if result is not None and (best is None or result.rc_total < best.rc_total):
+            best = result
+    return best

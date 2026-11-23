@@ -7,14 +7,16 @@ its own, so a mistake here cannot hide itself.
 
 from math import ceil
 
+from app.schemas.enums import Tier, TimeRigidity
 from app.schemas.events import (
     ClosureEvent,
     ExtendEvent,
     FatigueEvent,
+    MustVisitEvent,
     ReservationChangeEvent,
     WeatherEvent,
 )
-from app.schemas.models import MINUTES_PER_DAY, _Frozen
+from app.schemas.models import MINUTES_PER_DAY, Activity, Preference, _Frozen
 from app.schemas.recovery import RecoveryInput
 
 
@@ -43,6 +45,21 @@ def solver_view(inp: RecoveryInput) -> RecoveryInput:
     original plan is what the change is measured against. The validator never sees this view;
     it reads the event itself (module docstring)."""
     ev = inp.event
+    if isinstance(ev, MustVisitEvent):
+        return inp.model_copy(
+            update={
+                "activities": (*inp.activities, added_activity(inp)),
+                "preferences": (
+                    *inp.preferences,
+                    Preference(
+                        activity_id=ev.activity_id,
+                        tier=Tier.MUST,
+                        substitutability=0.0,
+                        time_rigidity=TimeRigidity.FLEXIBLE,
+                    ),
+                ),
+            }
+        )
     if not isinstance(ev, ReservationChangeEvent):
         return inp
     activities = tuple(
@@ -50,6 +67,34 @@ def solver_view(inp: RecoveryInput) -> RecoveryInput:
         for a in inp.activities
     )
     return inp.model_copy(update={"activities": activities})
+
+
+def added_activity(inp: RecoveryInput) -> Activity:
+    """MUST_VISIT: the new place as an activity the solver can place (decision 2026-11-23). It has
+    no planned slot; "planned" is as soon as possible from now, for its full length, so the DP's
+    start and length rules apply as to any piece. Its time cost is not counted (optimizer_dp)."""
+    ev = inp.event
+    assert isinstance(ev, MustVisitEvent)
+    # Not before the day begins: asked at 00:16, the place went at 00:45 (found 2026-11-24).
+    # Planned pieces keep their own times; only the new one has none, so it gets the day's start
+    # as its earliest opening. The validator checks the place's real hours on its own.
+    day_start = inp.day.start_time
+    opens = max(ev.open_at, day_start) if ev.open_at is not None else day_start
+    start = min(max(inp.now, day_start), MINUTES_PER_DAY - ev.duration)
+    return Activity(
+        id=ev.activity_id,
+        title=ev.title,
+        category=ev.category,
+        lat=ev.lat,
+        lng=ev.lng,
+        planned_start=start,
+        planned_end=start + ev.duration,
+        min_duration=ev.min_duration,
+        outdoor=None,
+        walking=None,
+        open_at=opens,
+        close_at=ev.close_at,
+    )
 
 
 def build_constraints(inp: RecoveryInput) -> Constraints:

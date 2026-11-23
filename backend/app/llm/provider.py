@@ -21,8 +21,9 @@ DEFAULT_MODEL = "gpt-4o-mini"
 MAX_ATTEMPTS = 2  # first try + one retry (invariant 4)
 # Per request to OpenAI. The SDK's default is 10 minutes with 2 hidden retries of its own: one
 # slow answer could hold a worker of the single server for half an hour. Our own MAX_ATTEMPTS
-# loop is the only retry. The browser gives up on LLM calls at 60 s (frontend/src/api/http.ts).
-LLM_TIMEOUT_SECONDS = 25.0
+# loop is the only retry. One day of a pasted itinerary is the longest answer (~2k tokens, well
+# under this); the browser waits up to 120 s for a parse (frontend/src/api/http.ts).
+LLM_TIMEOUT_SECONDS = 50.0
 
 
 class LLMError(RuntimeError):
@@ -71,6 +72,11 @@ class OpenAIProvider:
                 )
             except ValidationError as exc:
                 last_problem = f"schema mismatch: {exc.error_count()} error(s)"
+                continue
+            except (openai.APITimeoutError, openai.APIConnectionError) as exc:
+                # Slow or unreachable: retried once, then the caller hands over to the user
+                # (status "manual"), never a bare 500.
+                last_problem = f"no answer from the model: {type(exc).__name__}"
                 continue
             except openai.LengthFinishReasonError:
                 # Ran to max tokens (a repeating answer): unparseable, so retried like a schema

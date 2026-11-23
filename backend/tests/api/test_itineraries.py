@@ -106,8 +106,9 @@ def test_no_days_found_is_reported():
 
 
 # --- an answer that stops early (decision 2026-11-23: a remark line ended the plan) ---------
+# Without day headings the text is one call, read again once when it reads short.
 
-FOUR_DAYS = "".join(f"DAY {d}\n09:00~10:00\na{d}\n11:00~12:00\nb{d}\n" for d in range(1, 5))
+FOUR_DAYS = "".join(f"{d}번째 날\n09:00~10:00\na{d}\n11:00~12:00\nb{d}\n" for d in range(1, 5))
 
 
 def _days(n: int) -> ParsedItinerary:
@@ -172,3 +173,62 @@ def test_a_failed_second_try_keeps_the_first_answer():
     body = res.json()
     assert body["status"] == "ok" and len(body["draft"]["days"]) == 1
     assert body["partial"] == {"read": 2, "written": 8}
+
+
+# --- a text with day headings is read one day per call (2026-11-23) -------------------------
+
+HEADED = "".join(f"DAY {d}\n09:00~10:00\na{d}\n11:00~12:00\nb{d}\n" for d in range(1, 5))
+
+
+class DayProvider:
+    """Answers each call with the day its text is about; `short` days answer with nothing the
+    first time (the early stop), `broken` days fail every time."""
+
+    def __init__(self, short: set[int] = frozenset(), broken: set[int] = frozenset()) -> None:
+        self.short, self.broken = set(short), set(broken)
+        self.texts: list[str] = []
+
+    def complete_json(self, *, system, user, schema):
+        self.texts.append(user)
+        d = int(user.split()[1])
+        if d in self.broken:
+            raise LLMOutputError("x")
+        if d in self.short:
+            self.short.discard(d)
+            return ParsedItinerary(days=[ParsedDay(day_label=f"DAY {d}", theme=None, items=[])])
+        return ParsedItinerary(days=_days(4).days[d - 1 : d])
+
+
+def _post_days(fake: DayProvider):
+    app.dependency_overrides[get_provider] = lambda: fake
+    try:
+        return TestClient(app).post("/itineraries/parse", json={"text": HEADED}).json()
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_each_day_is_its_own_short_call_and_all_days_come_back_in_order():
+    fake = DayProvider()
+    body = _post_days(fake)
+    assert len(fake.texts) == 4 and all(t.count("DAY") == 1 for t in fake.texts)
+    assert [d["day_label"] for d in body["draft"]["days"]] == ["DAY 1", "DAY 2", "DAY 3", "DAY 4"]
+    assert body["partial"] is None
+
+
+def test_a_day_that_stops_early_is_asked_again_on_its_own():
+    fake = DayProvider(short={2})
+    body = _post_days(fake)
+    assert len(fake.texts) == 5 and sum(t.startswith("DAY 2") for t in fake.texts) == 2
+    assert len(body["draft"]["days"]) == 4 and body["partial"] is None
+
+
+def test_a_day_that_cannot_be_read_leaves_the_others_and_says_so():
+    body = _post_days(DayProvider(broken={3}))
+    assert body["status"] == "ok"
+    assert [d["day_label"] for d in body["draft"]["days"]] == ["DAY 1", "DAY 2", "DAY 4"]
+    assert body["partial"] == {"read": 6, "written": 8}
+
+
+def test_every_day_failing_asks_for_manual_entry():
+    body = _post_days(DayProvider(broken={1, 2, 3, 4}))
+    assert body["status"] == "manual" and body["problem"]["code"] == "LLM_FAILED"

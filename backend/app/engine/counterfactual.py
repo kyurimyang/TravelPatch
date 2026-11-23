@@ -6,10 +6,9 @@ candidate. Pure: no I/O, no clock. The numbers in the user-facing sentence must 
 result (reason_data), never from a language model.
 """
 
-from app.engine.candidate import strategy_rules
+from app.engine.candidate import solve_best, strategy_rules
 from app.engine.presets import STRATEGIES, Strategy
 from app.engine.reasons import explain_changes
-from app.engine.recover import original_order, solve_candidate
 from app.schemas.enums import Op
 from app.schemas.recovery import (
     Counterfactual,
@@ -34,7 +33,7 @@ def restore(
     if strategy is None:
         raise ValueError(f"unknown strategy: {base.strategy}")
 
-    result = solve_candidate(inp, strategy, original_order(inp), frozenset({activity_id}))
+    result = solve_best(inp, strategy, frozenset({activity_id}))
     if result is None:
         return None
     result = result.model_copy(

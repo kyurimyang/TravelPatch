@@ -1,4 +1,10 @@
-from app.engine.candidate import Discard, original_order, solve_candidate, strategy_rules
+from app.engine.candidate import (
+    Discard,
+    original_order,
+    solve_best,
+    solve_candidate,
+    strategy_rules,
+)
 from app.engine.constraint_builder import solver_view
 from app.engine.local_search import improve_order
 from app.engine.presets import SHOWN_CANDIDATES, STRATEGIES, Strategy
@@ -37,8 +43,13 @@ def recover(
     for i, strategy in enumerate(strategies):
         if _same_as_earlier(inp, strategy, strategies[:i]):
             continue  # its rules have nothing to act on today: an earlier strategy is identical
-        result = solve_candidate(inp, strategy, order, discards=discards)
-        if result is not None and strategy.searches_order:
+        adding = inp.event.type == "MUST_VISIT"
+        result = (
+            solve_best(inp, strategy, discards=discards)  # the new place at every position
+            if adding
+            else solve_candidate(inp, strategy, order, discards=discards)
+        )
+        if result is not None and strategy.searches_order and not adding:
             result = improve_order(inp, strategy, result, max_tries, max_tries)
         if result is None or result.changes in seen:
             continue

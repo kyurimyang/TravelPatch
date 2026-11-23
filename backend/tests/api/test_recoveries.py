@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -65,12 +64,16 @@ def test_malformed_input_is_rejected() -> None:
     assert client.post("/recoveries", json=bad).status_code == 422
 
 
-@pytest.mark.parametrize("kind", ["MUST_VISIT"])  # RESERVATION_CHANGE: supported (scenario F)
-def test_an_unsupported_event_is_answered_with_501(kind: str) -> None:
-    body = scenario_a_with_unsupported_event(kind).model_dump(mode="json")
+def test_a_must_visit_place_is_added_to_the_day() -> None:
+    # MUST_VISIT was answered with 501 until 2026-11-23; every event type is solved now.
+    body = scenario_a_with_unsupported_event("MUST_VISIT").model_dump(mode="json")
     res = client.post("/recoveries", json=body)
-    assert res.status_code == 501
-    assert kind in res.json()["detail"]
+    assert res.status_code == 200
+    cands = res.json()["candidates"]
+    assert cands and all(c["violations"] == 0 for c in cands)
+    for c in cands:
+        added = [x for x in c["changes"] if x["activity_id"] == "new1"]
+        assert len(added) == 1 and added[0]["op"] == "add" and added[0]["before"] is None
 
 
 def _noon_rain() -> dict:

@@ -33,6 +33,8 @@ _TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)$")
 _RANGE_RE = re.compile(r"(?<!\d)(\d{1,2}):(\d{2})\s*[~\-–—]\s*(\d{1,2}):(\d{2})(?!\d)")
 # A line that starts with a single time ("16:20", "- 18:30 출발"): a point, not a range.
 _POINT_LINE_RE = re.compile(r"^[^\w]*(\d{1,2}):(\d{2})(?!\d)")
+# A remark, not a plan item: "※ 지연되면 한 곳만 방문", "* 입장권 확인", "참고: ...".
+_REMARK_RE = re.compile(r"^\s*(?:※|\*|＊|참고|주의|note\b|nb\b)", re.IGNORECASE)
 # A leading label that only names the category: "점심 식사: Fumotoya" -> "Fumotoya".
 _LABEL_RE = re.compile(r"^[^\W\d][^:：\d]{0,14}[:：]\s*(\S.*)$")
 
@@ -214,9 +216,27 @@ def _convert_day(
     )
 
 
+def _fold_remarks(day: list[ParsedItem]) -> list[ParsedItem]:
+    """A remark line with no time ("※ 지연되면 한 곳만") goes into the note of the place above it
+    instead of standing as an item: as an item it had no time and the user had to delete it on
+    Confirm (the Prague paste, 2026-11-23). Nothing is lost: the words stay, as a note. A remark
+    above every place stays an item."""
+    out: list[ParsedItem] = []
+    for item in day:
+        remark = not (item.start or "").strip() and not (item.end or "").strip()
+        target = next((i for i in range(len(out) - 1, -1, -1) if out[i].role == "activity"), None)
+        if remark and _REMARK_RE.match(item.title) and target is not None:
+            prev = out[target]
+            note = f"{prev.note}\n{item.title}" if prev.note else item.title
+            out[target] = prev.model_copy(update={"note": note})
+        else:
+            out.append(item)
+    return out
+
+
 def build_draft(parsed: ParsedItinerary, text: str | None = None) -> DraftItinerary:
     """`text` is the pasted text the parser read; with it, times are checked against it."""
-    days = [list(d.items) for d in parsed.days]
+    days = [_fold_remarks(list(d.items)) for d in parsed.days]
     if text:
         days = _with_written_ends(days, written_times(text))
     hotel = find_hotel_query(days)

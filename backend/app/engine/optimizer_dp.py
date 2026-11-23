@@ -98,6 +98,7 @@ def solve_fixed_order(
     """
     inp = solver_view(inp)  # the event applied, e.g. a booking moved to its new time
     ev = inp.event
+    added = getattr(ev, "activity_id", None) if ev.type == "MUST_VISIT" else None
     constraints = build_constraints(inp)
     acts = {a.id: a for a in inp.activities}
     prefs = {p.activity_id: p.tier for p in inp.preferences}
@@ -124,7 +125,15 @@ def solve_fixed_order(
         in_progress = ev.location_id == a.id  # the user is there right now
         options: list[_Option] = []
         if a.id not in constraints.closed:
-            options.append(_Option(a.id, a.open_at, a.close_at, _durations(a, extend), None))
+            own = _durations(a, extend)
+            if in_progress:
+                # Delayed while inside it: the user stays until they can move (now), even past the
+                # planned end. Without this the piece could only be dropped, and a must made the
+                # whole day impossible (found 2026-11-23: "출발이 늦어졌어요" at a must in progress).
+                stay = _round_up(inp.now - a.planned_start)
+                if stay > max(own):
+                    own = [*own, stay]
+            options.append(_Option(a.id, a.open_at, a.close_at, own, None))
         if not in_progress and extend == 0:
             options += [
                 _Option(sub.id, sub.open_at, sub.close_at, _sub_durations(sub), sub)
@@ -191,7 +200,9 @@ def solve_fixed_order(
                     weights.w_move * travel(last, opt.node) / 60 if last is not None else 0.0
                 )
                 for s in starts:
-                    time_cost = weights.w_time * abs(s - a.planned_start) / 60 + move_cost
+                    # The added place has no planned time to be late for.
+                    late = 0 if a.id == added else abs(s - a.planned_start)
+                    time_cost = weights.w_time * late / 60 + move_cost
                     for d in durations:  # longer than a tiredness cap: already left out
                         end = s + d
                         if end > deadline or (opt.close_at is not None and end > opt.close_at):
@@ -238,6 +249,11 @@ def solve_fixed_order(
         a = acts[act_id]
         before = Slot(start=a.planned_start, end=a.planned_end)
         dec = decisions[act_id]
+        if act_id == added:
+            assert dec is not None  # a must: never dropped
+            after = Slot(start=dec[0], end=dec[0] + dec[1])
+            changes.append(RecoveryChange(activity_id=act_id, op=Op.ADD, before=None, after=after))
+            continue
         if dec is None:
             changes.append(RecoveryChange(activity_id=act_id, op=Op.DROP, before=before))
         else:
