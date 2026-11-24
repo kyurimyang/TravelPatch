@@ -13,14 +13,41 @@
   font-weight: 600;
 }
 
+/* A little stitched square instead of the browser's checkbox; a cream check when on. */
 .flight .flight__toggle input[type='checkbox'] {
   flex: none;
-  width: 20px;
-  height: 20px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
   min-height: 0;
   margin: 0;
   padding: 0;
-  accent-color: var(--tp-indigo);
+  appearance: none;
+  border: 1.5px dashed var(--tp-denim-deep);
+  border-radius: var(--radius-xs);
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.flight .flight__toggle input[type='checkbox']:checked {
+  border: 1.5px solid var(--tp-indigo);
+  background: var(--tp-indigo);
+}
+
+.flight .flight__toggle input[type='checkbox']:checked::after {
+  content: '';
+  width: 10px;
+  height: 6px;
+  margin-top: -3px;
+  border-left: 2.5px solid #fdfaf3;
+  border-bottom: 2.5px solid #fdfaf3;
+  transform: rotate(-45deg);
+}
+
+.flight .flight__toggle input[type='checkbox']:focus-visible {
+  outline: 3px solid var(--tp-copper);
+  outline-offset: 2px;
 }
 
 .flight__fields {
