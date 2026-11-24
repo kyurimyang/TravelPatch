@@ -28,42 +28,63 @@ export default function TripList() {
     navigate('/')
   }
 
+  // A trip is a boarding pass (2026-11-24, like the logo): the main part says where and when,
+  // the stub says where you are in it. One tag style, no empty box, delete as a small icon.
   function card(t: Trip) {
     const phase = phases.get(t.id)!
     const todayIndex = t.days.findIndex((d) => d.date === now.date)
     const today = todayIndex >= 0 ? t.days[todayIndex] : null
     const next = today ? nextItem(today, true, now.minutes) : null
     const checks = needsCheck(t)
-    const sub =
-      phase === 'ongoing' && todayIndex >= 0
-        ? `DAY ${todayIndex + 1} / ${t.days.length}`
-        : phase === 'past'
-          ? '패치워크 완성'
-          : checks > 0
-            ? '재단 중'
-            : '재단 완료'
+    const until = Math.round((Date.parse(t.startDate) - Date.parse(now.date)) / 86_400_000)
 
     return (
-      <li key={t.id} className={`trip-card tp-fabric trip-card--${phase}`}>
+      <li key={t.id} className={`trip-card trip-card--${phase}`}>
         <button type="button" className="trip-card__open" onClick={() => open(t.id)}>
-          <span className="trip-card__title">
-            <b>
-              {t.city} {tripLength(t.startDate, t.endDate)}
-            </b>
-            {t.id === current?.id && <span className="trip-card__current">보는 중</span>}
-            {phase === 'ongoing' && <span className="trip-card__today tp-tagstitch">오늘</span>}
-          </span>
-          <span className="trip-card__sub">
-            {dateRange(t)} · {sub}
-          </span>
-          {next && (
-            <span className="trip-card__next">
-              다음 · <b>{formatTime(next.start!)}</b> {next.title}
+          <span className="trip-card__main">
+            {t.id === current?.id && <span className="trip-card__current">지금 보는 여행</span>}
+            <b className="trip-card__title">{t.city}</b>
+            <span className="trip-card__sub">
+              {dateRange(t)} · {tripLength(t.startDate, t.endDate)}
             </span>
-          )}
-          <span className="trip-card__chips">
-            {t.patches.length > 0 && <span className="trip-card__chip">패치 {t.patches.length}</span>}
+            <span className="trip-card__days" aria-hidden="true">
+              {t.days.map((d, i) => (
+                <i
+                  key={d.date}
+                  data-state={
+                    phase === 'past' || (todayIndex >= 0 && i < todayIndex) ? 'done' : i === todayIndex ? 'today' : 'ahead'
+                  }
+                />
+              ))}
+            </span>
+            {next && (
+              <span className="trip-card__next">
+                다음 <b>{formatTime(next.start!)}</b> {next.title}
+              </span>
+            )}
             {checks > 0 && <span className="trip-card__chip trip-card__chip--warn">확인 필요 {checks}</span>}
+          </span>
+          <span className="trip-card__stub">
+            {phase === 'ongoing' && todayIndex >= 0 ? (
+              <>
+                <span className="trip-card__stub-label">DAY</span>
+                <b>
+                  {todayIndex + 1}
+                  <small>/{t.days.length}</small>
+                </b>
+              </>
+            ) : phase === 'upcoming' ? (
+              <>
+                <span className="trip-card__stub-label">출발까지</span>
+                <b>D-{Math.max(until, 0)}</b>
+              </>
+            ) : (
+              <>
+                <span className="trip-card__stub-label">여행</span>
+                <b className="trip-card__stub-word">완성</b>
+              </>
+            )}
+            {t.patches.length > 0 && <span className="trip-card__patches">패치 {t.patches.length}</span>}
           </span>
         </button>
         {confirming === t.id ? (
@@ -77,8 +98,10 @@ export default function TripList() {
             </button>
           </span>
         ) : (
-          <button type="button" className="trip-card__delete" onClick={() => setConfirming(t.id)}>
-            지우기
+          <button type="button" className="trip-card__delete" aria-label={`${t.city} 여행 지우기`} onClick={() => setConfirming(t.id)}>
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 12.5h9l1-12.5M10 11v5M14 11v5" />
+            </svg>
           </button>
         )}
       </li>
