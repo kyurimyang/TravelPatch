@@ -54,11 +54,8 @@ export default function Login() {
 
   return (
     <div className="account">
-      <h1>
-        다시 만나서
-        <br />
-        반가워요
-      </h1>
+      <h1>로그인</h1>
+      <p className="account__lead">저장해 둔 여행과 패치 기록을 이어서 볼 수 있어요.</p>
 
       <button type="button" className="account__social" onClick={google}>
         <span aria-hidden="true">G</span> Google로 시작하기
