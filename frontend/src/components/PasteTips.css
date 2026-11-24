@@ -107,7 +107,6 @@
 
 .paste-tips .paste-tips__line em {
   flex: none;
-  font-family: var(--font-label);
   font-size: var(--text-sm);
   font-style: normal;
   font-weight: 700;

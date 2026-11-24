@@ -96,6 +96,7 @@
   /* display (headings) = the body font, Pretendard. label (tags, stamps, map labels) = 티머니 둥근바람,
      self-hosted (styles/fonts.css). */
   --font-display: var(--font-sans);
+  /* label: only small tags, stamps, map labels and day tabs; headings and lines are Pretendard */
   --font-label: 'TmoneyRoundWind', var(--font-sans);
 
   /* type */

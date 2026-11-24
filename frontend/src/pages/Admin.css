@@ -14,8 +14,7 @@
 
 .admin h2 {
   margin: 0 0 var(--space-2);
-  font-family: var(--font-label);
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   font-weight: 700;
   color: var(--tp-denim-deep);
 }

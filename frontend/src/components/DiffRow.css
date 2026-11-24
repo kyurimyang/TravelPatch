@@ -126,6 +126,10 @@
   border-color: var(--tp-hemp);
   background: transparent;
   color: var(--color-text-muted);
+  /* "유지" on every untouched row: quiet, so the changed pieces are what stands out */
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 500;
   transform: none;
 }
 
