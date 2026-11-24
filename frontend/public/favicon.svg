@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- A denim patch (--tp-denim-deep) with a linen running stitch and a mustard "P". -->
-  <rect x="2" y="2" width="28" height="28" rx="6" fill="#2f4a75"/>
-  <rect x="5.5" y="5.5" width="21" height="21" rx="3.5" fill="none" stroke="#f8f1e3" stroke-width="1.6" stroke-dasharray="3 2.2" stroke-linecap="round"/>
-  <path d="M12.5 22V10.5h4.2a3.4 3.4 0 0 1 0 6.8h-4.2" fill="none" stroke="#e0a83a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
