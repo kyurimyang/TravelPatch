@@ -1,0 +1,28 @@
+/* A thread between two pieces: it joins them, so it stays flat and quiet (no patch edge). */
+.leg-chip {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-1);
+  /* lines up under the time column of .diff-row */
+  margin-left: 21px;
+  min-height: 28px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.leg-chip__line {
+  flex: none;
+  align-self: stretch;
+  border-left: var(--patch-stitch-width) dotted var(--tp-hemp);
+}
+
+.leg-chip__text {
+  font-variant-numeric: tabular-nums;
+}
+
+.leg-chip__text em {
+  font-style: normal;
+  opacity: 0.8;
+}

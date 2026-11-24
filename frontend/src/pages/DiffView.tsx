@@ -15,6 +15,7 @@ import { StateCard } from '../components/StateCard'
 import { StitchLoader } from '../components/StitchLoader'
 import { ExitLink } from '../components/ExitLink'
 import { useFlowTitle } from '../layout/flowTitle'
+import { SHOW_LEG_CHIPS } from '../lib/features'
 import { iconsById } from '../lib/placeIcons'
 import { inputFor, titlesOf, type RecoveryState } from '../lib/recovery'
 import { strategyLabel } from '../lib/strategy'
@@ -239,6 +240,8 @@ function DiffViewScreen({ nav }: { nav: RecoveryState }) {
             result={result}
             titleOf={titleOf}
             iconOf={iconOf}
+            travel={SHOW_LEG_CHIPS ? currentInput.travel : undefined}
+            mode={SHOW_LEG_CHIPS ? currentInput.day.travel_mode : undefined}
             renderDetail={(change) => (
               <WhyPanel
                 change={change}

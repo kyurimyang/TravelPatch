@@ -1,8 +1,9 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.routers.deps import get_places_client
-from tests.services.test_plan_builder import FakePlaces, _places, _request
+from app.routers.deps import get_places_client, get_routes_client_optional
+from app.schemas.models import HOTEL_ID
+from tests.services.test_plan_builder import FakePlaces, FakeRoutes, _places, _request
 
 client = TestClient(app)
 
@@ -40,3 +41,20 @@ def test_an_oversized_day_is_refused_before_any_google_call():
     res = client.post("/plans/build", json=body)
     assert res.status_code == 422
     assert any(e["type"] == "too_long" and e["loc"][-1] == "items" for e in res.json()["detail"])
+
+
+def test_build_uses_real_minutes_when_a_routes_client_is_configured():
+    app.dependency_overrides[get_routes_client_optional] = lambda: FakeRoutes(
+        {(HOTEL_ID, "meiji"): 25}
+    )
+    body = _post(_places()).json()
+    real = [t for t in body["travel"] if t["source"] == "api"]
+    assert [(t["a"], t["b"], t["minutes"]) for t in real] == [(HOTEL_ID, "meiji", 25)]
+    assert len(body["travel"]) == 6
+
+
+def test_build_survives_a_routes_outage():
+    app.dependency_overrides[get_routes_client_optional] = lambda: FakeRoutes(fail=True)
+    res = _post(_places())
+    assert res.status_code == 200
+    assert {t["source"] for t in res.json()["travel"]} == {"estimate"}

@@ -13,14 +13,20 @@ buffer has passed; a departure ends it at the airport (put in the HOTEL_ID node,
 ends") a buffer before take-off. Items that no longer fit are warned about, never moved.
 """
 
+import logging
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from app.schemas.enums import Category, TimeRigidity
-from app.schemas.models import HOTEL_ID, START_ID, Activity, Day, Preference
+from app.schemas.models import HOTEL_ID, START_ID, Activity, Day, Preference, TravelTime
 from app.schemas.plan import BuiltPlan, PlanRequest, PlanWarning
 from app.services.opening_hours import hours_for_weekday
 from app.services.places_client import GooglePlacesClient, PlaceDetails
+from app.services.routes_client import GoogleRoutesClient, RoutesError
 from app.services.travel_estimate import fill_missing_travel
+
+log = logging.getLogger(__name__)
 
 STEP = 5
 MIN_SHORTEST = 15
@@ -46,7 +52,44 @@ def _lookup(places: GooglePlacesClient, place_ids: list[str]) -> dict[str, Place
     return dict(zip(unique, found, strict=True))
 
 
-def build_plan(req: PlanRequest, places: GooglePlacesClient) -> BuiltPlan:
+def _zone(name: str) -> ZoneInfo:
+    try:
+        return ZoneInfo(name)
+    except ZoneInfoNotFoundError:
+        return ZoneInfo(DEFAULT_TIMEZONE)
+
+
+def _real_travel(
+    routes: GoogleRoutesClient | None,
+    points: dict[str, tuple[float, float]],
+    req: PlanRequest,
+    first_start: int,
+    zone: ZoneInfo,
+    now: datetime,
+) -> tuple[TravelTime, ...]:
+    """Google's minutes for this day, or () when there is no client or Google fails: the
+    caller fills every missing pair with an estimate, so a Routes outage never blocks a plan.
+
+    One departure time serves the whole table: the day's first start. A time already past is
+    left out (Google then uses "now")."""
+    if routes is None:
+        return ()
+    depart = datetime.combine(req.date, datetime.min.time(), tzinfo=zone) + timedelta(
+        minutes=first_start
+    )
+    try:
+        return routes.matrix(points, req.travel_mode, depart if depart > now else None)
+    except RoutesError:
+        log.warning("Routes failed; using estimates for this plan", exc_info=True)
+        return ()
+
+
+def build_plan(
+    req: PlanRequest,
+    places: GooglePlacesClient,
+    routes: GoogleRoutesClient | None = None,
+    now: datetime | None = None,
+) -> BuiltPlan:
     items = sorted(req.items, key=lambda it: (it.start, it.id))  # deterministic order
     airports = [f.airport_place_id for f in (req.arrival, req.departure) if f is not None]
     details = _lookup(places, [req.hotel_place_id, *airports, *(it.place_id for it in items)])
@@ -95,11 +138,16 @@ def build_plan(req: PlanRequest, places: GooglePlacesClient) -> BuiltPlan:
     hotel = details[req.hotel_place_id]
     end = details[req.departure.airport_place_id] if req.departure else hotel
     start = details[req.arrival.airport_place_id] if req.arrival else None
+    zone = hotel.time_zone or next(
+        (details[it.place_id].time_zone for it in items if details[it.place_id].time_zone),
+        DEFAULT_TIMEZONE,
+    )
     points = {a.id: (a.lat, a.lng) for a in activities}
     points[HOTEL_ID] = (end.lat, end.lng)
     if start is not None:
         points[START_ID] = (start.lat, start.lng)
-    travel = fill_missing_travel(points, mode=req.travel_mode)
+    known = _real_travel(routes, points, req, items[0].start, _zone(zone), now or datetime.now(UTC))
+    travel = fill_missing_travel(points, known, mode=req.travel_mode)
     minutes = {frozenset((t.a, t.b)): t.minutes for t in travel}
 
     ready_at = req.ready_at
@@ -120,10 +168,6 @@ def build_plan(req: PlanRequest, places: GooglePlacesClient) -> BuiltPlan:
             if a.planned_end + minutes[frozenset((a.id, HOTEL_ID))] > req.deadline
         ]
 
-    zone = hotel.time_zone or next(
-        (details[it.place_id].time_zone for it in items if details[it.place_id].time_zone),
-        DEFAULT_TIMEZONE,
-    )
     day = Day(
         id=req.date.isoformat(),
         date=req.date,

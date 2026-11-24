@@ -11,6 +11,7 @@ from app.llm.provider import LLMConfigError, LLMProvider, OpenAIProvider
 from app.services.auth import AuthConfigError, AuthError, TokenVerifier, get_verifier
 from app.services.guest_quota import GuestQuota, Kind, store_from_env
 from app.services.places_client import GooglePlacesClient, PlacesConfigError
+from app.services.routes_client import GoogleRoutesClient, RoutesConfigError, routes_enabled
 
 log = logging.getLogger(__name__)
 
@@ -53,6 +54,22 @@ def get_places_client_optional() -> GooglePlacesClient | None:
     try:
         return _google_places()
     except PlacesConfigError:
+        return None
+
+
+@lru_cache(maxsize=1)
+def _google_routes() -> GoogleRoutesClient:
+    return GoogleRoutesClient()
+
+
+def get_routes_client_optional() -> GoogleRoutesClient | None:
+    """None while the switch is off or without GOOGLE_ROUTES_API_KEY: the plan is built with
+    estimated travel times (the default)."""
+    if not routes_enabled():
+        return None
+    try:
+        return _google_routes()
+    except RoutesConfigError:
         return None
 
 

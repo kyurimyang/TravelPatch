@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react'
-import type { RecoveryChange, RecoveryResult } from '../api/types'
+import { Fragment, type ReactNode } from 'react'
+import type { RecoveryChange, RecoveryResult, TravelMode, TravelTime } from '../api/types'
+import { legIntoEach } from '../lib/legs'
 import { timetable } from '../lib/timetable'
 import { DiffRow } from './DiffRow'
+import { LegChip } from './LegChip'
 import './CandidateCard.css'
 
 interface Props {
@@ -12,23 +14,37 @@ interface Props {
   iconOf?: ReadonlyMap<string, string>
   /** Optional "왜?" content per changed row. */
   renderDetail?: (change: RecoveryChange) => ReactNode
+  /** With both, the way between neighbouring places is shown between rows. */
+  travel?: readonly TravelTime[]
+  mode?: TravelMode
 }
 
 // The chosen candidate as the day's timetable. Its name and summary are shown by the tabs above.
-export function CandidateCard({ result, titleOf, iconOf, renderDetail }: Props) {
+export function CandidateCard({ result, titleOf, iconOf, renderDetail, travel, mode }: Props) {
+  const rows = timetable(result.changes)
+  // Where the traveler really goes, in order: a dropped piece is not visited, and a substitute
+  // is visited in place of the original.
+  const stopOf = (c: RecoveryChange) => c.substitute_id ?? c.activity_id
+  const stops = rows.filter(({ change }) => change.after).map(({ change }) => stopOf(change))
+  const legInto = travel && mode ? legIntoEach(stops, travel) : null
   return (
     <ul className="candidate-card">
-      {timetable(result.changes).map(({ change, reordered }) => (
-        <DiffRow
-          key={change.activity_id}
-          reordered={reordered}
-          title={titleOf.get(change.activity_id) ?? change.activity_id}
-          icon={iconOf?.get(change.activity_id)}
-          substituteTitle={change.substitute_id ? titleOf.get(change.substitute_id) : undefined}
-          change={change}
-          detail={renderDetail?.(change)}
-        />
-      ))}
+      {rows.map(({ change, reordered }) => {
+        const leg = change.after ? legInto?.get(stopOf(change)) : undefined
+        return (
+          <Fragment key={change.activity_id}>
+            {leg && mode && <LegChip mode={mode} minutes={leg.minutes} source={leg.source} />}
+            <DiffRow
+              reordered={reordered}
+              title={titleOf.get(change.activity_id) ?? change.activity_id}
+              icon={iconOf?.get(change.activity_id)}
+              substituteTitle={change.substitute_id ? titleOf.get(change.substitute_id) : undefined}
+              change={change}
+              detail={renderDetail?.(change)}
+            />
+          </Fragment>
+        )
+      })}
     </ul>
   )
 }
