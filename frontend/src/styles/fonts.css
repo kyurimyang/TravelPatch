@@ -1,0 +1,13 @@
+/* Label font (tags, stamps, map labels): 티머니 둥근바람 ExtraBold (Tmoney, free for commercial
+   use), round like the Baloo 2 logo and readable at 12-14px (2026-11-25, in place of Gaegu).
+   Cut down to the 2,350 everyday Hangul syllables, jamo, Latin and a few marks (208KB): any rarer
+   syllable falls back to Pretendard. It runs large for its size, so size-adjust brings it back to
+   the boxes that were drawn for the old label font. */
+@font-face {
+  font-family: 'TmoneyRoundWind';
+  src: url('../assets/fonts/TmoneyRoundWind-ExtraBold.subset.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+  size-adjust: 88%;
+}
