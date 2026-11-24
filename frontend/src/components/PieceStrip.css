@@ -7,28 +7,41 @@
 .piece-strip ol {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
+  border-radius: var(--radius-xs);
+  box-shadow: 0 1px 0 rgba(36, 49, 77, 0.18);
 }
 
-/* One piece of the day: a small square of cloth, sewn edge. */
+/* One piece of the day: a square of cloth sewn to the next one, so the day reads as one strip
+   (2026-11-25: separate empty boxes looked like an unfilled form). Kept pieces are plain linen
+   with a tan seam; patched ones (below) are real fabric. */
 .piece-strip li {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   box-sizing: border-box;
-  border: 1.5px solid var(--tp-hemp);
-  border-radius: var(--radius-xs);
-  background: var(--tp-lace);
+  background: var(--tp-tex-linen), var(--tp-hemp);
+  outline: 1.2px dashed var(--tp-tan);
+  outline-offset: -4px;
+}
+
+.piece-strip li + li {
+  border-left: 1px solid rgba(122, 78, 50, 0.35);
+}
+
+.piece-strip li:first-child {
+  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+}
+
+.piece-strip li:last-child {
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 
 /* Patched pieces: real fabric, copper topstitch. */
 .piece-strip li:not([data-op='keep']):not([data-op='drop']) {
-  border: 0;
   outline: 1.5px dashed var(--tp-copper);
-  outline-offset: -3px;
-  box-shadow: 0 1px 0 rgba(36, 49, 77, 0.25);
+  outline-offset: -4px;
 }
 
 .piece-strip li[data-op='move'] {
@@ -50,8 +63,25 @@
 
 /* Taken out: a hole where the piece was, edged with the loose red thread. */
 .piece-strip li[data-op='drop'] {
-  border: 1.5px dashed var(--tp-thread-loose);
-  background: transparent;
+  background: var(--tp-lace);
+  outline: 1.5px dashed var(--tp-thread-loose);
+}
+
+/* Said once for the whole day, not on every kept row. */
+.piece-strip__check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm) !important;
+  color: var(--color-text-muted) !important;
+}
+
+.piece-strip__check span {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tp-mustard);
 }
 
 .piece-strip p {

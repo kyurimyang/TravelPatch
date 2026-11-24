@@ -9,6 +9,7 @@ export function PieceStrip({ changes, titleOf }: { changes: RecoveryChange[]; ti
     (a, b) => (a.after ?? a.before ?? { start: 0 }).start - (b.after ?? b.before ?? { start: 0 }).start,
   )
   const changed = changes.filter((c) => c.op !== 'keep').length
+  const toCheck = changes.filter((c) => c.needs_check).length
   return (
     <div className="piece-strip">
       <ol aria-label="오늘의 조각">
@@ -27,6 +28,12 @@ export function PieceStrip({ changes, titleOf }: { changes: RecoveryChange[]; ti
           <>조각을 그대로 두고 이어 붙여요</>
         )}
       </p>
+      {toCheck > 0 && (
+        <p className="piece-strip__check">
+          <span aria-hidden="true" />
+          {toCheck}곳은 미리 알 수 없는 게 있어요. 가서 한 번 확인해 주세요
+        </p>
+      )}
     </div>
   )
 }

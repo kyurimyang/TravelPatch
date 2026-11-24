@@ -74,12 +74,22 @@ export function DiffRow({ title, change, icon, substituteTitle, detail, reordere
       {icon && <img className="diff-row__icon" src={icon} alt="" aria-hidden="true" />}
       <div className="diff-row__main">
         <div className="diff-row__head">
-          <b className="diff-row__title">{title}</b>
+          <b className="diff-row__title">
+            {title}
+            {change.needs_check && change.op === 'keep' && (
+              <span className="diff-row__check-mark" title="현장 확인 필요">
+                <span className="sr-only">현장 확인 필요</span>
+              </span>
+            )}
+          </b>
           <span className="diff-row__chip">{OP_LABEL[change.op]}</span>
         </div>
         <ChangeLine change={change} substituteTitle={substituteTitle} />
         {reordered && <span className="diff-row__reordered">순서 바뀜</span>}
-        {change.needs_check && <span className="diff-row__check">현장 확인 필요</span>}
+        {/* A changed piece says it in words; on a kept piece the line repeated on every row and
+            buried the changes (2026-11-25), so it is a small mark there, counted once above
+            (PieceStrip). */}
+        {change.needs_check && change.op !== 'keep' && <span className="diff-row__check">현장 확인 필요</span>}
         {detail && change.op !== 'keep' && (
           <details className="diff-row__why">
             <summary>왜 바뀌었나요?</summary>

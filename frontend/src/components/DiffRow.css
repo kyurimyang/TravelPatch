@@ -165,6 +165,36 @@
   margin-top: var(--space-1);
 }
 
+/* On a kept row: a small mustard dot after the name instead of a line of text. */
+.diff-row__check-mark {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: var(--space-1);
+  border-radius: 50%;
+  background: var(--tp-mustard);
+  vertical-align: 0.2em;
+}
+
+/* Kept rows step back: lighter name and time, smaller patch, so the eye goes to the changes. */
+.diff-row[data-op='keep'] {
+  padding-block: var(--space-2);
+}
+
+.diff-row[data-op='keep'] .diff-row__title {
+  font-weight: 500;
+}
+
+.diff-row[data-op='keep'] .diff-row__time,
+.diff-row[data-op='keep'] .diff-row__change {
+  color: var(--color-text-muted);
+}
+
+.diff-row[data-op='keep'] .diff-row__icon {
+  opacity: 0.75;
+  transform: scale(0.85);
+}
+
 .diff-row__why summary {
   position: relative;
   display: inline-flex;
