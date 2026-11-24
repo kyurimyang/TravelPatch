@@ -93,9 +93,10 @@
   /* layout */
   --layout-app-max: 480px;
 
-  /* display (headings) = the body font, Pretendard. label (hand-lettered tags) = Gaegu, self-hosted via @fontsource */
+  /* display (headings) = the body font, Pretendard. label (tags, stamps, map labels) = Jua: round and cut-out
+     like the Baloo 2 logo, and readable at 12-14px where Gaegu was not (2026-11-25). Self-hosted via @fontsource. */
   --font-display: var(--font-sans);
-  --font-label: 'Gaegu', var(--font-sans);
+  --font-label: 'Jua', var(--font-sans);
 
   /* type */
   --font-sans: 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Segoe UI', 'Noto Sans KR', sans-serif;
