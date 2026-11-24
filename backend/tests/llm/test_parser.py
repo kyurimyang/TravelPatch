@@ -81,7 +81,7 @@ def test_patch_kind_from_the_list_is_accepted():
 
 def test_patch_kind_outside_the_list_is_rejected_by_the_schema():
     with pytest.raises(ValueError):
-        _item("x", patch="castle")
+        _item("x", patch="spaceport")
 
 
 def test_every_patch_kind_is_named_in_the_prompt():

@@ -31,6 +31,18 @@ PatchKind = Literal[
     "theme_park",
     "venue",
     "mall",
+    "bridge",
+    "castle",
+    "square",
+    "tower",
+    "park",
+    "aquarium",
+    "dessert",
+    "monument",
+    "souvenir",
+    "bookstore",
+    "fashion",
+    "drugstore",
 ]
 PATCH_KINDS: tuple[str, ...] = get_args(PatchKind)
 
@@ -58,10 +70,15 @@ For every item give:
 - patch: what kind of place it is, judged from the name in any language, or null when the line
   is none of these or you are not sure: church (church, cathedral, chapel, basilica), temple
   (Buddhist temple, pagoda), worship (shrine, mosque, any other place of worship), museum
-  (museum, gallery, aquarium), viewpoint (observation deck, tower, night view), bar (bar, pub,
-  izakaya), market (market, night market), nature (park, garden, mountain, lake), spa (hot
-  spring, spa, sauna), beach, lodging (hotel, check-in), theme_park (amusement park, theme park,
-  zoo), venue (concert hall, theater, stadium, show), mall (shopping mall, department store).
+  (museum, gallery), viewpoint (observation deck, night view), tower (a tower that is the sight
+  itself: TV tower, clock tower), bridge, castle (castle, palace, fortress), square (square,
+  plaza, old town), monument (monument, statue, memorial, triumphal arch), bar (bar, pub,
+  izakaya), market (market, night market), park (city park, garden), nature (mountain, lake,
+  forest, waterfall), spa (hot spring, spa, sauna), beach, aquarium (aquarium, zoo), lodging
+  (hotel, check-in), theme_park (amusement park, theme park), venue (concert hall, theater,
+  stadium, show), mall (shopping mall, department store), fashion (clothing store, boutique),
+  souvenir (souvenir or gift shop), bookstore, drugstore (drugstore, cosmetics, Don Quijote),
+  dessert (bakery, dessert, ice cream).
 - reserved: true only if the text says it is booked or reserved ("예약", "reservation").
 - place_query: only the name of the place to look up on a map, copied from the block as
   written, without activity words ("오모테산도 산책" -> "오모테산도", "이치란 라멘 점심" ->
