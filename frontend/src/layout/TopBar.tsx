@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router'
 import type { MouseEvent } from 'react'
-import logo from '../assets/logo.webp'
+import logo from '../assets/logo.svg'
 import { goBack, loginPath } from '../lib/nav'
 import { useAuth } from '../store/auth'
 import './TopBar.css'

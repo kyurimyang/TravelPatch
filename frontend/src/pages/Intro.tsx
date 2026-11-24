@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import logo from '../assets/logo.webp'
+import logo from '../assets/logo.svg'
 import mend from '../assets/patches/patch-mend.svg'
 import stay from '../assets/patches/place-stay.svg'
 import rain from '../assets/patches/hole-rain.svg'
