@@ -13,7 +13,15 @@ import { StateCard } from '../components/StateCard'
 import './Main.css'
 
 
-const TIER_LABEL: Record<Tier, string> = { must: '꼭 갈 곳', nice: '좋음', optional: '선택' }
+// Only the two tiers worth saying: "좋음" on most rows read as a rating, not a tier (2026-11-25).
+const TIER_LABEL: Record<Tier, string | null> = { must: '꼭 갈 곳', nice: null, optional: '빼도 괜찮은 곳' }
+
+/** "40분" / "1시간 20분" */
+function span(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return h > 0 ? (m > 0 ? `${h}시간 ${m}분` : `${h}시간`) : `${m}분`
+}
 
 export default function Main() {
   const { trip } = useTrip()
@@ -164,12 +172,18 @@ export default function Main() {
           <img src={itemIcon(next)} alt="" aria-hidden="true" />
           <div>
             <span>
-              {isToday ? '다음 일정' : '첫 일정'} · <b>{formatTime(next.start!)} 시작</b>
+              {isToday ? '다음 일정' : '이날 첫 일정'} · <b>{formatTime(next.start!)}</b>
             </span>
             <strong>{next.title}</strong>
+            {/* What the list below does not say: how long until it starts. */}
             <span>
-              {CATEGORY_LABEL[next.category]} · {TIER_LABEL[next.tier]}
+              {isToday
+                ? next.start! > now.minutes
+                  ? `${span(next.start! - now.minutes)} 뒤 시작`
+                  : '지금 하고 있을 시간이에요'
+                : CATEGORY_LABEL[next.category]}
               {next.reservationTime != null && ' · 예약'}
+              {next.tier === 'must' && ' · 꼭 갈 곳'}
             </span>
           </div>
         </section>
@@ -204,7 +218,7 @@ export default function Main() {
                   <span>
                     {it.dropped
                       ? '패치로 뺐어요'
-                      : `${CATEGORY_LABEL[it.category]} · ${TIER_LABEL[it.tier]}${it.substituted ? ' · 근처 다른 곳' : ''}`}
+                      : [CATEGORY_LABEL[it.category], TIER_LABEL[it.tier], it.substituted && '근처 다른 곳'].filter(Boolean).join(' · ')}
                   </span>
                 </span>
                 {isNext && <span className="main-screen__next-tag tp-tagstitch">다음</span>}

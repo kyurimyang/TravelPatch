@@ -14,17 +14,17 @@ const FABRICS = ['check', 'stripe', 'dot', 'plaid', 'butterfloral', 'hempweave',
 // Which change a patch is "about", most telling first.
 const OP_RANK = ['substitute', 'drop', 'shrink', 'move', 'extend', 'add'] as const
 
-type Badge = { id: string; name: string; hint: string; got: (trips: Trip[], today: string) => boolean }
+type Badge = { id: string; name: string; hint: string; goal: string; got: (trips: Trip[], today: string) => boolean }
 const allPatches = (trips: Trip[]) => trips.flatMap((t) => t.patches)
 const BADGES: Badge[] = [
-  { id: 'first', name: '첫 패치', hint: '처음으로 구멍을 기웠어요', got: (ts) => allPatches(ts).length > 0 },
-  { id: 'survive', name: '생존 패치', hint: '늦어진 하루를 살려 냈어요', got: (ts) => allPatches(ts).some((p) => p.eventType === 'DELAY') },
-  { id: 'umbrella', name: '우산 패치', hint: '비 오는 날을 기웠어요', got: (ts) => allPatches(ts).some((p) => p.eventType === 'WEATHER') },
-  { id: 'swap', name: '대체 패치', hint: '닫힌 곳 대신 근처로 갔어요', got: (ts) => allPatches(ts).some((p) => p.changes.some((c) => c.op === 'substitute')) },
-  { id: 'rest', name: '쉼표 패치', hint: '지친 날을 느슨하게 기웠어요', got: (ts) => allPatches(ts).some((p) => p.eventType === 'FATIGUE') },
-  { id: 'stay', name: '연장 패치', hint: '좋은 곳에 더 머물렀어요', got: (ts) => allPatches(ts).some((p) => p.eventType === 'EXTEND') },
-  { id: 'perfect', name: '감쪽 패치', hint: '원래 계획의 95% 이상을 지켰어요', got: (ts) => allPatches(ts).some((p) => p.preservationRate >= 0.95) },
-  { id: 'quilt', name: '패치워크 완성', hint: '패치를 덧댄 여행을 끝까지 마쳤어요', got: (ts, today) => ts.some((t) => t.patches.length > 0 && tripPhase(t, today) === 'past') },
+  { id: 'first', goal: '처음 구멍을 기우면 받아요', name: '첫 패치', hint: '처음으로 구멍을 기웠어요', got: (ts) => allPatches(ts).length > 0 },
+  { id: 'survive', goal: '늦어진 하루를 살려 내면 받아요', name: '생존 패치', hint: '늦어진 하루를 살려 냈어요', got: (ts) => allPatches(ts).some((p) => p.eventType === 'DELAY') },
+  { id: 'umbrella', goal: '비 오는 날을 기우면 받아요', name: '우산 패치', hint: '비 오는 날을 기웠어요', got: (ts) => allPatches(ts).some((p) => p.eventType === 'WEATHER') },
+  { id: 'swap', goal: '닫힌 곳 대신 근처로 가면 받아요', name: '대체 패치', hint: '닫힌 곳 대신 근처로 갔어요', got: (ts) => allPatches(ts).some((p) => p.changes.some((c) => c.op === 'substitute')) },
+  { id: 'rest', goal: '지친 날을 느슨하게 기우면 받아요', name: '쉼표 패치', hint: '지친 날을 느슨하게 기웠어요', got: (ts) => allPatches(ts).some((p) => p.eventType === 'FATIGUE') },
+  { id: 'stay', goal: '좋은 곳에 더 머무르면 받아요', name: '연장 패치', hint: '좋은 곳에 더 머물렀어요', got: (ts) => allPatches(ts).some((p) => p.eventType === 'EXTEND') },
+  { id: 'perfect', goal: '원래 계획의 95% 이상을 지키면 받아요', name: '감쪽 패치', hint: '원래 계획의 95% 이상을 지켰어요', got: (ts) => allPatches(ts).some((p) => p.preservationRate >= 0.95) },
+  { id: 'quilt', goal: '패치 덧댄 여행을 끝까지 마치면 받아요', name: '패치워크 완성', hint: '패치를 덧댄 여행을 끝까지 마쳤어요', got: (ts, today) => ts.some((t) => t.patches.length > 0 && tripPhase(t, today) === 'past') },
 ]
 const BOOK: Category[] = ['sightseeing', 'meal', 'cafe', 'shopping', 'transport', 'other']
 
@@ -128,8 +128,10 @@ export default function Patchwork() {
             return (
               <li key={b.id} className={got ? 'patchwork__badge' : 'patchwork__badge patchwork__badge--locked'} title={b.hint}>
                 <span className="patchwork__badge-mark" aria-hidden="true" />
-                <b>{got ? b.name : '아직'}</b>
-                <span>{got ? b.hint : '없어요'}</span>
+                {/* Locked badges still say what they are and how to get them: something to
+                    collect, not six "아직 없어요" (2026-11-25). */}
+                <b>{b.name}</b>
+                <span>{got ? b.hint : b.goal}</span>
               </li>
             )
           })}

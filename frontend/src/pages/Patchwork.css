@@ -198,7 +198,18 @@
 
 .patchwork__badge--locked {
   border-color: var(--tp-hemp);
-  opacity: 0.6;
+  background: transparent;
+}
+
+.patchwork__badge--locked b {
+  color: var(--color-text-muted);
+}
+
+/* Not sewn on yet: the outline where the badge will go, chalked in. */
+.patchwork__badge--locked .patchwork__badge-mark {
+  background: none;
+  border: 2px dashed var(--tp-tan);
+  outline: none;
 }
 
 .patchwork__badge--locked .patchwork__badge-mark {
