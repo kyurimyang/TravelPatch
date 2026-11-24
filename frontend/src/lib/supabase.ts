@@ -8,4 +8,4 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 export const supabase: SupabaseClient | null = url && anonKey ? createClient(url, anonKey) : null
 
 /** Terms the user agreed to. Bump when a text changes, so users are asked again. */
-export const TERMS_VERSION = '2026-11-18'
+export const TERMS_VERSION = '2026-11-25'
