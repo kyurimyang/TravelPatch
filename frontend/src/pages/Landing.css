@@ -22,11 +22,10 @@
 }
 
 .landing__logo img {
-  width: 300px;
-  max-width: 86%;
+  /* the logo carries its own stitched shadow: no extra filter, no tilt */
+  width: 340px;
+  max-width: 92%;
   height: auto;
-  transform: rotate(-2deg);
-  filter: drop-shadow(0 3px 2px rgba(36, 49, 77, 0.25));
 }
 
 .landing__tag {

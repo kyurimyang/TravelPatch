@@ -11,13 +11,10 @@
 
 .top-bar__logo {
   display: block;
-  /* wordmark.webp is mostly transparent padding (letters span rows 97-281 of 408 in the 1200px source,
-     a bit above centre). Size the image so the letters are ~30px tall, and use
-     negative margins so the box stays 44px: the bar (and its pinked edge) keeps
-     its 56px height and the letters sit vertically centred. */
-  height: 66px;
+  /* logo.webp (2026-11-24): felt "Travel" + the denim boarding-pass "Patch", cropped tight to
+     its own shadow, about 4.3:1. 40px tall keeps "Patch" readable inside the 56px bar. */
+  height: 40px;
   width: auto;
-  margin: calc(var(--space-2) * -1) 0 calc(var(--space-3) * -1);
 }
 
 .top-bar__back {
@@ -54,6 +51,5 @@
 }
 
 .top-bar__home--small .top-bar__logo {
-  height: 46px;
-  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0;
+  height: 28px;
 }

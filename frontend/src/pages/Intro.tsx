@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import wordmark from '../assets/wordmark.webp'
+import logo from '../assets/logo.webp'
 import mend from '../assets/patches/patch-mend.svg'
 import stay from '../assets/patches/place-stay.svg'
 import rain from '../assets/patches/hole-rain.svg'
@@ -31,7 +31,7 @@ export default function Intro() {
     <div className="landing">
       <section className="landing__hero tp-pinked-bottom" aria-label="서비스 소개">
         <div className="landing__logo">
-          <img src={wordmark} alt="TravelPatch" />
+          <img src={logo} alt="TravelPatch" />
         </div>
         <p className="landing__tag">깨진 일정, 덧대어 고쳐요</p>
         <p className="landing__lead">

@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router'
 import type { MouseEvent } from 'react'
-import wordmark from '../assets/wordmark.webp'
+import logo from '../assets/logo.webp'
 import { goBack, loginPath } from '../lib/nav'
 import { useAuth } from '../store/auth'
 import './TopBar.css'
@@ -29,7 +29,7 @@ export default function TopBar({ variant, title, aside }: Props) {
       {variant === 'tab' ? (
         <>
           <Link className="top-bar__home" to="/" aria-label="홈으로" onClick={home}>
-            <img className="top-bar__logo" src={wordmark} alt="TravelPatch" />
+            <img className="top-bar__logo" src={logo} alt="TravelPatch" />
           </Link>
           <Link className="top-bar__account" to={user ? '/settings' : loginPath(pathname + search)} aria-label={user ? '설정' : '로그인'}>
             <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -50,7 +50,7 @@ export default function TopBar({ variant, title, aside }: Props) {
           {aside && <span className="top-bar__aside">{aside}</span>}
           {/* Inside a flow too: the wordmark is the way home (2026-11-24). */}
           <Link className="top-bar__home top-bar__home--small" to="/" aria-label="홈으로">
-            <img className="top-bar__logo" src={wordmark} alt="" />
+            <img className="top-bar__logo" src={logo} alt="" />
           </Link>
         </>
       )}
