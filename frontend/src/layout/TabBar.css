@@ -26,3 +26,61 @@
   color: var(--tp-indigo);
   font-weight: 700;
 }
+
+/* The patch icons: linen with tan thread when idle. */
+.tab-ico {
+  overflow: visible;
+  transition: transform 0.15s;
+}
+
+.tab-ico__cloth {
+  fill: var(--tp-hemp);
+  stroke: var(--tp-tan);
+  stroke-width: 1.4;
+}
+
+.tab-ico__stitch {
+  fill: none;
+  stroke: var(--tp-lace);
+  stroke-width: 1.3;
+  stroke-dasharray: 2 1.8;
+  stroke-linecap: round;
+}
+
+.tab-ico__motif {
+  fill: none;
+  stroke: var(--tp-plaid-brown);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The open tab: sewn on in denim, cream thread, tilted a little like a patch just stitched. */
+.tab-bar__item.active .tab-ico {
+  transform: rotate(-4deg) scale(1.08);
+  filter: drop-shadow(0 1.5px 0 rgba(36, 49, 77, 0.3));
+}
+
+.tab-bar__item.active .tab-ico__cloth {
+  fill: var(--tp-denim-deep);
+  stroke: var(--tp-indigo);
+}
+
+.tab-bar__item.active .tab-ico__stitch {
+  stroke: #f6ecd8;
+}
+
+.tab-bar__item.active .tab-ico__motif {
+  stroke: #fdfaf3;
+}
+
+/* The patchwork tab's corner cross-stitches sit on the page, not on the cloth: copper there. */
+.tab-bar__item.active .tab-ico__cloth + .tab-ico__stitch + .tab-ico__motif[d^='M3.5'] {
+  stroke: var(--tp-copper);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-ico {
+    transition: none;
+  }
+}
