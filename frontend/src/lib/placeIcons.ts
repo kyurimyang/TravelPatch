@@ -98,6 +98,10 @@ const TITLE_KINDS: [RegExp, PatchKind][] = [
   [/공원|정원|가든|\bpark\b|garden|jardin|giardino|zahrada|庭園|公園/i, 'park'],
 ]
 
+// A café by its name, in the words travellers write ("Café Savoy" came back as a meal with the
+// izakaya lantern, 2026-11-25).
+const CAFE_WORDS = /카페|커피|café|\bcafe\b|caffè|caffe\b|coffee|kavárna|kavarna|kaffee|喫茶|咖啡/i
+
 function titleKind(title: string | undefined): PatchKind | null {
   if (!title) return null
   for (const [re, kind] of TITLE_KINDS) if (re.test(title)) return kind
@@ -115,7 +119,8 @@ function worshipIcon(title: string | undefined): string {
 export function itemIcon(item: { category: string; patch?: string | null; title?: string }): string {
   // A café is a café even when the parser called it a bar ("Café Louvre" got the izakaya lantern);
   // a bakery or a gelato shop the parser filed under cafe keeps its cake.
-  if (item.category === 'cafe' && item.patch !== 'museum' && item.patch !== 'viewpoint') {
+  const cafeByName = !!item.title && CAFE_WORDS.test(item.title)
+  if ((item.category === 'cafe' || cafeByName) && item.patch !== 'museum' && item.patch !== 'viewpoint') {
     return item.patch === 'dessert' || titleKind(item.title) === 'dessert' ? dessert : cafe
   }
   if (item.patch === 'worship') return worshipIcon(item.title)

@@ -67,6 +67,8 @@ For every item give:
   "호텔까지 이동 및 짐 보관" is lodging, "산책 및 식당으로 이동" is transport,
   "호텔 조식" is an activity.
 - category: meal, sightseeing, shopping, cafe, transport or other. Use other when unclear.
+  A café (café, coffee house, kavárna, 카페) is cafe even when it serves meals, and never has
+  patch bar: bar is for places mainly for drinking.
 - patch: what kind of place it is, judged from the name in any language, or null when the line
   is none of these or you are not sure: church (church, cathedral, chapel, basilica), temple
   (Buddhist temple, pagoda), worship (shrine, mosque, any other place of worship), museum

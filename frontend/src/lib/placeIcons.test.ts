@@ -36,4 +36,10 @@ describe('itemIcon', () => {
     expect(t('Café Louvre', 'cafe')).toBe(itemIcon({ category: 'cafe' }))
     expect(t('오모테산도 산책')).toBe(itemIcon({ category: 'sightseeing' })) // nothing known: the camera
   })
+
+  it('knows a café by its name whatever category and patch the parser gave', () => {
+    expect(itemIcon({ category: 'meal', patch: 'bar', title: 'Café Savoy' })).toBe(itemIcon({ category: 'cafe' }))
+    expect(itemIcon({ category: 'meal', patch: null, title: 'Kavárna Slavia' })).toBe(itemIcon({ category: 'cafe' }))
+    expect(itemIcon({ category: 'meal', patch: 'bar', title: 'U Fleků' })).toBe(PATCH_ICON.bar)
+  })
 })
