@@ -46,6 +46,9 @@ export default function Main() {
         >
           <p>짜 둔 일정을 붙여넣으면 하루하루를 원단으로 정리해 드려요.</p>
         </StateCard>
+        <Link className="main-screen__guide" to="/guide">
+          이용법 보기
+        </Link>
       </div>
     )
   }
@@ -235,6 +238,10 @@ export default function Main() {
         </Link>
         <p>깨진 일정은 직접 알려 주세요.</p>
       </div>
+
+      <Link className="main-screen__guide" to="/guide">
+        이용법 보기
+      </Link>
     </div>
   )
 }

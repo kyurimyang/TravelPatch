@@ -77,6 +77,13 @@ export default function Settings() {
         </p>
       )}
 
+      <section className="settings__group tp-fabric" aria-label="도움말">
+        <h2>도움말</h2>
+        <Link className="settings__link" to="/guide">
+          이용법 보기
+        </Link>
+      </section>
+
       <section className="settings__group tp-fabric" aria-label="약관과 정책">
         <h2>약관과 정책</h2>
         <Link className="settings__link" to="/legal/terms">

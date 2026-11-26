@@ -1,0 +1,103 @@
+/* Steps: patches sewn onto one seam. The dashed copper thread runs behind the icons. */
+.guide-steps {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-steps::before {
+  content: '';
+  position: absolute;
+  left: 25px;
+  top: 26px;
+  bottom: 26px;
+  border-left: 2px dashed var(--tp-thread-stitch);
+}
+
+.guide-steps li {
+  position: relative;
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.guide-steps img {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 2px 1px rgba(36, 49, 77, 0.22));
+}
+
+.guide-steps li:nth-child(odd) img {
+  transform: rotate(-4deg);
+}
+
+.guide-steps li:nth-child(even) img {
+  transform: rotate(3deg);
+}
+
+/* Badge and title on one line, as one heading; the text under both (2026-11-27). The top padding
+   puts the heading line at the middle of the 52px patch beside it. */
+.guide-steps li > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+  padding-top: var(--space-4);
+}
+
+.guide-steps small {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 22px;
+  padding: 0 var(--space-2);
+  line-height: 1;
+  border-radius: var(--radius-xs);
+  background: var(--tp-indigo);
+  color: var(--tp-lace);
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.guide-steps b {
+  font-size: var(--text-md);
+}
+
+.guide-steps span {
+  grid-column: 1 / -1;
+  text-wrap: pretty; /* no lone last word ("바꿀 수 / 있어요") */
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* /guide: the same steps as a screen of their own. */
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--page-top) var(--page-x) var(--page-bottom);
+}
+
+.guide h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  line-height: 1.3;
+}
+
+.guide p {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}

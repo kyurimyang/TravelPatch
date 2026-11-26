@@ -8,6 +8,7 @@ import Confirm from './pages/Confirm'
 import Consent from './pages/Consent'
 import DiffView from './pages/DiffView'
 import Grade from './pages/Grade'
+import Guide from './pages/Guide'
 import Home from './pages/Home'
 import Landing from './pages/Landing'
 import Legal from './pages/Legal'
@@ -47,6 +48,7 @@ export default function AppRoutes() {
           <Route path="signup" element={<Signup />} />
           <Route path="consent" element={<Consent />} />
           <Route path="legal/:doc" element={<Legal />} />
+          <Route path="guide" element={<Guide />} />
           <Route path="settings" element={<Settings />} />
           <Route path="settings/withdraw" element={<Withdraw />} />
           <Route path="admin" element={<Admin />} />

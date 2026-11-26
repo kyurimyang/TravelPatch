@@ -363,6 +363,15 @@
 
 
 
+.main-screen__guide {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
 .main-screen__patched {
   margin: 0 0 var(--space-2);
   font-size: var(--text-sm);
