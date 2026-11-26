@@ -58,7 +58,9 @@ interface Props {
   icon?: string
   /** Name of the place a substitute change goes to instead. */
   substituteTitle?: string
-  /** "왜?" content, folded under the row. Changed rows only (a kept row needs no reason). */
+  /** Why, in a few words ("비 때문에"); nothing when the engine has no single reason. */
+  tag?: string | null
+  /** What the user can do about it (살리기 / 원래대로), shown under the row. Changed rows only. */
   detail?: ReactNode
   /** It changed places with a piece around it (lib/timetable). */
   reordered?: boolean
@@ -66,7 +68,7 @@ interface Props {
 
 // A piece of the day as a row of the timetable: time | patch | name + what changes | op label.
 // Changed pieces are stitched on (dashed edge in the op colour); kept pieces stay flat.
-export function DiffRow({ title, change, icon, substituteTitle, detail, reordered }: Props) {
+export function DiffRow({ title, change, icon, substituteTitle, tag, detail, reordered }: Props) {
   const slot = change.after ?? change.before
   return (
     <li className="diff-row" data-op={change.op}>
@@ -85,17 +87,13 @@ export function DiffRow({ title, change, icon, substituteTitle, detail, reordere
           <span className="diff-row__chip">{OP_LABEL[change.op]}</span>
         </div>
         <ChangeLine change={change} substituteTitle={substituteTitle} />
+        {tag && change.op !== 'keep' && <span className="diff-row__tag">{tag}</span>}
         {reordered && <span className="diff-row__reordered">순서 바뀜</span>}
         {/* A changed piece says it in words; on a kept piece the line repeated on every row and
             buried the changes (2026-11-25), so it is a small mark there, counted once above
             (PieceStrip). */}
         {change.needs_check && change.op !== 'keep' && <span className="diff-row__check">현장 확인 필요</span>}
-        {detail && change.op !== 'keep' && (
-          <details className="diff-row__why">
-            <summary>왜 바뀌었나요?</summary>
-            {detail}
-          </details>
-        )}
+        {detail && change.op !== 'keep' && <div className="diff-row__actions">{detail}</div>}
       </div>
     </li>
   )

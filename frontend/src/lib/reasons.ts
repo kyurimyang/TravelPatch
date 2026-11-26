@@ -1,26 +1,8 @@
 // Why each change was made, in Korean, filled ONLY from the engine's own reason data
-// (CLAUDE.md invariant 5: numbers and names never come from an LLM). The LLM polishing step can
-// later rephrase these sentences, but not add facts.
+// (CLAUDE.md invariant 5: numbers and names never come from an LLM). No reason established ->
+// nothing is said (the time change on the row already shows what happened, 2026-11-27).
 import type { DisruptionEvent, RecoveryChange } from '../api/types'
-import { formatTime } from './time'
 
-// Validator kinds (engine/validator.py) -> what that hard constraint means to a traveller.
-const FORCED: Record<string, string> = {
-  past: '원래 시각이 이미 지나서 그대로 둘 수 없었어요',
-  meal_window: '식사는 원래 시각 앞뒤 1시간 반 안에서만 옮겨요',
-  reservation_buffer: '예약 시각보다 여유 있게 도착하도록 맞췄어요',
-  no_drop: '이 전략에선 빼지 않는 일정이에요',
-  closure: '문을 닫아서 그대로 갈 수 없었어요',
-  reservation: '예약 시각을 지키려면 원래 자리에 둘 수 없었어요',
-  hours: '원래 시각은 영업시간과 맞지 않았어요',
-  weather: '비 오는 시간을 피했어요',
-  fatigue: '많이 걷는 일정이라 짧게 줄였어요',
-  deadline: '숙소로 돌아갈 시각을 지키려고 했어요',
-  travel: '앞 일정이 밀리면서 함께 옮겨졌어요',
-  event: '알려 주신 상황 때문이에요',
-  in_progress: '지금 하고 있는 일정이에요',
-  duration: '이보다 더 짧게 할 수는 없어요',
-}
 const TIER_BY_VALUE: Record<number, string> = { 5: '꼭', 3: '좋음', 1: '선택' }
 
 // Broken by the original slot on its own (with the event), whatever else moves: locking the piece
@@ -35,35 +17,59 @@ export function canLock(change: RecoveryChange): boolean {
   return !forced.some((k) => SELF_BOUND.has(k))
 }
 
-function forcedText(kind: string, event: DisruptionEvent | undefined): string {
-  // For a delay "now" is when the user can move again (start_time), not that the time went by.
-  if (kind === 'past' && event?.type === 'DELAY') {
-    return `${formatTime(event.start_time)}까지 움직일 수 없어서 원래 시각에 갈 수 없었어요`
-  }
-  return FORCED[kind] ?? '지켜야 하는 조건 때문이에요'
+// The same reasons as a short tag next to the change (2026-11-27): the full sentence under a
+// "왜 바뀌었나요?" fold was one more thing to open and read. Same sources, fewer words.
+const TAG: Record<string, string> = {
+  past: '시간이 지나서',
+  meal_window: '식사 시간대',
+  reservation_buffer: '예약 여유',
+  no_drop: '이 안의 규칙',
+  closure: '문 닫아서',
+  reservation: '예약 시각 때문에',
+  hours: '영업시간 때문에',
+  weather: '비 때문에',
+  fatigue: '덜 걸으려고',
+  deadline: '숙소 복귀 시각',
+  travel: '앞 일정이 밀려서',
+  event: '말씀하신 대로',
+  in_progress: '지금 하는 중',
+  duration: '최소 시간',
 }
 
-/** One or two sentences, or null when the engine established no single reason (never invented).
- * Numbers come from the engine's reason data or the confirmed event, never from an LLM. */
-export function describeReason(change: RecoveryChange, event?: DisruptionEvent): string | null {
-  const data = change.reason_data
-  if (change.reason_type === 'binding' && data) {
-    const lines = [...new Set(data.forced_by.map((k) => forcedText(k, event)))]
-    return lines.length ? lines.join(' · ') : null
-  }
-  if (change.reason_type === 'value' && data) {
-    const tier = data.value != null ? TIER_BY_VALUE[data.value] : undefined
-    const saved = data.minutes_saved
-    if (change.op === 'drop') {
-      return `${tier ? `‘${tier}’ 일정이라 ` : ''}빼는 쪽을 골랐어요${saved ? `. ${saved}분을 다른 일정에 썼어요` : ''}`
-    }
-    if (change.op === 'shrink') {
-      return `${tier ? `‘${tier}’ 일정이라 ` : ''}${saved ? `${saved}분 줄여서 ` : '조금 줄여서 '}더 중요한 일정을 지켰어요`
+/** The tag a piece gets from an event that names it ("점심 대기 40분"): the user's own words back,
+ * numbers from the event itself. First event that names the piece wins. */
+function eventTag(change: RecoveryChange, events: DisruptionEvent[]): string | null {
+  for (const e of events) {
+    if (!('activity_id' in e) || e.activity_id !== change.activity_id) continue
+    switch (e.type) {
+      case 'WAIT':
+        return `대기 ${e.minutes}분 포함`
+      case 'RESERVATION_CHANGE':
+        return '예약이 바뀌어서'
+      case 'EXTEND':
+        return '말씀하신 대로'
+      case 'CLOSURE':
+        return '문 닫아서'
     }
   }
-  if (change.op === 'substitute') return '원래 장소에 갈 수 없어서 근처의 비슷한 곳으로 바꿨어요'
   return null
 }
 
-/** Shown when describeReason has nothing: honest about what we do not know (invariant 8). */
-export const NO_SINGLE_REASON = '한 가지 이유로 꼽기는 어려워요. 하루 전체를 맞추는 과정에서 바뀌었어요.'
+/** A few words saying why, or null when the engine has no single reason (never invented).
+ * `event` is the main event; `more` the rest of the same sentence. */
+export function reasonTag(change: RecoveryChange, event?: DisruptionEvent, more: DisruptionEvent[] = []): string | null {
+  const named = eventTag(change, event ? [event, ...more] : more)
+  if (named) return named
+  const data = change.reason_data
+  if (change.reason_type === 'binding' && data?.forced_by.length) {
+    const kind = data.forced_by[0]
+    if (kind === 'past' && event?.type === 'DELAY') return '늦어져서'
+    return TAG[kind] ?? null
+  }
+  if (change.reason_type === 'value' && data?.value != null && (change.op === 'drop' || change.op === 'shrink')) {
+    const tier = TIER_BY_VALUE[data.value]
+    return tier ? `‘${tier}’ 일정이라` : null
+  }
+  if (change.op === 'substitute') return '원래 곳에 못 가서'
+  return null
+}

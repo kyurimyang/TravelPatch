@@ -2,7 +2,7 @@
 // can only fail.
 import { describe, expect, it } from 'vitest'
 import type { DisruptionEvent, RecoveryChange } from '../api/types'
-import { canLock, describeReason } from './reasons'
+import { canLock, reasonTag } from './reasons'
 
 const forced = (op: RecoveryChange['op'], ...kinds: string[]): RecoveryChange =>
   ({
@@ -17,13 +17,28 @@ const forced = (op: RecoveryChange['op'], ...kinds: string[]): RecoveryChange =>
 const lateStart: DisruptionEvent = { type: 'DELAY', occurred_at: 530, start_time: 650, location_id: 'hotel' }
 const rain: DisruptionEvent = { type: 'WEATHER', occurred_at: 720, start_time: 720, location_id: 'hotel' }
 
-describe('describeReason', () => {
-  it('says when the user can move again for a delay, not that the time has passed', () => {
-    expect(describeReason(forced('move', 'past'), lateStart)).toBe('10:50까지 움직일 수 없어서 원래 시각에 갈 수 없었어요')
+describe('reasonTag', () => {
+  it('a delay says "늦어져서", not that the time has passed', () => {
+    expect(reasonTag(forced('move', 'past'), lateStart)).toBe('늦어져서')
+    expect(reasonTag(forced('move', 'past'), rain)).toBe('시간이 지나서')
   })
 
-  it('keeps "already passed" for other events', () => {
-    expect(describeReason(forced('move', 'past'), rain)).toBe('원래 시각이 이미 지나서 그대로 둘 수 없었어요')
+  it('names the first rule that forced it', () => {
+    expect(reasonTag(forced('drop', 'weather', 'travel'), rain)).toBe('비 때문에')
+  })
+
+  it('a value choice names the tier', () => {
+    const cut = { ...forced('drop'), reason_type: 'value', reason_data: { forced_by: [], value: 1 } } as RecoveryChange
+    expect(reasonTag(cut)).toBe('‘선택’ 일정이라')
+  })
+
+  it('a piece an event names says so, with the event’s own number', () => {
+    const queue: DisruptionEvent = { type: 'WAIT', occurred_at: 540, activity_id: 'meiji', minutes: 40, location_id: 'hotel' }
+    expect(reasonTag(forced('extend', 'travel'), rain, [queue])).toBe('대기 40분 포함')
+  })
+
+  it('says nothing rather than a vague sentence when no single reason is known', () => {
+    expect(reasonTag({ ...forced('move'), reason_type: null, reason_data: null } as unknown as RecoveryChange)).toBeNull()
   })
 })
 

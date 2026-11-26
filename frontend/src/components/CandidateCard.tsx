@@ -12,15 +12,17 @@ interface Props {
   titleOf: ReadonlyMap<string, string>
   /** Patch icon by activity id. */
   iconOf?: ReadonlyMap<string, string>
-  /** Optional "왜?" content per changed row. */
+  /** Optional actions per changed row (살리기 / 원래대로). */
   renderDetail?: (change: RecoveryChange) => ReactNode
+  /** Optional short reason per changed row ("비 때문에"). */
+  tagOf?: (change: RecoveryChange) => string | null
   /** With both, the way between neighbouring places is shown between rows. */
   travel?: readonly TravelTime[]
   mode?: TravelMode
 }
 
 // The chosen candidate as the day's timetable. Its name and summary are shown by the tabs above.
-export function CandidateCard({ result, titleOf, iconOf, renderDetail, travel, mode }: Props) {
+export function CandidateCard({ result, titleOf, iconOf, renderDetail, tagOf, travel, mode }: Props) {
   const rows = timetable(result.changes)
   // Where the traveler really goes, in order: a dropped piece is not visited, and a substitute
   // is visited in place of the original.
@@ -40,6 +42,7 @@ export function CandidateCard({ result, titleOf, iconOf, renderDetail, travel, m
               icon={iconOf?.get(change.activity_id)}
               substituteTitle={change.substitute_id ? titleOf.get(change.substitute_id) : undefined}
               change={change}
+              tag={tagOf?.(change)}
               detail={renderDetail?.(change)}
             />
           </Fragment>

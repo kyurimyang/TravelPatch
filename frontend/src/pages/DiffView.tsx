@@ -11,6 +11,7 @@ import mendArt from '../assets/patches/patch-mend.svg'
 import { CandidateCard } from '../components/CandidateCard'
 import { SummaryBar } from '../components/SummaryBar'
 import { WhyPanel } from '../components/WhyPanel'
+import { reasonTag } from '../lib/reasons'
 import { StateCard } from '../components/StateCard'
 import { StitchLoader } from '../components/StitchLoader'
 import { ExitLink } from '../components/ExitLink'
@@ -245,10 +246,10 @@ function DiffViewScreen({ nav }: { nav: RecoveryState }) {
             iconOf={iconOf}
             travel={SHOW_LEG_CHIPS ? currentInput.travel : undefined}
             mode={SHOW_LEG_CHIPS ? currentInput.day.travel_mode : undefined}
+            tagOf={(change) => reasonTag(change, event, nav?.moreEvents ?? [])}
             renderDetail={(change) => (
               <WhyPanel
                 change={change}
-                event={event}
                 titleOf={titleOf}
                 onRestore={isAdopted ? undefined : restore}
                 onAdopt={isAdopted ? undefined : adopt}
