@@ -231,6 +231,17 @@
   background: rgba(194, 54, 47, 0.08);
 }
 
+.trip-card__edit {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 40px;
+  padding-right: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--tp-denim-deep);
+  text-decoration: underline dashed;
+}
+
 .trip-card__confirm {
   display: flex;
   align-items: center;

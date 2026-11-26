@@ -35,7 +35,7 @@ export default function TripList() {
     const todayIndex = t.days.findIndex((d) => d.date === now.date)
     const today = todayIndex >= 0 ? t.days[todayIndex] : null
     const next = today ? nextItem(today, true, now.minutes) : null
-    const checks = needsCheck(t)
+    const checks = needsCheck(t, now.date)
     const until = Math.round((Date.parse(t.startDate) - Date.parse(now.date)) / 86_400_000)
 
     return (
@@ -87,6 +87,12 @@ export default function TripList() {
             {t.patches.length > 0 && <span className="trip-card__patches">패치 {t.patches.length}</span>}
           </span>
         </button>
+        {/* Under the pass, not on it: the pass itself opens the trip. */}
+        {phase !== 'past' && confirming !== t.id && (
+          <Link className="trip-card__edit" to={`/trips/${t.id}/edit`} aria-label={`${t.city} 여행 고치기`}>
+            여행 고치기
+          </Link>
+        )}
         {confirming === t.id ? (
           <span className="trip-card__confirm" role="alert">
             이 여행과 패치 기록을 지울까요?

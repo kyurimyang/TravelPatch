@@ -1,0 +1,91 @@
+.edit-lock,
+.edit-add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1.5px dashed var(--tp-copper);
+  border-radius: var(--radius-md);
+  background: var(--tp-linen);
+}
+
+.edit-lock > span,
+.edit-lock__confirm > span {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.edit-lock__confirm > span {
+  flex-basis: 100%;
+  color: var(--tp-rust);
+}
+
+.edit-lock__confirm,
+.edit-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The question on its own line, the two answers side by side under it. */
+.edit-tools > span {
+  flex-basis: 100%;
+  font-size: var(--text-sm);
+  color: var(--tp-rust);
+}
+
+/* Quiet text buttons, like the card's other actions (.confirm__link). */
+.edit-lock button,
+.edit-tools button {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 var(--space-2) 0 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--tp-denim-deep);
+  text-decoration: underline dashed;
+  cursor: pointer;
+}
+
+.edit-tools button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.edit-lock .edit-danger,
+.edit-tools .edit-danger {
+  color: var(--tp-rust);
+  font-weight: 700;
+}
+
+.edit-tools input,
+.edit-add input,
+.edit-add select {
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: var(--space-2) var(--space-3);
+  border: 1.5px solid var(--tp-denim-deep);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: var(--text-md);
+  color: inherit;
+}
+
+.edit-tools input {
+  flex: 1 1 100%;
+}
+
+.edit-add label {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}

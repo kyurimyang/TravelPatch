@@ -7,6 +7,9 @@ import { formatDate, formatTime } from '../lib/time'
 import { useTrip } from '../store/trip'
 import { StateCard } from '../components/StateCard'
 import { ExitLink } from '../components/ExitLink'
+import { StitchLoader } from '../components/StitchLoader'
+import { dayLock } from '../lib/tripEdit'
+import { useEditTarget } from '../store/editTarget'
 import './Grade.css'
 
 const LEGEND: { cls: string; label: string; text: string }[] = [
@@ -15,11 +18,18 @@ const LEGEND: { cls: string; label: string; text: string }[] = [
   { cls: 'optional', label: '선택', text: '시간이 남으면 가요. 먼저 빠질 수 있어요.' },
 ]
 
+// /new/grade: step 2 of registering. /trips/:id/grade: from the edit screen, where past and
+// patched days are shown but cannot be changed (lib/tripEdit).
 export default function Grade() {
   const { trip, updateItem } = useTrip()
-  const [openDay, setOpenDay] = useState(0)
+  const { editing, status, today } = useEditTarget()
+  const [chosenDay, setOpenDay] = useState<number | null>(null)
+  const upcoming = trip?.days.findIndex((d) => d.date >= today) ?? -1
+  const openDay = chosenDay ?? (editing ? Math.max(0, upcoming) : 0)
 
-  if (!trip) {
+  if (status === 'loading') return <StitchLoader steps={['여행을 불러오고 있어요']} />
+
+  if (status === 'missing' || !trip) {
     return (
       <StateCard
         kind="empty"
@@ -37,11 +47,15 @@ export default function Grade() {
 
   return (
     <div className="grade">
-      <div className="grade__step">
-        <span>중요도 정하기</span>
-        <span>2 / 2</span>
-      </div>
-      <div className="grade__progress" aria-hidden="true" />
+      {!editing && (
+        <>
+          <div className="grade__step">
+            <span>중요도 정하기</span>
+            <span>2 / 2</span>
+          </div>
+          <div className="grade__progress" aria-hidden="true" />
+        </>
+      )}
 
       <div className="grade__body">
         <div className="grade__intro">
@@ -77,16 +91,26 @@ export default function Grade() {
               </button>
             )
           }
+          const lock = editing ? dayLock(trip, day.date, today) : null
           return (
             <section key={day.date} aria-label={`${label} 조각 중요도`} className="grade__list">
               <h2>
                 {label} · {formatDate(day.date)}
               </h2>
+              {lock && (
+                <p className="grade__locked">
+                  {lock === 'past' ? '지난 날은 바꿀 수 없어요.' : '패치를 덧댄 날이에요. 여행 고치기에서 패치를 풀면 바꿀 수 있어요.'}
+                </p>
+              )}
               {day.items.map((it) => {
                 const recommended = defaultTier(it)
                 const edited = it.tier !== recommended
                 return (
-                  <fieldset key={it.id} className={`grade__item tp-fabric${edited ? ' grade__item--edited' : ''}`}>
+                  <fieldset
+                    key={it.id}
+                    disabled={lock !== null}
+                    className={`grade__item tp-fabric${edited ? ' grade__item--edited' : ''}`}
+                  >
                     <legend className="sr-only">{it.title} 중요도</legend>
                     <div className="grade__item-head">
                       <img src={itemIcon(it)} alt="" aria-hidden="true" />
@@ -114,10 +138,10 @@ export default function Grade() {
       </div>
 
       <div className="grade__bar tp-pinked-top">
-        <span>나중에 일정 화면에서도 바꿀 수 있어요</span>
-        {/* Registering is done: leave the flow, so back does not walk through its steps again. */}
+        <span>{editing ? '바꾸면 바로 저장돼요' : '나중에 여행 고치기에서도 바꿀 수 있어요'}</span>
+        {/* Done: leave the flow, so back does not walk through its steps again. */}
         <ExitLink flow="new" className="tp-btn-primary tp-denim">
-          원단 완성하기
+          {editing ? '다 고쳤어요' : '원단 완성하기'}
         </ExitLink>
       </div>
     </div>

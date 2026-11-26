@@ -22,9 +22,11 @@ export function tripPhase(trip: Pick<Trip, 'startDate' | 'endDate'>, today: stri
   return 'ongoing'
 }
 
-/** Items the user still has to settle on Confirm (place not picked, or no usable time). */
-export function needsCheck(trip: Trip): number {
+/** Items the user still has to settle (place not picked, or no usable time). Days before `today`
+ *  are not counted: they cannot be edited any more (lib/tripEdit), so there is nothing to do. */
+export function needsCheck(trip: Pick<Trip, 'days'>, today: string): number {
   return trip.days
+    .filter((d) => d.date >= today)
     .flatMap((d) => d.items)
     .filter((it) => !it.dropped && (!it.placeId || it.start == null || it.end == null || it.end <= it.start)).length
 }

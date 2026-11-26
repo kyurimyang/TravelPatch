@@ -107,6 +107,16 @@
   color: var(--color-text-muted);
 }
 
+.grade__locked {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--tp-rust);
+}
+
+.grade__item:disabled {
+  opacity: 0.6;
+}
+
 .grade__item {
   margin: 0;
   display: flex;

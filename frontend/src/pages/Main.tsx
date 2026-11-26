@@ -66,9 +66,17 @@ export default function Main() {
   return (
     <div className="main-screen">
       <div className="main-screen__head">
-        <span className="main-screen__trip">
-          {trip.city} {tripLength(trip.startDate, trip.endDate)}
-        </span>
+        <div className="main-screen__trip-row">
+          <span className="main-screen__trip">
+            {trip.city} {tripLength(trip.startDate, trip.endDate)}
+          </span>
+          {/* A trip that is over is a record: nothing left to change (lib/tripEdit). */}
+          {trip.endDate >= now.date && (
+            <Link className="main-screen__edit" to={`/trips/${trip.id}/edit`} state={{ dayIndex }}>
+              여행 고치기
+            </Link>
+          )}
+        </div>
         <div className="main-screen__date">
           {formatDate(day.date)} · DAY {dayIndex + 1} / {trip.days.length}
         </div>
@@ -76,9 +84,9 @@ export default function Main() {
       </div>
 
       {/* Settling places/times can wait past registration (Confirm, 2026-11-23); say what is left. */}
-      {needsCheck(trip) > 0 && (
-        <Link className="main-screen__todo tp-fabric" to="/new/confirm" state={{ reopened: true }}>
-          <span>확인 안 한 조각 {needsCheck(trip)}개</span>
+      {needsCheck(trip, now.date) > 0 && (
+        <Link className="main-screen__todo tp-fabric" to={`/trips/${trip.id}/edit`}>
+          <span>확인 안 한 조각 {needsCheck(trip, now.date)}개</span>
           <b>일정 확인하기</b>
         </Link>
       )}

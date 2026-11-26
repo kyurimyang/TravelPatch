@@ -152,7 +152,7 @@ export default function Recover() {
             <section className="recover__blocked tp-fabric">
               <p>{day.message}</p>
               {trip && (
-                <Link className="tp-btn-quiet" to="/new/confirm" state={{ reopened: true }}>
+                <Link className="tp-btn-quiet" to={`/trips/${trip.id}/edit`} state={{ dayIndex }}>
                   일정 확인으로 가기
                 </Link>
               )}

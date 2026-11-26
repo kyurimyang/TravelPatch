@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 import { searchPlaces } from '../api/places'
 import type { PlaceOption } from '../api/types'
 import { PlaceSearch } from '../components/PlaceSearch'
@@ -11,7 +11,11 @@ import { useTrip, type DraftIssue, type TripItem } from '../store/trip'
 import { withJosa } from '../lib/josa'
 import { StateCard } from '../components/StateCard'
 import { ExitLink } from '../components/ExitLink'
+import { AddItem, DayLockNotice, ItemTools } from '../components/EditControls'
+import { StitchLoader } from '../components/StitchLoader'
 import { markFlowStart } from '../lib/nav'
+import { addItem, changeTime, dayLock, removeItem, unpatchDay } from '../lib/tripEdit'
+import { useEditTarget } from '../store/editTarget'
 import './Confirm.css'
 
 // What the parser could not settle, in the user's words. Shown until the item has a usable range.
@@ -34,15 +38,19 @@ const hasTime = (it: TripItem) => it.start != null && it.end != null && it.end >
 // no place for it: nothing is searched (never the title, decision 2026-11-23), the user picks.
 type Match = { status: 'ok'; options: PlaceOption[] } | { status: 'error' } | { status: 'unwritten' }
 
+// Two screens in one (decision 2026-11-27):
+// - /new/confirm: step 1 of registering, checking what was read from the pasted text.
+// - /trips/:id/edit: changing a registered trip. Also renames, adds and removes pieces; past and
+//   patched days are locked (lib/tripEdit). Both save each change as it is made.
 export default function Confirm() {
-  const { trip, setTrip, updateItem, updateTrip } = useTrip()
-  // Opened later from Main or Recover (to settle what was left): this screen starts the flow,
-  // so "완성" returns there, not to wherever an old registration began.
-  const reopened = (useLocation().state as { reopened?: boolean } | null)?.reopened === true
+  const { trip, setTrip, updateItem, updateTrip, editTrip } = useTrip()
+  const { editing, status, today } = useEditTarget()
+  // Edit mode starts its own flow, so "다 고쳤어요" returns to the screen it was opened from.
   useEffect(() => {
-    if (reopened) markFlowStart('new')
-  }, [reopened])
-  const [dayIndex, setDayIndex] = useState(0)
+    if (editing) markFlowStart('new')
+  }, [editing])
+  const askedDay = (useLocation().state as { dayIndex?: number } | null)?.dayIndex
+  const [chosenDay, setDayIndex] = useState<number | null>(null)
   const [matches, setMatches] = useState<Record<string, Match>>({})
   // Google's name for each picked place, for this screen only (names are never saved).
   // The first candidate is saved at once (decision 2026-11-18): the user only fixes wrong ones.
@@ -50,15 +58,21 @@ export default function Confirm() {
   // Item whose candidate list is open ("다른 곳이에요" / "바꾸기").
   const [open, setOpen] = useState<string | null>(null)
   // Item whose time editor is open (items without a usable time always show it).
-  const [editing, setEditing] = useState<string | null>(null)
+  const [editingTime, setEditingTime] = useState<string | null>(null)
   // Items already searched. A ref, so StrictMode's second effect run does not search twice.
   const requested = useRef(new Set<string>())
 
+  // Until a tab is tapped: editing opens the day asked for, else the first one not past yet.
+  const upcoming = trip?.days.findIndex((d) => d.date >= today) ?? -1
+  const dayIndex = chosenDay ?? (editing ? (askedDay ?? Math.max(0, upcoming)) : 0)
   const day = trip?.days[dayIndex]
+  const lockOf = (date: string) => (editing && trip ? dayLock(trip, date, today) : null)
+  const lock = day ? lockOf(day.date) : null
 
   // Search the places of the day on screen only: other days are searched when opened.
+  // A locked day is never searched: that would change it.
   useEffect(() => {
-    if (!trip || !day) return
+    if (!trip || !day || status !== 'ready' || lock) return
     for (const it of day.items) {
       if (it.placeId) continue
       if (it.placeFrom) {
@@ -79,7 +93,7 @@ export default function Confirm() {
         })
         .catch(() => setMatches((m) => ({ ...m, [it.id]: { status: 'error' } })))
     }
-  }, [trip, day, updateItem])
+  }, [trip, day, status, lock, updateItem])
 
   // Flights read from the text (tripFromDraft): find their airport, then they are the trip's
   // flights like ones entered at registration. A take-off the text does not give is flagged.
@@ -106,6 +120,25 @@ export default function Confirm() {
     }
   }, [trip, updateTrip])
 
+  if (status === 'loading') return <StitchLoader steps={['여행을 불러오고 있어요']} />
+  if (status === 'missing') {
+    return (
+      <StateCard
+        kind="empty"
+        title="여행을 찾지 못했어요"
+        actions={
+          <Link className="tp-btn-primary tp-denim" to="/trips">
+            내 여행으로
+          </Link>
+        }
+      >
+        <p>지웠거나, 다른 계정이나 기기에 있는 여행이에요.</p>
+      </StateCard>
+    )
+  }
+  // A patched trip is not being registered any more (e.g. browser forward): edit it, with locks.
+  if (!editing && trip && trip.patches.length > 0) return <Navigate to={`/trips/${trip.id}/edit`} replace />
+
   if (!trip || !day) {
     return (
       <StateCard
@@ -124,8 +157,12 @@ export default function Confirm() {
 
   const needs = (items: TripItem[]) => items.filter((it) => !it.placeId || !hasTime(it)).length
   const totalItems = trip.days.reduce((n, d) => n + d.items.length, 0)
-  const flightNeeds = trip.departure && trip.departureTimeGuessed ? 1 : 0
-  const totalNeeds = trip.days.reduce((n, d) => n + needs(d.items), 0) + flightNeeds
+  const allPast = editing && trip.endDate < today
+  // The departure time can still be set while its day (the last) is open.
+  const askDeparture = !!trip.departure && !!trip.departureTimeGuessed && !lockOf(trip.endDate)
+  // Locked days are not counted: there is nothing to settle on them.
+  const totalNeeds =
+    trip.days.reduce((n, d) => n + (lockOf(d.date) ? 0 : needs(d.items)), 0) + (askDeparture ? 1 : 0)
   function pick(item: TripItem, place: PlaceOption) {
     // The user chose it themselves: no "far from the hotel" second look. Picking for an item
     // that shared another's place makes it its own; items sharing this one's place follow it.
@@ -161,8 +198,11 @@ export default function Confirm() {
     // the issue still says so, so the booking comes back with the time the user gives.
     const wasReserved = day!.issues.some((i) => i.item === index && i.code === 'RESERVED_NO_TIME')
     const reserved = item.reservationTime != null || wasReserved
-    updateItem(item.id, { start, end, durationEstimated: false, reservationTime: reserved ? start : null })
-    setEditing(null)
+    const time = { start, end, reservationTime: reserved ? start : null }
+    // Editing keeps the day in time order; registering shows it in the order pasted.
+    if (editing) editTrip((t) => changeTime(t, day!.date, item.id, time))
+    else updateItem(item.id, { ...time, durationEstimated: false })
+    setEditingTime(null)
   }
 
   function renderTime(it: TripItem, index: number, prev: TripItem | undefined) {
@@ -170,7 +210,7 @@ export default function Confirm() {
     const problem = day!.issues.find((i) => i.item === index && ISSUE_TEXT[i.code])
     const overlaps = ready && prev && hasTime(prev) && it.start! < prev.end!
 
-    if (!ready || editing === it.id) {
+    if (!ready || editingTime === it.id) {
       return (
         <div className="confirm__time">
           {!ready && <p className="confirm__warn">{problem ? ISSUE_TEXT[problem.code] : '시각을 정해 주세요'}</p>}
@@ -179,7 +219,7 @@ export default function Confirm() {
             start={it.start}
             end={it.end}
             onSave={(s, e) => saveTime(it, index, s, e)}
-            onCancel={ready ? () => setEditing(null) : undefined}
+            onCancel={ready ? () => setEditingTime(null) : undefined}
           />
         </div>
       )
@@ -190,7 +230,7 @@ export default function Confirm() {
           <p className="confirm__hint">끝나는 시각은 짐작한 값이에요 (약 {it.end! - it.start!}분)</p>
         )}
         {overlaps && <p className="confirm__hint">앞 일정과 시간이 겹쳐요. 맞는지 확인해 주세요</p>}
-        <button type="button" className="confirm__link" onClick={() => setEditing(it.id)}>
+        <button type="button" className="confirm__link" onClick={() => setEditingTime(it.id)}>
           시각 고치기
         </button>
       </>
@@ -280,18 +320,28 @@ export default function Confirm() {
 
   return (
     <div className="confirm">
-      <div className="confirm__step">
-        <span>일정 확인</span>
-        <span>1 / 2</span>
-      </div>
-      <div className="confirm__progress" aria-hidden="true">
-        <div style={{ width: '50%' }} />
-      </div>
+      {!editing && (
+        <>
+          <div className="confirm__step">
+            <span>일정 확인</span>
+            <span>1 / 2</span>
+          </div>
+          <div className="confirm__progress" aria-hidden="true">
+            <div style={{ width: '50%' }} />
+          </div>
+        </>
+      )}
 
       <div className="confirm__body">
         <div className="confirm__intro">
-          <h1>이렇게 재단했어요</h1>
-          <p>장소는 찾아서 채워 뒀어요. 다른 곳만 바꾸고, 표시된 것만 고쳐 주세요.</p>
+          <h1>{editing ? '여행 고치기' : '이렇게 재단했어요'}</h1>
+          <p>
+            {!editing
+              ? '장소는 찾아서 채워 뒀어요. 다른 곳만 바꾸고, 표시된 것만 고쳐 주세요.'
+              : allPast
+                ? '지난 여행이라 기록으로만 볼 수 있어요.'
+                : '바꾸면 바로 저장돼요. 여행지·날짜·숙소·항공편을 바꾸려면 새 여행으로 등록해 주세요.'}
+          </p>
         </div>
 
         <div className="confirm__summary">
@@ -321,6 +371,7 @@ export default function Confirm() {
             type="time"
             step={300}
             value={formatTime(trip.endDeadline)}
+            disabled={allPast}
             onChange={(e) => {
               const m = parseTime(e.target.value)
               if (m !== null) setTrip({ ...trip, endDeadline: m })
@@ -328,7 +379,7 @@ export default function Confirm() {
           />
         </div>
 
-        {trip.departure && trip.departureTimeGuessed && (
+        {askDeparture && trip.departure && (
           <div className="confirm__deadline tp-fabric">
             <label htmlFor="departure-time">
               <b>출국편 출발 시각</b>
@@ -373,7 +424,15 @@ export default function Confirm() {
                 }}
               >
                 DAY {i + 1}
-                <span>{n > 0 ? `확인 ${n}` : '확인 끝'}</span>
+                <span>
+                  {lockOf(d.date) === 'past'
+                    ? '지난 날'
+                    : lockOf(d.date) === 'patched'
+                      ? '패치 있음'
+                      : n > 0
+                        ? `확인 ${n}`
+                        : '확인 끝'}
+                </span>
               </button>
             )
           })}
@@ -383,6 +442,16 @@ export default function Confirm() {
           <h2>
             DAY {dayIndex + 1} · {formatDate(day.date)}
           </h2>
+
+          {lock && (
+            <DayLockNotice
+              key={day.date}
+              lock={lock}
+              patches={trip.patches.filter((p) => p.date === day.date).length}
+              onUnpatch={() => editTrip((t) => unpatchDay(t, day.date))}
+            />
+          )}
+          {editing && day.items.length === 0 && <p className="confirm__hint">이날에는 조각이 없어요.</p>}
 
           {day.items.map((it, index) => (
             <div className="confirm__card tp-fabric" key={it.id}>
@@ -394,13 +463,31 @@ export default function Confirm() {
                     {CATEGORY_LABEL[it.category]}
                     {it.reservationTime != null && ' · 예약'}
                   </span>
-                  <b>{it.title}</b>
+                  <b>{it.dropped ? <s>{it.title}</s> : it.title}</b>
                 </div>
               </div>
-              {renderTime(it, index, day.items[index - 1])}
-              {renderPlace(it)}
+              {lock ? (
+                <p className="confirm__hint">
+                  {it.dropped ? '패치로 뺐어요' : (knownLabel(it) ?? (it.placeId ? '장소 확인됨' : '장소 없음'))}
+                </p>
+              ) : (
+                <>
+                  {renderTime(it, index, day.items[index - 1])}
+                  {renderPlace(it)}
+                  {editing && (
+                    <ItemTools
+                      item={it}
+                      onRename={(title) => updateItem(it.id, { title })}
+                      onRemove={() => editTrip((t) => removeItem(t, day.date, it.id))}
+                    />
+                  )}
+                </>
+              )}
             </div>
           ))}
+          {editing && !lock && (
+            <AddItem key={day.date} count={day.items.length} onAdd={(item) => editTrip((t) => addItem(t, day.date, item))} />
+          )}
         </section>
       </div>
 
@@ -413,13 +500,28 @@ export default function Confirm() {
             확인할 조각 {totalNeeds}개는 나중에 해도 돼요. 그날 패치를 찾기 전에만 끝내 주세요.
           </span>
         )}
-        <Link className="tp-btn-primary tp-denim" to="/new/grade">
-          다음: 중요도 정하기
-        </Link>
-        {/* Tiers have defaults (booked = 꼭, else 좋음): finishing here is a real choice. */}
-        <ExitLink flow="new" className="tp-btn-quiet">
-          중요도는 기본값으로 두고 완성하기
-        </ExitLink>
+        {editing ? (
+          <>
+            <ExitLink flow="new" className="tp-btn-primary tp-denim">
+              {allPast ? '돌아가기' : '다 고쳤어요'}
+            </ExitLink>
+            {!allPast && (
+              <Link className="tp-btn-quiet" to={`/trips/${trip.id}/grade`}>
+                중요도 바꾸기
+              </Link>
+            )}
+          </>
+        ) : (
+          <>
+            <Link className="tp-btn-primary tp-denim" to="/new/grade">
+              다음: 중요도 정하기
+            </Link>
+            {/* Tiers have defaults (booked = 꼭, else 좋음): finishing here is a real choice. */}
+            <ExitLink flow="new" className="tp-btn-quiet">
+              중요도는 기본값으로 두고 완성하기
+            </ExitLink>
+          </>
+        )}
       </div>
     </div>
   )

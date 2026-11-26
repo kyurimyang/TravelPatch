@@ -41,6 +41,8 @@ export default function AppRoutes() {
           <Route path="new" element={<Landing />} />
           <Route path="new/confirm" element={<Confirm />} />
           <Route path="new/grade" element={<Grade />} />
+          <Route path="trips/:id/edit" element={<Confirm />} />
+          <Route path="trips/:id/grade" element={<Grade />} />
           <Route path="recover" element={<Recover />} />
           <Route path="recover/patch" element={<DiffView />} />
           <Route path="recover/blocked" element={<NoPatch />} />

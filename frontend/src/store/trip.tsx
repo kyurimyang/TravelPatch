@@ -138,6 +138,8 @@ type TripStore = {
   updateItem: (itemId: string, patch: Partial<Omit<TripItem, 'id'>>) => void
   /** Change fields of the current trip as it is when applied (safe after an await). */
   updateTrip: (patch: (t: Trip) => Partial<Omit<Trip, 'id' | 'days'>>) => void
+  /** Apply a whole-trip change (lib/tripEdit) to the current trip. */
+  editTrip: (change: (t: Trip) => Trip) => void
   /** Stitch a patch onto its day of the current trip (idempotent by patch id). */
   stitch: (patch: SavedPatch) => void
   /** Take the latest patch of a day back off. */
@@ -445,6 +447,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         deleteTrip,
         updateItem,
         updateTrip,
+        editTrip: editCurrent,
         stitch,
         unstitch,
         sync: signedIn ? sync : { kind: 'guest' },

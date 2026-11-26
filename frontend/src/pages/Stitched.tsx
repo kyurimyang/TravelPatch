@@ -28,6 +28,8 @@ export default function Stitched() {
     titles?: Record<string, string>
     back?: RecoveryState
     added?: PatchChange['added'] | null
+    /** Set on this history entry once its patch is stitched: coming back does not stitch again. */
+    stitched?: boolean
   } | null
   const { trip, stitch, unstitch } = useTrip()
   const result = navState?.result
@@ -35,12 +37,15 @@ export default function Stitched() {
   // Only a registered trip is saved; the example trip is a demo and leaves nothing behind.
   const saves = navState?.source === 'trip' && !!navState.patchId && !!date
 
-  // Stitch on arrival. Idempotent by patch id, so StrictMode's second run changes nothing.
+  // Stitch on arrival. Idempotent by patch id, so StrictMode's second run changes nothing. The
+  // entry is then marked: after "패치 풀고 고치기", browser forward must not put the patch back.
   useEffect(() => {
-    if (!saves || !result) return
+    if (!saves || !result || navState?.stitched) return
     stitch(patchFrom(navState!.patchId!, date!, result, navState?.chips ?? [], new Date().toISOString(), navState?.eventType ?? null, navState?.added ?? null))
+    navigate('.', { replace: true, state: { ...navState, stitched: true } })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  const takenOff = saves && !!navState?.stitched && !!trip && !trip.patches.some((p) => p.id === navState.patchId)
 
   function undo() {
     if (saves) unstitch(navState!.patchId!)
@@ -53,12 +58,12 @@ export default function Stitched() {
   const iconOf = iconsById(navState?.source === 'trip' ? trip : null, navState?.plan?.activities ?? [])
 
   // Opened without a chosen patch (e.g. typed URL): nothing to show.
-  if (!result) {
+  if (!result || takenOff) {
     return (
       <div className="stitched">
         <header className="stitched__head tp-pinked-bottom">박음질 완료</header>
         <div className="stitched__body">
-          <p>박음질한 패치가 없어요.</p>
+          <p>{takenOff ? '이 패치는 이미 풀었어요.' : '박음질한 패치가 없어요.'}</p>
           <Link className="tp-btn-primary tp-denim" to="/" replace>
             오늘 일정으로
           </Link>

@@ -8,10 +8,11 @@ type Props = {
   end: number | null
   onSave: (start: number, end: number) => void
   onCancel?: () => void
+  saveLabel?: string
 }
 
 // Two clock inputs for one itinerary item. Saves only a range the engine can use (end after start).
-export function TimeEditor({ idPrefix, start, end, onSave, onCancel }: Props) {
+export function TimeEditor({ idPrefix, start, end, onSave, onCancel, saveLabel = '저장' }: Props) {
   const [from, setFrom] = useState(start != null ? formatTime(start) : '')
   const [to, setTo] = useState(end != null ? formatTime(end) : '')
 
@@ -35,7 +36,7 @@ export function TimeEditor({ idPrefix, start, end, onSave, onCancel }: Props) {
           </button>
         )}
         <button type="button" disabled={!valid} onClick={() => valid && onSave(s, e)}>
-          저장
+          {saveLabel}
         </button>
       </div>
     </div>

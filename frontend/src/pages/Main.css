@@ -11,6 +11,23 @@
   gap: var(--space-1);
 }
 
+.main-screen__trip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.main-screen__edit {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--text-sm);
+  color: var(--tp-denim-deep);
+  text-decoration: underline dashed;
+}
+
 .main-screen__trip {
   align-self: flex-start;
   min-height: 36px;
