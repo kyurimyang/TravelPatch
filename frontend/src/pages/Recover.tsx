@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { interpretDisruption } from '../api/disruptions'
+import { buildDisruption, interpretDisruption } from '../api/disruptions'
 import { accessMessage, ApiError } from '../api/http'
 import { addPlace, buildPlan } from '../api/plans'
-import type { BuiltPlan, InterpretResponse, PlaceOption, TravelTime } from '../api/types'
+import type { BuiltPlan, EventDraft, InterpretResponse, PlaceOption, TravelTime, Wish } from '../api/types'
+import { EventChips } from '../components/EventChips'
 import addArt from '../assets/patches/place-sight.svg'
 import { PlaceSearch } from '../components/PlaceSearch'
 import closed from '../assets/patches/hole-closed.svg'
@@ -30,7 +31,7 @@ import { formatTime, parseTime } from '../lib/time'
 import { deviceNow } from '../lib/today'
 import { markFlowStart } from '../lib/nav'
 import { ExitLink } from '../components/ExitLink'
-import { closable, minutesLabel, QUICK_ASK, quickResponse, type QuickKind } from '../lib/quick'
+import { closable, minutesLabel, ok, QUICK_ASK, quickResponse, type QuickKind } from '../lib/quick'
 import { useTrip } from '../store/trip'
 import './Recover.css'
 
@@ -102,6 +103,8 @@ export default function Recover() {
   const [addPick, setAddPick] = useState<{ option: PlaceOption; title: string } | null>(null)
   const [added, setAdded] = useState<{ placeId: string; travel: TravelTime[] } | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
+  // A chip being fixed or a question being answered: the rules run again on the server.
+  const [rebuilding, setRebuilding] = useState(false)
   // Already visited, left out of the recovery (A1): the user's taps over the pre-checked default.
   // Cleared whenever the event changes, so the default follows the new event.
   const [visitEdits, setVisitEdits] = useState<Record<string, boolean>>({})
@@ -199,20 +202,35 @@ export default function Recover() {
     }
   }
 
+  // Fixed chip, answered question, taken-out event: the drafts go back through the same rules
+  // (POST /disruptions/build, no LLM). Nothing left: back to an empty answer.
+  async function rebuild(drafts: EventDraft[], wishes: Wish[]) {
+    if (drafts.length === 0 && wishes.length === 0) {
+      reset()
+      return
+    }
+    setRebuilding(true)
+    try {
+      const response = await buildDisruption({ drafts, wishes, now: nowMin, location_id: where, activities })
+      setVisitEdits({})
+      setPhase({ kind: 'result', response })
+    } catch (e) {
+      setPhase({ kind: 'error', message: accessMessage(e) ?? '고친 내용을 반영하지 못했어요. 잠시 뒤 다시 시도해 주세요.' })
+    } finally {
+      setRebuilding(false)
+    }
+  }
+
   // From the hole alert, with nothing typed: the event is known without the LLM (A2). Typing a
   // sentence ("30분 더 걸려요") takes the usual interpret path instead.
   const fromHole: InterpretResponse | null =
     hole && phase.kind === 'idle' && text.trim() === ''
-      ? {
-          status: 'ok',
-          interpretation: null,
-          event: holeEvent(nowMin, where),
-          chips: [`${formatTime(nowMin)}부터 움직일 수 있어요`],
-          problem: null,
-        }
+      ? ok(holeEvent(nowMin, where), [`${formatTime(nowMin)}부터 움직일 수 있어요`])
       : null
   const response = phase.kind === 'result' ? phase.response : fromHole
-  const ready = response?.status === 'ok' && response.event !== null
+  const ready = response?.status === 'ok' && response.event != null
+  // A typed sentence comes back as editable items; quick buttons and the hole alert as plain chips.
+  const editable = !!response && (response.items.length > 0 || response.wish_chips.length > 0)
   const reset = () => {
     setAdded(null)
     setPhase({ kind: 'idle' })
@@ -220,8 +238,9 @@ export default function Recover() {
   }
   // Only what was planned to start before now can have been visited; the rest is not asked.
   const event = ready ? response.event! : null
-  const locked = event ? visitLocked(event) : new Set<string>()
-  const preChecked = new Set(event ? defaultVisited(plan, event) : [])
+  const moreEvents = ready ? response.events.slice(1) : []
+  const locked = event ? visitLocked(event, moreEvents) : new Set<string>()
+  const preChecked = new Set(event ? defaultVisited(plan, event, moreEvents) : [])
   const isVisited = (id: string) => !locked.has(id) && (visitEdits[id] ?? preChecked.has(id))
   const visitable = event
     ? activities.filter((a) => a.planned_start < event.occurred_at && !locked.has(a.id))
@@ -371,13 +390,7 @@ export default function Recover() {
                             const unknown = res.hours === 'unknown' ? ' · 영업시간 확인 필요' : ''
                             setPhase({
                               kind: 'result',
-                              response: {
-                                status: 'ok',
-                                interpretation: null,
-                                event: res.event,
-                                chips: [`${addPick.title} · ${minutesLabel(m)} 넣기${unknown}`],
-                                problem: null,
-                              },
+                              response: ok(res.event, [`${addPick.title} · ${minutesLabel(m)} 넣기${unknown}`]),
                             })
                           } catch (e) {
                             setPhase({ kind: 'error', message: accessMessage(e) ?? '장소 정보를 불러오지 못했어요. 잠시 뒤 다시 해 주세요.' })
@@ -453,19 +466,35 @@ export default function Recover() {
         {response && (
           <section className="recover__chips tp-fabric" aria-label="이렇게 이해했어요" aria-live="polite">
             <h2>이렇게 이해했어요</h2>
+            {editable && (
+              <EventChips
+                response={response}
+                activities={activities}
+                now={nowMin}
+                busy={rebuilding}
+                onChange={rebuild}
+                onAddPlace={() => {
+                  setText('')
+                  setQuick('add')
+                  setPhase({ kind: 'idle' })
+                }}
+              />
+            )}
             {ready ? (
               <>
-                <ul>
-                  {response.chips.map((c) => (
-                    <li key={c}>{c}</li>
-                  ))}
-                </ul>
+                {!editable && (
+                  <ul>
+                    {response.chips.map((c) => (
+                      <li key={c}>{c}</li>
+                    ))}
+                  </ul>
+                )}
                 <span className="recover__hint">
                   {fromHole
                     ? '더 늦어질 것 같다면 한 줄로 적어 주세요. 예: 20분 더 걸려요'
                     : quick
                       ? '다른 상황이면 버튼을 다시 고르거나 한 줄로 적어 주세요.'
-                      : '다르게 이해했다면 문장을 고쳐서 다시 확인해 주세요.'}
+                      : '칩마다 고치거나 뺄 수 있어요. 빠진 게 있으면 문장을 고쳐 다시 확인해 주세요.'}
                 </span>
                 {visitable.length > 0 && (
                   <fieldset className="recover__visited">
@@ -488,14 +517,11 @@ export default function Recover() {
                 )}
               </>
             ) : (
-              <>
-                <p>{response.problem?.detail ?? '내용을 이해하지 못했어요. 조금 더 구체적으로 적어 주세요.'}</p>
-                {!!response.problem?.candidates.length && (
-                  <span className="recover__hint">
-                    후보: {response.problem.candidates.map(titleOf).join(', ')} — 이름을 넣어 다시 적어 주세요.
-                  </span>
-                )}
-              </>
+              <span className="recover__hint">
+                {editable
+                  ? '이해한 건 위에 두었어요. 빠진 것만 골라 주세요.'
+                  : '내용을 이해하지 못했어요. 조금 더 구체적으로 적어 주세요.'}
+              </span>
             )}
           </section>
         )}
@@ -516,6 +542,8 @@ export default function Recover() {
                 source,
                 addedPlaceId: added?.placeId,
                 event: response!.event!,
+                moreEvents,
+                wishes: response!.wishes,
                 chips: response!.chips,
                 visited: activities.filter((a) => isVisited(a.id)).map((a) => a.id),
               }

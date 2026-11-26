@@ -79,6 +79,10 @@ class Substitute(_Frozen):
     open_at: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
     close_at: int | None = Field(default=None, ge=0, le=MINUTES_PER_DAY)
     penalty: float = Field(default=0.0, ge=0.0)  # new-place penalty added to D_sub
+    # Whether the new place is outdoors. None: not known, read as the replaced activity's
+    # (so an unknown place stands in for an outdoor one only when it is dry). Known indoor
+    # places are how "rain, so somewhere inside instead" becomes a patch (2026-11-26).
+    outdoor: bool | None = None
 
     @model_validator(mode="after")
     def _check_durations(self) -> "Substitute":

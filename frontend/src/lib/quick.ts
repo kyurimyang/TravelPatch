@@ -36,8 +36,9 @@ export function closable(plan: BuiltPlan, now: number): BuiltPlan['activities'] 
   return plan.activities.filter((a) => a.planned_end > now)
 }
 
-function ok(event: DisruptionEvent, chips: string[]): InterpretResponse {
-  return { status: 'ok', interpretation: null, event, chips, problem: null }
+/** A ready answer with one event, shaped like the server's (Recover shows both the same way). */
+export function ok(event: DisruptionEvent, chips: string[]): InterpretResponse {
+  return { status: 'ok', event, events: [event], items: [], wishes: [], chips, wish_chips: [], problem: null }
 }
 
 /** The event (and the chips shown for it) for a quick button and the choice made under it.

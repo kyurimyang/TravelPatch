@@ -6,6 +6,9 @@ it, keeps those not closed at that time, and adds them with estimated travel tim
 then picks the one that changes the day least, or none.
 
 `build_substitutes` is the pure decision part; `add_substitutes` does the I/O around it.
+
+Rain or a "실내 우선" wish also searches indoor places for outdoor pieces (2026-11-26): a hit
+Google types as indoors is marked outdoor=False, so the engine may use it in the rain.
 """
 
 from collections.abc import Iterable
@@ -14,7 +17,8 @@ from dataclasses import dataclass
 
 from app.llm.provider import LLMProvider
 from app.llm.substitute_query import substitute_query
-from app.schemas.events import ClosureEvent
+from app.schemas.enums import Wish
+from app.schemas.events import ClosureEvent, WeatherEvent
 from app.schemas.models import HOTEL_ID, START_ID, Activity, Substitute
 from app.schemas.recovery import RecoveryInput
 from app.services.opening_hours import hours_for_weekday
@@ -37,6 +41,52 @@ PENALTY_MAX = 1.0
 # also return a cap shop on the same street; for meals and cafes those are left out.
 EAT_DRINK_TYPES = {"restaurant", "food", "cafe", "coffee_shop", "bar", "pub", "bakery"}
 EAT_DRINK_SUFFIXES = ("_restaurant", "_bar", "_cafe")
+
+
+# Google types that settle whether a place is inside. Anything else stays unknown (None): the
+# engine then reads it as the piece it replaces, so an unknown place is never sent into rain.
+INDOOR_TYPES = {
+    "museum",
+    "art_gallery",
+    "aquarium",
+    "shopping_mall",
+    "department_store",
+    "movie_theater",
+    "library",
+    "bowling_alley",
+    "planetarium",
+    "book_store",
+    "restaurant",
+    "cafe",
+    "coffee_shop",
+    "bar",
+    "bakery",
+    "spa",
+}
+INDOOR_SUFFIXES = ("_restaurant", "_cafe", "_bar", "_museum", "_store", "_shop")
+OUTDOOR_TYPES = {
+    "park",
+    "garden",
+    "botanical_garden",
+    "zoo",
+    "amusement_park",
+    "beach",
+    "hiking_area",
+    "national_park",
+    "campground",
+    "plaza",
+}
+# Outdoor pieces searched for an indoor stand-in per request (one LLM call + one search each).
+MAX_INDOOR_SEARCHES = 2
+
+
+def place_outdoor(types: tuple[str, ...]) -> bool | None:
+    """True / False when Google's types say so, None when they do not (or disagree)."""
+    outside = any(t in OUTDOOR_TYPES for t in types)
+    inside = any(t in INDOOR_TYPES or t.endswith(INDOOR_SUFFIXES) for t in types)
+    if outside == inside:
+        return None
+    return outside
 
 
 def _same_kind(category: str, types: tuple[str, ...]) -> bool:
@@ -88,36 +138,68 @@ def build_substitutes(
                 open_at=hours.open_at if known else None,
                 close_at=hours.close_at if known else None,
                 penalty=round(min(PENALTY_MAX, PENALTY_BASE + PENALTY_PER_KM * km), 2),
+                outdoor=place_outdoor(hit.types),
             )
         )
     return Found(tuple(subs), frozenset(unknown))
 
 
-def wants_substitutes(inp: RecoveryInput) -> bool:
-    """A closure whose activity has no substitute yet: the only case that calls the LLM and
-    Google. The router asks this too, to charge a guest only when the search happens."""
-    ev = inp.event
-    return isinstance(ev, ClosureEvent) and not any(
-        s.replaces == ev.activity_id for s in inp.substitutes
+def _without_substitutes(inp: RecoveryInput, ids: Iterable[str]) -> list[str]:
+    has = {s.replaces for s in inp.substitutes}
+    return [i for i in dict.fromkeys(ids) if i not in has]
+
+
+def closed_targets(inp: RecoveryInput) -> list[str]:
+    """Closed activities (any of the events) with no substitute yet, in event order."""
+    return _without_substitutes(
+        inp, (ev.activity_id for ev in inp.events if isinstance(ev, ClosureEvent))
     )
+
+
+def indoor_targets(inp: RecoveryInput) -> list[str]:
+    """With rain or the "실내 우선" wish: outdoor pieces still ahead with no substitute yet, the
+    most valuable first (then by id), at most MAX_INDOOR_SEARCHES."""
+    rain = any(isinstance(ev, WeatherEvent) for ev in inp.events)
+    if not rain and Wish.INDOOR not in inp.wishes:
+        return []
+    weight = {p.activity_id: p.tier.weight for p in inp.preferences}
+    here = inp.event.location_id
+    outdoor = [
+        a.id
+        for a in inp.activities
+        if a.outdoor is True and a.planned_end > inp.now and a.id != here
+    ]
+    todo = _without_substitutes(inp, outdoor)
+    return sorted(todo, key=lambda i: (-weight[i], i))[:MAX_INDOOR_SEARCHES]
+
+
+def wants_substitutes(inp: RecoveryInput) -> bool:
+    """A closure with no substitute yet, or an outdoor piece to find an indoor stand-in for: the
+    cases that call the LLM and Google. The router asks this too, to charge a guest only when
+    the search happens."""
+    return bool(closed_targets(inp) or indoor_targets(inp))
 
 
 def add_substitutes(
     inp: RecoveryInput, provider: LLMProvider, places: GooglePlacesClient
 ) -> RecoveryInput:
-    """The input with substitutes for a closed activity, or unchanged when there is nothing to do
-    (not a closure, substitutes already given) or Google cannot answer (then the blockers say so).
-    A substitute with unknown hours has no open_at/close_at; see `needs_check_ids`.
+    """The input with substitutes for closed activities and (rain, "실내 우선") indoor ones for
+    outdoor pieces, or unchanged when there is nothing to do or Google cannot answer (then the
+    blockers say so). A substitute with unknown hours has no open_at/close_at; see
+    `needs_check_ids`.
     """
-    if not wants_substitutes(inp):
+    closed, indoor = closed_targets(inp), indoor_targets(inp)
+    if not closed and not indoor:
         return inp
-    ev = inp.event
-    assert isinstance(ev, ClosureEvent)  # narrowed by wants_substitutes
-    return add_substitutes_for(inp, [ev.activity_id], provider, places)
+    return add_substitutes_for(inp, [*closed, *indoor], provider, places, indoor=frozenset(indoor))
 
 
 def add_substitutes_for(
-    inp: RecoveryInput, ids: Iterable[str], provider: LLMProvider, places: GooglePlacesClient
+    inp: RecoveryInput,
+    ids: Iterable[str],
+    provider: LLMProvider,
+    places: GooglePlacesClient,
+    indoor: frozenset[str] = frozenset(),
 ) -> RecoveryInput:
     """Substitutes for the given activities (decision 2026-11-23: also for pieces a plan drops,
     not only for a closure): "instead of dropping it, a similar place nearby that fits". The
@@ -128,7 +210,7 @@ def add_substitutes_for(
         target = next((a for a in inp.activities if a.id == aid), None)
         if target is None or any(s.replaces == aid for s in inp.substitutes):
             continue
-        found_all += _search(inp, target, provider, places)
+        found_all += _search(inp, target, provider, places, target.id in indoor)
     if not found_all:
         return inp
     points = {a.id: (a.lat, a.lng) for a in inp.activities}
@@ -144,11 +226,16 @@ def add_substitutes_for(
 
 
 def _search(
-    inp: RecoveryInput, target: Activity, provider: LLMProvider, places: GooglePlacesClient
+    inp: RecoveryInput,
+    target: Activity,
+    provider: LLMProvider,
+    places: GooglePlacesClient,
+    indoor: bool = False,
 ) -> list[Substitute]:
     """Places like `target` near it, open that day: one LLM call for what to search, one Google
-    search, details in parallel. [] when Google cannot answer."""
-    query = substitute_query(provider, target.title, target.category)
+    search, details in parallel. [] when Google cannot answer. `indoor`: an inside place is
+    wanted (rain or the wish), so the search asks for one."""
+    query = substitute_query(provider, target.title, target.category, indoor=indoor)
     try:
         hits = places.search(query, near=(target.lat, target.lng))
     except PlacesError:

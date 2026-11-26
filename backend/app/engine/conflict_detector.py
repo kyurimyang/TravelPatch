@@ -27,38 +27,40 @@ def find_blockers(inp: RecoveryInput) -> list[Blocker]:
         return 0 if a == b else table[frozenset((a, b))]
 
     musts = {p.activity_id for p in inp.preferences if p.tier == Tier.MUST}
-    extended = ev.activity_id if isinstance(ev, ExtendEvent) else None
+    extensions = {e.activity_id: e for e in inp.events if isinstance(e, ExtendEvent)}
+    rains = [e for e in inp.events if isinstance(e, WeatherEvent)]
     out: list[Blocker] = []
 
     for a in sorted(inp.activities, key=lambda a: a.id):
-        if (a.id not in musts and a.id != extended) or a.reservation_time is None:
+        if (a.id not in musts and a.id not in extensions) or a.reservation_time is None:
             continue
         if a.id == ev.location_id:
             continue  # the user is already there
         r = a.reservation_time
         if r < inp.now + travel(ev.location_id, a.id):
             out.append(Blocker(kind="reserved_in_past", activity_id=a.id, blocking_time=r))
-        elif isinstance(ev, WeatherEvent) and a.outdoor is True:  # unknown (None) is not blocked
-            rain_end = ev.end_time if ev.end_time is not None else MINUTES_PER_DAY
-            if r < rain_end and r + (a.planned_end - a.planned_start) > ev.start_time:
-                out.append(Blocker(kind="reserved_in_rain", activity_id=a.id, blocking_time=r))
+        elif a.outdoor is True:  # unknown (None) is not blocked
+            length = a.planned_end - a.planned_start
+            for rain in rains:
+                rain_end = rain.end_time if rain.end_time is not None else MINUTES_PER_DAY
+                if r < rain_end and r + length > rain.start_time:
+                    out.append(Blocker(kind="reserved_in_rain", activity_id=a.id, blocking_time=r))
+                    break
 
     # Closed, cannot be dropped, and nothing to stand in for it: no plan can exist.
     # With any substitute it is not certain (one may fit), so nothing is reported then.
-    if (
-        isinstance(ev, ClosureEvent)
-        and ev.activity_id in musts
-        and not any(s.replaces == ev.activity_id for s in inp.substitutes)
-    ):
-        out.append(Blocker(kind="closed_no_substitute", activity_id=ev.activity_id))
+    closed = sorted({e.activity_id for e in inp.events if isinstance(e, ClosureEvent)})
+    for aid in closed:
+        if aid in musts and not any(s.replaces == aid for s in inp.substitutes):
+            out.append(Blocker(kind="closed_no_substitute", activity_id=aid))
 
-    out += _reservation_clashes(inp, musts, extended, travel)
+    out += _reservation_clashes(inp, musts, extensions, travel)
     out += _meals_out_of_reach(inp, musts, travel)
 
-    if isinstance(ev, ExtendEvent):
-        target = next(a for a in inp.activities if a.id == ev.activity_id)
+    for aid in sorted(extensions):
+        target = next(a for a in inp.activities if a.id == aid)
         most = _max_extra(inp, target, travel)
-        if most < ev.extra_minutes:
+        if most < extensions[aid].extra_minutes:
             out.append(
                 Blocker(kind="extension_blocked", activity_id=target.id, max_extra_minutes=most)
             )
@@ -82,24 +84,23 @@ def _max_extra(inp: RecoveryInput, a: Activity, travel) -> int:
 
 
 def _reservation_clashes(
-    inp: RecoveryInput, musts: set[str], extended: str | None, travel
+    inp: RecoveryInput, musts: set[str], extensions: dict[str, ExtendEvent], travel
 ) -> list[Blocker]:
     """Two bookings that can neither move nor be dropped, too close for the first to end and the
     traveller to get to the second. Reserved slots keep their length, so this is certain."""
-    ev = inp.event
     pinned = sorted(
         (
             a
             for a in inp.activities
-            if a.reservation_time is not None and (a.id in musts or a.id == extended)
+            if a.reservation_time is not None and (a.id in musts or a.id in extensions)
         ),
         key=lambda a: (a.reservation_time, a.id),
     )
     out: list[Blocker] = []
     for first, second in pairwise(pinned):
         length = first.planned_end - first.planned_start
-        if isinstance(ev, ExtendEvent) and ev.activity_id == first.id:
-            length += ev.extra_minutes
+        if first.id in extensions:
+            length += extensions[first.id].extra_minutes
         if first.reservation_time + length + travel(first.id, second.id) > second.reservation_time:
             out.append(
                 Blocker(

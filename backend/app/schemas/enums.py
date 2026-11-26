@@ -56,6 +56,18 @@ class EventType(StrEnum):
     EXTEND = "EXTEND"
     RESERVATION_CHANGE = "RESERVATION_CHANGE"
     MUST_VISIT = "MUST_VISIT"
+    # Queue at a place of the plan: that many minutes there before the activity itself starts
+    # (decision 2026-11-26). Unlike EXTEND the piece can still be shortened, swapped or dropped.
+    WAIT = "WAIT"
+
+
+class Wish(StrEnum):
+    """What the traveller would like for the rest of the day, said with or without an event
+    ("실내에서 최대한 머무르고 싶어요"). Not a hard rule: see where each one is read."""
+
+    INDOOR = "indoor"  # engine: D_outdoor in the cost (soft, decision 2026-11-26)
+    LESS_WALKING = "less_walking"  # rules: becomes a FATIGUE event
+    REST = "rest"  # rules: a FATIGUE event; service: the "relaxed" strategy comes first
 
 
 class ReasonType(StrEnum):

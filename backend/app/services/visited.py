@@ -32,9 +32,10 @@ def apply_visited(inp: RecoveryInput, visited: Iterable[str]) -> RecoveryInput:
     unknown = sorted(gone - ids)
     if unknown:
         raise VisitedError(f"not activities of this day: {unknown}")
-    target = getattr(inp.event, "activity_id", None)
-    if target in gone:
-        raise VisitedError(f"the event is about {target}: it cannot be visited already")
+    for ev in inp.events:
+        target = getattr(ev, "activity_id", None)
+        if target in gone:
+            raise VisitedError(f"the event is about {target}: it cannot be visited already")
 
     data = inp.model_dump()
     travel = data["travel"]
@@ -53,6 +54,8 @@ def apply_visited(inp: RecoveryInput, visited: Iterable[str]) -> RecoveryInput:
             if START_ID not in (t["a"], t["b"])
         ]
         data["event"]["location_id"] = START_ID
+        for more in data["more_events"]:
+            more["location_id"] = START_ID  # every event shares the place (RecoveryInput)
 
     subs_gone = {s.id for s in inp.substitutes if s.replaces in gone}
     out_nodes = gone | subs_gone

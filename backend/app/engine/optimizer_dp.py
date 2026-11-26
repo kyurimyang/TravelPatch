@@ -31,6 +31,8 @@ class _Option(NamedTuple):
     close_at: int | None
     durations: list[int]
     substitute: Substitute | None
+    outdoor: bool | None = None  # of the place itself: a substitute may be inside (2026-11-26)
+    wait: int = 0  # queue minutes before the activity itself, at its own place only (WAIT)
 
 
 class Solution(NamedTuple):
@@ -133,10 +135,18 @@ def solve_fixed_order(
                 stay = _round_up(inp.now - a.planned_start)
                 if stay > max(own):
                     own = [*own, stay]
-            options.append(_Option(a.id, a.open_at, a.close_at, own, None))
+            wait = constraints.wait(a.id)
+            options.append(_Option(a.id, a.open_at, a.close_at, own, None, a.outdoor, wait))
         if not in_progress and extend == 0:
             options += [
-                _Option(sub.id, sub.open_at, sub.close_at, _sub_durations(sub), sub)
+                _Option(
+                    sub.id,
+                    sub.open_at,
+                    sub.close_at,
+                    _sub_durations(sub),
+                    sub,
+                    a.outdoor if sub.outdoor is None else sub.outdoor,  # unknown: as the original
+                )
                 for sub in subs_of.get(a.id, [])
             ]
         nxt: _Layer = {}
@@ -204,15 +214,13 @@ def solve_fixed_order(
                     late = 0 if a.id == added else abs(s - a.planned_start)
                     time_cost = weights.w_time * late / 60 + move_cost
                     for d in durations:  # longer than a tiredness cap: already left out
-                        end = s + d
+                        end = s + opt.wait + d  # a queue comes first, at the same place
                         if end > deadline or (opt.close_at is not None and end > opt.close_at):
                             continue
                         if in_progress and end < inp.now:
                             continue  # cannot have ended in the past
-                        if a.outdoor and constraints.rain is not None:
-                            rain_start, rain_end = constraints.rain
-                            if s < rain_end and end > rain_start:
-                                continue  # outdoors during rain
+                        if opt.outdoor and constraints.rained_on(s, end):
+                            continue  # outdoors during rain
                         if opt.substitute is not None:
                             step = weights.w_changed + sub_cost
                         else:
@@ -224,7 +232,10 @@ def solve_fixed_order(
                                 else 0.0
                             )
                         step += time_cost
-                        _relax(nxt, (opt.node, end), cost + step, (state, (s, d, opt.node)))
+                        if constraints.outdoor_cost and opt.outdoor:
+                            # "실내 우선": the share of the planned length spent outdoors.
+                            step += weights.w_outdoor * value * (end - s) / planned_len
+                        _relax(nxt, (opt.node, end), cost + step, (state, (s, end - s, opt.node)))
         layers.append(nxt)
 
     # Final: the last placed activity must still leave time to get back to the hotel.

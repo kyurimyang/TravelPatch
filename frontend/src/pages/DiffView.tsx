@@ -45,6 +45,8 @@ const HOLE_TITLE: Record<string, string> = {
   CLOSURE: '가려던 곳이 문을 닫았어요',
   FATIGUE: '많이 걷기 힘들어요',
   EXTEND: '더 머물고 싶어요',
+  WAIT: '기다려야 하는 곳이 생겼어요',
+  RESERVATION_CHANGE: '예약 시간이 바뀌었어요',
 }
 
 type State =
@@ -67,7 +69,7 @@ function DiffViewScreen({ nav }: { nav: RecoveryState }) {
   const source = nav.source
   const event = nav?.event ?? (sample as unknown as RecoveryInput).event
   const chips = nav?.chips ?? []
-  const baseInput = inputFor(plan, event, nav?.visited ?? [])
+  const baseInput = inputFor(plan, event, nav?.visited ?? [], nav?.moreEvents ?? [], nav?.wishes ?? [])
 
   const [state, setState] = useState<State>({ status: 'loading' })
   const [picked, setPicked] = useState(0)
@@ -150,7 +152,8 @@ function DiffViewScreen({ nav }: { nav: RecoveryState }) {
   const isAdopted = result !== candidate
   // The input the server really used (with searched substitutes and earlier locks).
   // Restore / lock take the input the server really used (visited already out), never the request.
-  const currentInput = state.response.used_input ?? inputFor(plan, event)
+  const currentInput =
+    state.response.used_input ?? inputFor(plan, event, [], nav?.moreEvents ?? [], nav?.wishes ?? [])
   const titleOf = titlesOf(currentInput)
   const iconOf = iconsById(source === 'trip' ? trip : null, currentInput.activities)
 

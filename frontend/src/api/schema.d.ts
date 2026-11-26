@@ -76,6 +76,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/disruptions/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build
+         * @description The rules again on edited drafts (a fixed chip, an answered question). No LLM, so no
+         *     key and no guest charge: the same rules the interpret call ran.
+         */
+        post: operations["build_disruptions_build_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/itineraries/parse": {
         parameters: {
             query?: never;
@@ -133,6 +154,8 @@ export interface paths {
         /**
          * Build
          * @description One trip day (place_ids, times, tiers) -> engine input pieces. Nothing is stored.
+         *     Real travel minutes from Google Routes when a key is set, estimates otherwise. The Routes
+         *     call is part of this one counted call (same daily limit as Places).
          */
         post: operations["build_plans_build_post"];
         delete?: never;
@@ -271,6 +294,28 @@ export interface components {
             blocking_time?: number | null;
             /** Max Extra Minutes */
             max_extra_minutes?: number | null;
+        };
+        /**
+         * BuildRequest
+         * @description POST /disruptions/build: the rules again on edited drafts (no LLM, nothing charged).
+         */
+        BuildRequest: {
+            /** Drafts */
+            drafts: components["schemas"]["EventDraft"][];
+            /**
+             * Wishes
+             * @default []
+             */
+            wishes: components["schemas"]["Wish"][];
+            /** Now */
+            now: number;
+            /**
+             * Location Id
+             * @default hotel
+             */
+            location_id: string;
+            /** Activities */
+            activities: components["schemas"]["Activity"][];
         };
         /** BuiltPlan */
         BuiltPlan: {
@@ -499,6 +544,41 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /**
+         * EventDraft
+         * @description One event as heard, before the rules (services/event_builder.py). It starts as the LLM's
+         *     reading and is what the client edits: answering a question or fixing a chip sets a field
+         *     here and sends the drafts back to POST /disruptions/build (rules only, no LLM).
+         *
+         *     Every field means "what the user said or chose"; none is ever shown as a name on screen.
+         */
+        EventDraft: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "DELAY" | "WEATHER" | "CLOSURE" | "FATIGUE" | "EXTEND" | "WAIT" | "RESERVATION_CHANGE" | "MUST_VISIT" | "UNKNOWN";
+            /** Delay Minutes */
+            delay_minutes?: number | null;
+            /** Time From */
+            time_from?: string | null;
+            /** Time To */
+            time_to?: string | null;
+            /** Whole Day */
+            whole_day?: boolean | null;
+            /** Activity Hint */
+            activity_hint?: string | null;
+            /** Activity Id */
+            activity_id?: string | null;
+            /** Extra Minutes */
+            extra_minutes?: number | null;
+            /** Wait Minutes */
+            wait_minutes?: number | null;
+            /** New Time */
+            new_time?: string | null;
+            /** Shift Minutes */
+            shift_minutes?: number | null;
+        };
         /** ExtendEvent */
         ExtendEvent: {
             /** Occurred At */
@@ -557,8 +637,27 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
+         * InterpretItem
+         * @description One event: built (with its chip), or waiting for an answer (with the question).
+         *     A built event can still carry a question: how to correct it when the user taps the chip.
+         */
+        InterpretItem: {
+            draft: components["schemas"]["EventDraft"];
+            /** Event */
+            event?: (components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"] | components["schemas"]["WaitEvent"]) | null;
+            /** Chip */
+            chip?: string | null;
+            /**
+             * Assumed
+             * @default false
+             */
+            assumed: boolean;
+            question?: components["schemas"]["Question"] | null;
+        };
+        /**
          * InterpretProblem
-         * @description Why no event could be built. The UI turns it into a chip the user taps to fix.
+         * @description Why the events are not all ready. `detail` is the question in plain Korean, never a
+         *     field name (the screen shows it as is).
          */
         InterpretProblem: {
             /**
@@ -595,53 +694,34 @@ export interface components {
              * @enum {string}
              */
             status: "ok" | "needs_input";
-            interpretation: components["schemas"]["InterpretedDisruption"] | null;
             /** Event */
-            event: (components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"]) | null;
+            event: (components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"] | components["schemas"]["WaitEvent"]) | null;
+            /**
+             * Events
+             * @default []
+             */
+            events: (components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"] | components["schemas"]["WaitEvent"])[];
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["InterpretItem"][];
+            /**
+             * Wishes
+             * @default []
+             */
+            wishes: components["schemas"]["Wish"][];
             /**
              * Chips
              * @default []
              */
             chips: string[];
+            /**
+             * Wish Chips
+             * @default []
+             */
+            wish_chips: components["schemas"]["WishChip"][];
             problem?: components["schemas"]["InterpretProblem"] | null;
-        };
-        /** InterpretedDisruption */
-        InterpretedDisruption: {
-            /**
-             * Type
-             * @enum {string}
-             */
-            type: "DELAY" | "WEATHER" | "CLOSURE" | "FATIGUE" | "EXTEND" | "RESERVATION_CHANGE" | "MUST_VISIT" | "UNKNOWN";
-            /**
-             * Delay Minutes
-             * @description DELAY: how long from now, in minutes
-             */
-            delay_minutes: number | null;
-            /**
-             * Time From
-             * @description WEATHER: start time, HH:MM
-             */
-            time_from: string | null;
-            /**
-             * Time To
-             * @description WEATHER: end time, HH:MM
-             */
-            time_to: string | null;
-            /**
-             * Activity Hint
-             * @description CLOSURE/EXTEND/RESERVATION_CHANGE/MUST_VISIT
-             */
-            activity_hint: string | null;
-            /**
-             * Extra Minutes
-             * @description EXTEND: extra minutes at the place
-             */
-            extra_minutes: number | null;
-            /**
-             * New Time
-             * @description RESERVATION_CHANGE: new time, HH:MM
-             */
-            new_time: string | null;
         };
         /**
          * LockRequest
@@ -807,6 +887,37 @@ export interface components {
             substitutability: number;
             time_rigidity: components["schemas"]["TimeRigidity"];
         };
+        /**
+         * Question
+         * @description What to ask about one draft, in plain Korean. `field` says which draft field the answer
+         *     fills (for the client's code, never displayed); `kind` says which control to show.
+         */
+        Question: {
+            /**
+             * Field
+             * @enum {string}
+             */
+            field: "type" | "delay_minutes" | "time_from" | "activity_id" | "extra_minutes" | "wait_minutes" | "new_time";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "type" | "minutes" | "time" | "place" | "add_place";
+            /** Text */
+            text: string;
+            /**
+             * Options
+             * @default []
+             */
+            options: number[];
+            /**
+             * Candidates
+             * @default []
+             */
+            candidates: string[];
+            /** Default */
+            default?: number | null;
+        };
         /** RcBreakdown */
         RcBreakdown: {
             /**
@@ -849,6 +960,11 @@ export interface components {
              * @default 0
              */
             d_changed: number;
+            /**
+             * D Outdoor
+             * @default 0
+             */
+            d_outdoor: number;
         };
         /**
          * ReasonData
@@ -900,12 +1016,22 @@ export interface components {
             /** Travel */
             travel: components["schemas"]["TravelTime"][];
             /** Event */
-            event: components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"];
+            event: components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"] | components["schemas"]["WaitEvent"];
             /**
              * Substitutes
              * @default []
              */
             substitutes: components["schemas"]["Substitute"][];
+            /**
+             * More Events
+             * @default []
+             */
+            more_events: (components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"] | components["schemas"]["WaitEvent"])[];
+            /**
+             * Wishes
+             * @default []
+             */
+            wishes: components["schemas"]["Wish"][];
         };
         /**
          * RecoveryRequest
@@ -922,12 +1048,22 @@ export interface components {
             /** Travel */
             travel: components["schemas"]["TravelTime"][];
             /** Event */
-            event: components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"];
+            event: components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"] | components["schemas"]["WaitEvent"];
             /**
              * Substitutes
              * @default []
              */
             substitutes: components["schemas"]["Substitute"][];
+            /**
+             * More Events
+             * @default []
+             */
+            more_events: (components["schemas"]["DelayEvent"] | components["schemas"]["WeatherEvent"] | components["schemas"]["ClosureEvent"] | components["schemas"]["FatigueEvent"] | components["schemas"]["ExtendEvent"] | components["schemas"]["ReservationChangeEvent"] | components["schemas"]["MustVisitEvent"] | components["schemas"]["WaitEvent"])[];
+            /**
+             * Wishes
+             * @default []
+             */
+            wishes: components["schemas"]["Wish"][];
             /**
              * Visited
              * @default []
@@ -1065,6 +1201,8 @@ export interface components {
              * @default 0
              */
             penalty: number;
+            /** Outdoor */
+            outdoor?: boolean | null;
         };
         /**
          * Tier
@@ -1111,6 +1249,25 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** WaitEvent */
+        WaitEvent: {
+            /** Occurred At */
+            occurred_at: number;
+            /**
+             * Location Id
+             * @default hotel
+             */
+            location_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "WAIT";
+            /** Activity Id */
+            activity_id: string;
+            /** Minutes */
+            minutes: number;
+        };
         /** WeatherEvent */
         WeatherEvent: {
             /** Occurred At */
@@ -1129,6 +1286,19 @@ export interface components {
             start_time: number;
             /** End Time */
             end_time?: number | null;
+        };
+        /**
+         * Wish
+         * @description What the traveller would like for the rest of the day, said with or without an event
+         *     ("실내에서 최대한 머무르고 싶어요"). Not a hard rule: see where each one is read.
+         * @enum {string}
+         */
+        Wish: "indoor" | "less_walking" | "rest";
+        /** WishChip */
+        WishChip: {
+            wish: components["schemas"]["Wish"];
+            /** Text */
+            text: string;
         };
     };
     responses: never;
@@ -1252,6 +1422,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["InterpretRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterpretResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_disruptions_build_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildRequest"];
             };
         };
         responses: {

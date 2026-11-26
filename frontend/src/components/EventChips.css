@@ -1,0 +1,106 @@
+/* One understood event per row: a chip to check (fix / take out), or the question still open.
+   Doubled class: wins over the page's own `.recover__chips ul/li` (a box per plain chip). */
+.event-chips.event-chips ul {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event-chips.event-chips li {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 400;
+}
+
+.event-chips__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.event-chips__chip {
+  min-height: 36px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1.5px solid var(--tp-denim-deep);
+  border-radius: var(--radius-sm);
+  background: var(--tp-lace);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+/* A value a rule filled in ("지금부터"): said in words, not by colour alone. */
+.event-chips__chip em {
+  font-style: normal;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* Still open: a loose basting stitch instead of a sewn-on edge. */
+.event-chips__open .event-chips__question {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border: 1.5px dashed var(--tp-denim);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.event-chips__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-1);
+}
+
+.event-chips__actions button {
+  min-height: 36px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  background: transparent;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.event-chips__answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.event-chips__answer > span {
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.event-chips__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.event-chips__options button,
+.event-chips__options input {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: var(--text-base);
+}

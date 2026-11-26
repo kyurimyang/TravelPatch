@@ -60,6 +60,13 @@ class ReservationChangeEvent(_EventBase):
     new_time: int = Field(ge=0, le=MINUTES_PER_DAY)
 
 
+class WaitEvent(_EventBase):
+    # A queue at a place of the plan: `minutes` there before the activity itself can start.
+    type: Literal[EventType.WAIT] = EventType.WAIT
+    activity_id: str
+    minutes: int = Field(gt=0, le=MINUTES_PER_DAY)
+
+
 class MustVisitEvent(_EventBase):
     # A place not in the original plan that the user insists on visiting.
     # No planned_start/end: the engine decides where it goes.
@@ -88,6 +95,7 @@ DisruptionEvent = Annotated[
     | FatigueEvent
     | ExtendEvent
     | ReservationChangeEvent
-    | MustVisitEvent,
+    | MustVisitEvent
+    | WaitEvent,
     Field(discriminator="type"),
 ]

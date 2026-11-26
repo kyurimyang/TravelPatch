@@ -1,10 +1,19 @@
-from app.llm.disruption_interpreter import SYSTEM_PROMPT, InterpretedDisruption, interpret
+from typing import get_args
+
+from app.llm.disruption_interpreter import (
+    SYSTEM_PROMPT,
+    EventKind,
+    InterpretedDisruption,
+    InterpretedMessage,
+    WishKind,
+    interpret,
+)
 
 
 class FakeProvider:
     """Records the call and returns a canned interpretation."""
 
-    def __init__(self, answer: InterpretedDisruption) -> None:
+    def __init__(self, answer: InterpretedMessage) -> None:
         self.answer = answer
         self.seen: dict = {}
 
@@ -13,30 +22,34 @@ class FakeProvider:
         return self.answer
 
 
-def _blank(**fields) -> InterpretedDisruption:
-    base = {
-        "type": "UNKNOWN",
-        "delay_minutes": None,
-        "time_from": None,
-        "time_to": None,
-        "activity_hint": None,
-        "extra_minutes": None,
-        "new_time": None,
-    }
-    return InterpretedDisruption(**{**base, **fields})
+def _event(**fields) -> InterpretedDisruption:
+    base = dict.fromkeys(InterpretedDisruption.model_fields)
+    return InterpretedDisruption(**{**base, "type": "UNKNOWN", **fields})
 
 
 def test_passes_text_and_schema_to_provider():
-    provider = FakeProvider(_blank(type="DELAY", delay_minutes=120))
+    answer = InterpretedMessage(events=[_event(type="DELAY", delay_minutes=120)], wishes=[])
+    provider = FakeProvider(answer)
     result = interpret(provider, "  늦잠 잤어 2시간  ")
-    assert result.type == "DELAY" and result.delay_minutes == 120
+    assert result.events[0].type == "DELAY" and result.events[0].delay_minutes == 120
     assert provider.seen["user"] == "늦잠 잤어 2시간"
     assert provider.seen["system"] == SYSTEM_PROMPT
-    assert provider.seen["schema"] is InterpretedDisruption
+    assert provider.seen["schema"] is InterpretedMessage
 
 
 def test_every_event_type_is_covered_by_the_schema():
     from app.schemas.enums import EventType
 
-    allowed = set(InterpretedDisruption.model_fields["type"].annotation.__args__)
-    assert {e.value for e in EventType} <= allowed
+    assert {e.value for e in EventType} <= set(get_args(EventKind))
+
+
+def test_every_wish_is_covered_by_the_schema():
+    from app.schemas.enums import Wish
+
+    assert {w.value for w in Wish} == set(get_args(WishKind))
+
+
+def test_every_field_is_required_for_structured_output():
+    # OpenAI strict mode: each property must be listed as required (nullable, no default).
+    schema = InterpretedDisruption.model_json_schema()
+    assert set(schema["required"]) == set(InterpretedDisruption.model_fields)

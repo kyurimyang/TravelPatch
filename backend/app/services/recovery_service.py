@@ -4,6 +4,7 @@ import time
 
 from app.engine.conflict_detector import find_blockers
 from app.engine.counterfactual import restore
+from app.engine.presets import strategies_for
 from app.engine.recover import Discard, recover
 from app.engine.relax import relaxations
 from app.schemas.recovery import (
@@ -39,7 +40,8 @@ def _recover_logged(inp: RecoveryInput) -> list[RecoveryResult]:
     """recover(), writing a warning for each candidate the validator rejected (CLAUDE.md 6).
     One means the solver let a hard constraint through: never silent, never shown to the user."""
     discards: list[Discard] = []
-    results = recover(inp, discards=discards)
+    # "쉬고 싶어요" shows the relaxed candidate first; the set of strategies is the same.
+    results = recover(inp, strategies_for(inp.wishes), discards=discards)
     for d in discards:
         detail = "; ".join(f"{v.kind} {v.activity_id}: {v.detail}" for v in d.violations)
         log.warning("validator rejected the %s candidate: %s", d.strategy, detail)

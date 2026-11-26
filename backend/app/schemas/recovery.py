@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from app.schemas.enums import Op, ReasonType
+from app.schemas.enums import EventType, Op, ReasonType, Wish
 from app.schemas.events import DelayEvent, DisruptionEvent
 from app.schemas.models import (
     HOTEL_ID,
@@ -94,6 +94,7 @@ class RcBreakdown(_Frozen):
     d_move: float = 0.0
     d_intent: float = 0.0
     d_changed: float = 0.0
+    d_outdoor: float = 0.0  # only with the "indoor" wish: share of outdoor pieces still outdoors
 
 
 class RecoveryResult(_Frozen):
@@ -131,6 +132,8 @@ class RecoveryResponse(_Frozen):
 # Caps on one day's size (MAX_ACTIVITIES: models.py), so an oversized request cannot hold
 # the server for long.
 MAX_SUBSTITUTES = 48
+# One sentence rarely says more than three things; a cap keeps the solve small.
+MAX_MORE_EVENTS = 4
 
 
 class RecoveryInput(_Frozen):
@@ -145,12 +148,21 @@ class RecoveryInput(_Frozen):
     )
     event: DisruptionEvent
     substitutes: tuple[Substitute, ...] = Field(default=(), max_length=MAX_SUBSTITUTES)
+    # More events from the same moment ("비가 오고, 예약이 당겨졌고, 점심은 대기 40분"), stacked
+    # on `event` (decision 2026-11-26). Empty for a single event, so old inputs are unchanged.
+    # Same occurred_at and location_id as `event`; MUST_VISIT only as `event` itself.
+    more_events: tuple[DisruptionEvent, ...] = Field(default=(), max_length=MAX_MORE_EVENTS)
+    wishes: tuple[Wish, ...] = Field(default=(), max_length=len(Wish))
+
+    @property
+    def events(self) -> tuple[DisruptionEvent, ...]:
+        return (self.event, *self.more_events)
 
     @property
     def now(self) -> int:
-        # A delayed user can move again at start_time; otherwise "now" is occurred_at.
-        ev = self.event
-        return ev.start_time if isinstance(ev, DelayEvent) else ev.occurred_at
+        # A delayed user can move again at start_time (the latest of them); else occurred_at.
+        delays = [ev.start_time for ev in self.events if isinstance(ev, DelayEvent)]
+        return max(delays) if delays else self.event.occurred_at
 
     @model_validator(mode="after")
     def _check_references(self) -> "RecoveryInput":
@@ -165,9 +177,29 @@ class RecoveryInput(_Frozen):
         target = getattr(self.event, "activity_id", None)
         if target is not None and self.event.type != "MUST_VISIT" and target not in ids:
             raise ValueError(f"event references unknown activity: {target}")
+        self._check_more_events(ids)
         self._check_substitutes(ids)
         self._check_travel_table(ids, target)
         return self
+
+    def _check_more_events(self, ids: list[str]) -> None:
+        first = self.event
+        seen: set[tuple[str, str]] = set()
+        for ev in self.events:
+            if ev.occurred_at != first.occurred_at or ev.location_id != first.location_id:
+                raise ValueError("all events must share occurred_at and location_id")
+            if ev is not first and ev.type == EventType.MUST_VISIT:
+                raise ValueError("MUST_VISIT can only be the main event")
+            target = getattr(ev, "activity_id", None)
+            if target is None or ev.type == EventType.MUST_VISIT:
+                continue
+            if target not in ids:
+                raise ValueError(f"event references unknown activity: {target}")
+            if (ev.type, target) in seen:
+                raise ValueError(f"two {ev.type} events for {target}")
+            seen.add((ev.type, target))
+        if len(set(self.wishes)) != len(self.wishes):
+            raise ValueError("duplicate wish")
 
     def _check_substitutes(self, ids: list[str]) -> None:
         sub_ids = [s.id for s in self.substitutes]

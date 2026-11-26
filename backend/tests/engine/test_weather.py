@@ -18,12 +18,12 @@ def _kinds(violations: list) -> list[tuple[str, str]]:
 
 def test_weather_event_becomes_a_rain_window() -> None:
     inp = load_scenario("scenario_b.json")
-    assert build_constraints(inp) == Constraints(rain=(720, 1440))  # no end time: until night
+    assert build_constraints(inp) == Constraints(rains=((720, 1440),))  # no end: until night
 
 
 def test_other_events_have_no_rain_window() -> None:
-    assert build_constraints(load_scenario("scenario_e.json")).rain is None
-    assert build_constraints(load_scenario("scenario_a.json")).rain is None
+    assert build_constraints(load_scenario("scenario_e.json")).rains == ()
+    assert build_constraints(load_scenario("scenario_a.json")).rains == ()
 
 
 def test_rain_window_must_have_positive_length() -> None:

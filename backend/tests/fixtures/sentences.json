@@ -1,0 +1,1345 @@
+[
+ {
+  "id": "rain_all_day_indoor",
+  "day": "london",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "오늘 하루종일 비가 와요. 실내에서 최대한 머무르고 싶어요",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER",
+     "whole_day": true
+    }
+   ],
+   "wishes": [
+    "indoor"
+   ]
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WEATHER"
+   ],
+   "chips": [
+    "지금(09:00)부터 비 · 하루 종일",
+    "실내 위주로 · 야외 조각은 실내 장소를 먼저 찾아요"
+   ],
+   "wishes": [
+    "indoor"
+   ]
+  }
+ },
+ {
+  "id": "london_three_events",
+  "day": "london",
+  "now": "11:00",
+  "at": "museum",
+  "text": "DAY 2에 비가 많이 오고 있어. 게다가 런던 아이 예약 시간이 1시간 앞당겨졌고, 점심 식당에서도 대기 시간이 40분 발생했어",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER"
+    },
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "런던 아이",
+     "shift_minutes": -60
+    },
+    {
+     "type": "WAIT",
+     "activity_hint": "점심 식당",
+     "wait_minutes": 40
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WEATHER",
+    "RESERVATION_CHANGE",
+    "WAIT"
+   ],
+   "chips": [
+    "지금(11:00)부터 비 · 끝나는 시각 미정",
+    "런던 아이 예약 15:00 → 14:00",
+    "Dishoom 코벤트가든 대기 40분"
+   ]
+  }
+ },
+ {
+  "id": "overslept_2h",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "늦잠 잤어요 2시간 늦게 나가요",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 120
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY"
+   ],
+   "chips": [
+    "11:00부터 움직일 수 있어요"
+   ]
+  }
+ },
+ {
+  "id": "overslept_now",
+  "day": "tokyo",
+  "now": "10:10",
+  "at": "hotel",
+  "text": "늦잠 자서 지금 일어났어",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY"
+   ],
+   "chips": [
+    "지금(10:10)부터 움직일 수 있어요"
+   ]
+  }
+ },
+ {
+  "id": "late_30",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "30분 정도 늦게 출발할 것 같아",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 30
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY"
+   ],
+   "chips": [
+    "09:30부터 움직일 수 있어요"
+   ]
+  }
+ },
+ {
+  "id": "train_20",
+  "day": "tokyo",
+  "now": "11:40",
+  "at": "harajuku",
+  "text": "지하철이 20분 지연됐어",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 20
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY"
+   ],
+   "chips": [
+    "12:00부터 움직일 수 있어요"
+   ]
+  }
+ },
+ {
+  "id": "train_stopped",
+  "day": "tokyo",
+  "now": "11:40",
+  "at": "harajuku",
+  "text": "열차가 멈췄어. 언제 갈지 모르겠어",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY"
+   ],
+   "chips": [
+    "지금(11:40)부터 움직일 수 있어요"
+   ]
+  }
+ },
+ {
+  "id": "missed_bus",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "버스를 놓쳐서 45분 늦어",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 45
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY"
+   ],
+   "chips": [
+    "09:45부터 움직일 수 있어요"
+   ]
+  }
+ },
+ {
+  "id": "no_taxi",
+  "day": "tokyo",
+  "now": "12:00",
+  "at": "omotesando",
+  "text": "택시가 안 잡혀서 15분 더 걸려",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 15
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY"
+   ],
+   "chips": [
+    "12:15부터 움직일 수 있어요"
+   ]
+  }
+ },
+ {
+  "id": "late_90",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "한 시간 반 늦을 것 같아요",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 90
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY"
+   ],
+   "chips": [
+    "10:30부터 움직일 수 있어요"
+   ]
+  }
+ },
+ {
+  "id": "rain_from_noon",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "12시부터 비 온대",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER",
+     "time_from": "12:00"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WEATHER"
+   ],
+   "chips": [
+    "12:00부터 비 · 끝나는 시각 미정"
+   ]
+  }
+ },
+ {
+  "id": "shower_window",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "오후 2시부터 4시까지 소나기래",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER",
+     "time_from": "14:00",
+     "time_to": "16:00"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WEATHER"
+   ],
+   "chips": [
+    "14:00부터 비 · 16:00까지"
+   ]
+  }
+ },
+ {
+  "id": "rain_started",
+  "day": "tokyo",
+  "now": "10:25",
+  "at": "meiji",
+  "text": "비가 오기 시작했어",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WEATHER"
+   ],
+   "chips": [
+    "지금(10:25)부터 비 · 끝나는 시각 미정"
+   ]
+  }
+ },
+ {
+  "id": "rain_all_day_must_outdoor",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "비가 하루종일 온대",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER",
+     "whole_day": true
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WEATHER"
+   ],
+   "chips": [
+    "지금(09:00)부터 비 · 하루 종일"
+   ],
+   "patch": false
+  }
+ },
+ {
+  "id": "rain_walk_less",
+  "day": "tokyo",
+  "now": "10:25",
+  "at": "meiji",
+  "text": "비 와서 걷기 힘들어요",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER"
+    }
+   ],
+   "wishes": [
+    "less_walking"
+   ]
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WEATHER",
+    "FATIGUE"
+   ],
+   "chips": [
+    "지금(10:25)부터 비 · 끝나는 시각 미정",
+    "걷는 일정은 원래 길이의 50% 이하로 줄여요"
+   ]
+  }
+ },
+ {
+  "id": "rain_indoor",
+  "day": "tokyo",
+  "now": "10:25",
+  "at": "meiji",
+  "text": "비가 와서 실내 위주로 다니고 싶어",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER"
+    }
+   ],
+   "wishes": [
+    "indoor"
+   ]
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WEATHER"
+   ],
+   "wishes": [
+    "indoor"
+   ]
+  }
+ },
+ {
+  "id": "rain_until_15",
+  "day": "tokyo",
+  "now": "10:25",
+  "at": "meiji",
+  "text": "15시쯤 비 그친대, 지금은 많이 와",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER",
+     "time_to": "15:00"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WEATHER"
+   ],
+   "chips": [
+    "지금(10:25)부터 비 · 15:00까지"
+   ]
+  }
+ },
+ {
+  "id": "rain_bad_time",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "비가 25시부터 온대",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER",
+     "time_from": "25:00"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "needs_input",
+   "types": [],
+   "ask": "비가 언제부터 오나요?"
+  }
+ },
+ {
+  "id": "izakaya_closed",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "이자카야 오늘 임시휴무래",
+  "llm": {
+   "events": [
+    {
+     "type": "CLOSURE",
+     "activity_hint": "이자카야"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "CLOSURE"
+   ],
+   "chips": [
+    "이자카야 저녁 이용 불가"
+   ],
+   "patch": false
+  }
+ },
+ {
+  "id": "cafe_closed",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "카페가 문을 닫았어",
+  "llm": {
+   "events": [
+    {
+     "type": "CLOSURE",
+     "activity_hint": "카페"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "CLOSURE"
+   ],
+   "chips": [
+    "카페 이용 불가"
+   ]
+  }
+ },
+ {
+  "id": "shop_closed",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "시부야 쇼핑하려던 곳이 휴무야",
+  "llm": {
+   "events": [
+    {
+     "type": "CLOSURE",
+     "activity_hint": "시부야 쇼핑"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "CLOSURE"
+   ],
+   "chips": [
+    "시부야 쇼핑 이용 불가"
+   ]
+  }
+ },
+ {
+  "id": "closed_vague",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "거기 오늘 쉰대",
+  "llm": {
+   "events": [
+    {
+     "type": "CLOSURE",
+     "activity_hint": "거기"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "needs_input",
+   "types": [],
+   "ask": "어디가 문을 닫았나요?"
+  }
+ },
+ {
+  "id": "closed_ambiguous",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "시부야 쪽 가게가 닫았어",
+  "llm": {
+   "events": [
+    {
+     "type": "CLOSURE",
+     "activity_hint": "시부야"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "needs_input",
+   "types": [],
+   "ask": "어디가 문을 닫았나요?",
+   "candidates": [
+    "shibuya_shop",
+    "sky"
+   ]
+  }
+ },
+ {
+  "id": "ramen_closed",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "라멘집 영업 끝났대",
+  "llm": {
+   "events": [
+    {
+     "type": "CLOSURE",
+     "activity_hint": "라멘집"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "CLOSURE"
+   ],
+   "chips": [
+    "라멘 점심 이용 불가"
+   ],
+   "patch": false
+  }
+ },
+ {
+  "id": "tired",
+  "day": "tokyo",
+  "now": "12:00",
+  "at": "omotesando",
+  "text": "너무 피곤해요",
+  "llm": {
+   "events": [
+    {
+     "type": "FATIGUE"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "FATIGUE"
+   ],
+   "chips": [
+    "걷는 일정은 원래 길이의 50% 이하로 줄여요"
+   ]
+  }
+ },
+ {
+  "id": "legs_hurt",
+  "day": "tokyo",
+  "now": "12:00",
+  "at": "omotesando",
+  "text": "다리가 아파서 덜 걷고 싶어",
+  "llm": {
+   "events": [],
+   "wishes": [
+    "less_walking"
+   ]
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "FATIGUE"
+   ],
+   "chips": [
+    "걷는 일정은 원래 길이의 50% 이하로 줄여요"
+   ]
+  }
+ },
+ {
+  "id": "want_rest",
+  "day": "tokyo",
+  "now": "14:00",
+  "at": "ramen",
+  "text": "좀 쉬고 싶어요",
+  "llm": {
+   "events": [],
+   "wishes": [
+    "rest"
+   ]
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "FATIGUE"
+   ],
+   "wishes": [
+    "rest"
+   ],
+   "chips": [
+    "걷는 일정은 원래 길이의 50% 이하로 줄여요",
+    "여유 있게 · 조각 사이를 넉넉히 비워요"
+   ],
+   "first_strategy": "relaxed"
+  }
+ },
+ {
+  "id": "kid_tired",
+  "day": "tokyo",
+  "now": "12:00",
+  "at": "omotesando",
+  "text": "아이가 지쳐서 쉬어야 해",
+  "llm": {
+   "events": [
+    {
+     "type": "FATIGUE"
+    }
+   ],
+   "wishes": [
+    "rest"
+   ]
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "FATIGUE"
+   ],
+   "wishes": [
+    "rest"
+   ],
+   "first_strategy": "relaxed"
+  }
+ },
+ {
+  "id": "indoor_only",
+  "day": "tokyo",
+  "now": "10:25",
+  "at": "meiji",
+  "text": "실내에 있고 싶어요",
+  "llm": {
+   "events": [],
+   "wishes": [
+    "indoor"
+   ]
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY"
+   ],
+   "chips": [
+    "실내 위주로 · 야외 조각은 실내 장소를 먼저 찾아요"
+   ],
+   "wishes": [
+    "indoor"
+   ]
+  }
+ },
+ {
+  "id": "ramen_queue",
+  "day": "tokyo",
+  "now": "12:40",
+  "at": "omotesando",
+  "text": "라멘집 대기가 40분이래",
+  "llm": {
+   "events": [
+    {
+     "type": "WAIT",
+     "activity_hint": "라멘집",
+     "wait_minutes": 40
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WAIT"
+   ],
+   "chips": [
+    "라멘 점심 대기 40분"
+   ]
+  }
+ },
+ {
+  "id": "queue_here",
+  "day": "tokyo",
+  "now": "12:55",
+  "at": "ramen",
+  "text": "여기 줄이 길어서 30분은 기다려야 해",
+  "llm": {
+   "events": [
+    {
+     "type": "WAIT",
+     "wait_minutes": 30
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WAIT"
+   ],
+   "chips": [
+    "라멘 점심 대기 30분"
+   ]
+  }
+ },
+ {
+  "id": "lunch_waiting_1h",
+  "day": "tokyo",
+  "now": "12:40",
+  "at": "omotesando",
+  "text": "점심 먹을 곳 웨이팅이 1시간이래",
+  "llm": {
+   "events": [
+    {
+     "type": "WAIT",
+     "activity_hint": "점심 먹을 곳",
+     "wait_minutes": 60
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WAIT"
+   ],
+   "chips": [
+    "라멘 점심 대기 60분"
+   ]
+  }
+ },
+ {
+  "id": "cafe_queue",
+  "day": "tokyo",
+  "now": "15:00",
+  "at": "shibuya_shop",
+  "text": "카페 대기 20분",
+  "llm": {
+   "events": [
+    {
+     "type": "WAIT",
+     "activity_hint": "카페",
+     "wait_minutes": 20
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WAIT"
+   ],
+   "chips": [
+    "카페 대기 20분"
+   ]
+  }
+ },
+ {
+  "id": "queue_unknown_length",
+  "day": "tokyo",
+  "now": "12:40",
+  "at": "omotesando",
+  "text": "대기가 길대",
+  "llm": {
+   "events": [
+    {
+     "type": "WAIT"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "needs_input",
+   "types": [],
+   "ask": "오모테산도 산책에서 얼마나 기다려야 하나요?"
+  }
+ },
+ {
+  "id": "sky_earlier_1h",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "스카이 예약이 1시간 앞당겨졌어",
+  "llm": {
+   "events": [
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "스카이",
+     "shift_minutes": -60
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "RESERVATION_CHANGE"
+   ],
+   "chips": [
+    "시부야 스카이 예약 17:00 → 16:00"
+   ]
+  }
+ },
+ {
+  "id": "izakaya_to_20",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "이자카야 예약을 20시로 바꿨어",
+  "llm": {
+   "events": [
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "이자카야",
+     "new_time": "20:00"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "RESERVATION_CHANGE"
+   ],
+   "chips": [
+    "이자카야 저녁 예약 19:30 → 20:00"
+   ]
+  }
+ },
+ {
+  "id": "sky_later_30",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "스카이 예약이 30분 늦춰졌어",
+  "llm": {
+   "events": [
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "스카이",
+     "shift_minutes": 30
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "RESERVATION_CHANGE"
+   ],
+   "chips": [
+    "시부야 스카이 예약 17:00 → 17:30"
+   ]
+  }
+ },
+ {
+  "id": "booking_which",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "예약 시간이 바뀌었어",
+  "llm": {
+   "events": [
+    {
+     "type": "RESERVATION_CHANGE"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "needs_input",
+   "types": [],
+   "ask": "어떤 예약이 바뀌었나요?",
+   "candidates": [
+    "sky",
+    "izakaya"
+   ]
+  }
+ },
+ {
+  "id": "booking_when",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "이자카야 예약 시간이 바뀌었대",
+  "llm": {
+   "events": [
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "이자카야 예약 시간"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "needs_input",
+   "types": [],
+   "ask": "이자카야 저녁 예약이 몇 시로 바뀌었나요?"
+  }
+ },
+ {
+  "id": "extend_harajuku",
+  "day": "tokyo",
+  "now": "10:40",
+  "at": "harajuku",
+  "text": "하라주쿠 30분 더 있고 싶어",
+  "llm": {
+   "events": [
+    {
+     "type": "EXTEND",
+     "activity_hint": "하라주쿠",
+     "extra_minutes": 30
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "EXTEND"
+   ],
+   "chips": [
+    "하라주쿠 다케시타 거리 30분 더 머물기"
+   ]
+  }
+ },
+ {
+  "id": "extend_here",
+  "day": "tokyo",
+  "now": "10:40",
+  "at": "harajuku",
+  "text": "여기 너무 좋아서 20분만 더 있을래",
+  "llm": {
+   "events": [
+    {
+     "type": "EXTEND",
+     "extra_minutes": 20
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "EXTEND"
+   ],
+   "chips": [
+    "하라주쿠 다케시타 거리 20분 더 머물기"
+   ]
+  }
+ },
+ {
+  "id": "extend_how_long",
+  "day": "tokyo",
+  "now": "15:00",
+  "at": "shibuya_shop",
+  "text": "쇼핑 더 하고 싶어",
+  "llm": {
+   "events": [
+    {
+     "type": "EXTEND",
+     "activity_hint": "쇼핑"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "needs_input",
+   "types": [],
+   "ask": "시부야 쇼핑에서 얼마나 더 머물까요?"
+  }
+ },
+ {
+  "id": "must_visit",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "도쿄타워 꼭 가고 싶어",
+  "llm": {
+   "events": [
+    {
+     "type": "MUST_VISIT",
+     "activity_hint": "도쿄타워"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "needs_input",
+   "types": [],
+   "code": "UNSUPPORTED"
+  }
+ },
+ {
+  "id": "unclear",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "음... 뭔가 꼬였어",
+  "llm": {
+   "events": [
+    {
+     "type": "UNKNOWN"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "needs_input",
+   "types": [],
+   "ask": "어떤 일이 있었나요?"
+  }
+ },
+ {
+  "id": "late_and_rain",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "늦잠 자서 1시간 늦고, 12시부터 비 온대",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 60
+    },
+    {
+     "type": "WEATHER",
+     "time_from": "12:00"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY",
+    "WEATHER"
+   ],
+   "chips": [
+    "10:00부터 움직일 수 있어요",
+    "12:00부터 비 · 끝나는 시각 미정"
+   ]
+  }
+ },
+ {
+  "id": "rain_and_queue",
+  "day": "tokyo",
+  "now": "12:40",
+  "at": "omotesando",
+  "text": "비가 오고 라멘집은 30분 대기래",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER"
+    },
+    {
+     "type": "WAIT",
+     "activity_hint": "라멘집",
+     "wait_minutes": 30
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "WEATHER",
+    "WAIT"
+   ]
+  }
+ },
+ {
+  "id": "closed_and_later_booking",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "카페 문 닫았고 스카이 예약은 1시간 늦춰졌어",
+  "llm": {
+   "events": [
+    {
+     "type": "CLOSURE",
+     "activity_hint": "카페"
+    },
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "스카이",
+     "shift_minutes": 60
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "CLOSURE",
+    "RESERVATION_CHANGE"
+   ],
+   "chips": [
+    "카페 이용 불가",
+    "시부야 스카이 예약 17:00 → 18:00"
+   ]
+  }
+ },
+ {
+  "id": "tired_rain_indoor_rest",
+  "day": "tokyo",
+  "now": "12:00",
+  "at": "omotesando",
+  "text": "피곤하고 비도 와서 실내에서 쉬고 싶어",
+  "llm": {
+   "events": [
+    {
+     "type": "FATIGUE"
+    },
+    {
+     "type": "WEATHER"
+    }
+   ],
+   "wishes": [
+    "indoor",
+    "rest"
+   ]
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "FATIGUE",
+    "WEATHER"
+   ],
+   "wishes": [
+    "indoor",
+    "rest"
+   ],
+   "first_strategy": "relaxed"
+  }
+ },
+ {
+  "id": "booking_clash_with_lunch",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "스카이 예약이 3시간 반 앞당겨졌고 라멘집은 40분 대기래",
+  "llm": {
+   "events": [
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "스카이",
+     "shift_minutes": -210
+    },
+    {
+     "type": "WAIT",
+     "activity_hint": "라멘집",
+     "wait_minutes": 40
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "RESERVATION_CHANGE",
+    "WAIT"
+   ],
+   "chips": [
+    "시부야 스카이 예약 17:00 → 13:30",
+    "라멘 점심 대기 40분"
+   ],
+   "distinct_candidates": true
+  }
+ },
+ {
+  "id": "late_and_unknown_closure",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "버스가 20분 늦고, 어딘가 문을 닫았대",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 20
+    },
+    {
+     "type": "CLOSURE",
+     "activity_hint": "어딘가"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "needs_input",
+   "types": [
+    "DELAY"
+   ],
+   "chips": [
+    "09:20부터 움직일 수 있어요"
+   ],
+   "ask": "어디가 문을 닫았나요?"
+  }
+ },
+ {
+  "id": "london_late_and_rain",
+  "day": "london",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "길이 막혀서 30분 늦어요, 그리고 비도 온대",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 30
+    },
+    {
+     "type": "WEATHER"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "DELAY",
+    "WEATHER"
+   ],
+   "chips": [
+    "09:30부터 움직일 수 있어요",
+    "지금(09:00)부터 비 · 끝나는 시각 미정"
+   ]
+  }
+ },
+ {
+  "id": "london_eye_later",
+  "day": "london",
+  "now": "13:00",
+  "at": "lunch",
+  "text": "런던 아이 예약이 16시로 바뀌었어",
+  "llm": {
+   "events": [
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "런던 아이",
+     "new_time": "16:00"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "status": "ok",
+   "types": [
+    "RESERVATION_CHANGE"
+   ],
+   "chips": [
+    "런던 아이 예약 15:00 → 16:00"
+   ]
+  }
+ }
+]

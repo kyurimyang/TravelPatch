@@ -15,6 +15,11 @@ export type Relaxation = Schemas['Relaxation']
 export type InterpretRequest = Schemas['InterpretRequest']
 export type InterpretResponse = Schemas['InterpretResponse']
 export type DisruptionEvent = NonNullable<InterpretResponse['event']>
+export type InterpretItem = Schemas['InterpretItem']
+export type EventDraft = Schemas['EventDraft']
+export type Question = Schemas['Question']
+export type BuildRequest = Schemas['BuildRequest']
+export type Wish = Schemas['Wish']
 
 // What the UI needs to name an activity; the engine's changes only carry the id.
 export type ActivityInfo = Pick<Schemas['Activity'], 'id' | 'title' | 'category'>

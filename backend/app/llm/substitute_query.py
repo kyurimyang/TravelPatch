@@ -18,6 +18,9 @@ same kind that could replace it, in the language of the title.
   "블루보틀 커피" -> "카페", "이자카야 저녁" -> "이자카야", "teamLab Planets" -> "디지털 아트 전시".
 - Drop meal times and filler words ("점심", "저녁", "예약", "가기").
 - If you cannot tell what kind of place it is, answer null.
+- If indoor is yes, the item is outdoors and it is raining or the traveler wants to stay inside:
+  name an INDOOR kind of place for a similar purpose ("메이지 신궁" -> "박물관",
+  "공원 산책" -> "실내 정원", "야시장" -> "푸드홀").
 """
 
 
@@ -25,17 +28,16 @@ class SubstituteQuery(BaseModel):
     query: str | None = Field(description="short search phrase, or null")
 
 
-def substitute_query(provider: LLMProvider, title: str, category: str) -> str:
-    """Search text for places like `title`. Falls back to the title; never raises for LLM trouble."""
+def substitute_query(provider: LLMProvider, title: str, category: str, indoor: bool = False) -> str:
+    """Search text for places like `title`. Falls back to the title; never raises for LLM trouble.
+    `indoor`: an inside place is wanted (the fallback then asks Google for "실내 <title>")."""
+    fallback = f"실내 {title}" if indoor else title
+    user = f"title: {title}\ncategory: {category}" + ("\nindoor: yes" if indoor else "")
     try:
-        answer = provider.complete_json(
-            system=SYSTEM_PROMPT,
-            user=f"title: {title}\ncategory: {category}",
-            schema=SubstituteQuery,
-        )
+        answer = provider.complete_json(system=SYSTEM_PROMPT, user=user, schema=SubstituteQuery)
     except LLMOutputError:
-        return title
+        return fallback
     query = (answer.query or "").strip()
     if not query or len(query) > MAX_QUERY_CHARS:
-        return title
+        return fallback
     return query

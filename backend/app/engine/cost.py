@@ -8,7 +8,8 @@ from itertools import combinations, pairwise
 from typing import NamedTuple
 
 from app.engine.presets import DEFAULT_WEIGHTS, Weights
-from app.schemas.enums import Op
+from app.schemas.enums import Op, Wish
+from app.schemas.events import WaitEvent
 from app.schemas.recovery import RcBreakdown, RecoveryChange, RecoveryInput
 
 
@@ -45,11 +46,14 @@ def compute_cost(
     )
 
     d_shrink = 0.0
+    # A queue (WAIT) is time at the place, not time of the activity: a lunch that is 60 of its
+    # planned 70 minutes after a 40-minute queue is shrunk, though its slot got longer.
+    waits = {e.activity_id: e.minutes for e in inp.events if isinstance(e, WaitEvent)}
     for c in changes:
         # A substitution is paid for by D_sub only; its stay at the new place is not a "shrink".
         if c.before is not None and c.after is not None and c.op != Op.SUBSTITUTE:
             before_len = c.before.end - c.before.start
-            after_len = c.after.end - c.after.start
+            after_len = c.after.end - c.after.start - waits.get(c.activity_id, 0)
             if after_len < before_len:
                 d_shrink += values[c.activity_id] * (before_len - after_len) / before_len
 
@@ -89,6 +93,20 @@ def compute_cost(
 
     d_changed = float(sum(1 for c in changes if c.op != Op.KEEP))
 
+    # "실내 우선" (decision 2026-11-26): value x share of the planned length still outdoors.
+    # A substitute is outdoors by its own flag, or by the original's when that is unknown.
+    d_outdoor = 0.0
+    if Wish.INDOOR in inp.wishes:
+        outdoor = {a.id: a.outdoor for a in inp.activities}
+        sub_outdoor = {s.id: s.outdoor for s in inp.substitutes}
+        for c in changes:
+            if c.before is None or c.after is None:
+                continue
+            here = sub_outdoor.get(c.substitute_id) if c.substitute_id else None
+            if (outdoor.get(c.activity_id) if here is None else here) is True:
+                share = (c.after.end - c.after.start) / (c.before.end - c.before.start)
+                d_outdoor += values[c.activity_id] * share
+
     breakdown = RcBreakdown(
         d_drop=d_drop,
         d_shrink=d_shrink,
@@ -98,6 +116,7 @@ def compute_cost(
         d_move=d_move,
         d_intent=d_intent,
         d_changed=d_changed,
+        d_outdoor=d_outdoor,
     )
     rc_total = (
         weights.w_drop * weighted_drop
@@ -108,6 +127,7 @@ def compute_cost(
         + weights.w_move * d_move
         + weights.w_intent * d_intent
         + weights.w_changed * d_changed
+        + weights.w_outdoor * d_outdoor
     )
     total_value = sum(values.values())
     preservation = 1 - (d_drop + d_shrink + d_sub) / total_value

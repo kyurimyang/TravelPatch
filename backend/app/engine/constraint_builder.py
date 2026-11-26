@@ -1,19 +1,21 @@
-"""Rule table: user event -> constraints the DP must respect.
+"""Rule table: user events -> constraints the DP must respect.
 
-LLM output never reaches the solver directly; it goes through the typed event and then
-through this file. The validator does NOT import this module: it reads the event again on
-its own, so a mistake here cannot hide itself.
+LLM output never reaches the solver directly; it goes through the typed events and then
+through this file. Several events stack (decision 2026-11-26): each adds its own rules and
+none replaces another's. The validator does NOT import this module: it reads the events
+again on its own, so a mistake here cannot hide itself.
 """
 
 from math import ceil
 
-from app.schemas.enums import Tier, TimeRigidity
+from app.schemas.enums import Tier, TimeRigidity, Wish
 from app.schemas.events import (
     ClosureEvent,
     ExtendEvent,
     FatigueEvent,
     MustVisitEvent,
     ReservationChangeEvent,
+    WaitEvent,
     WeatherEvent,
 )
 from app.schemas.models import MINUTES_PER_DAY, Activity, Preference, _Frozen
@@ -21,20 +23,30 @@ from app.schemas.recovery import RecoveryInput
 
 
 class Constraints(_Frozen):
-    # Outdoor activities must not overlap [start, end) of the rain.
-    rain: tuple[int, int] | None = None
+    # Outdoor activities must not overlap any [start, end) of rain (one per WEATHER event).
+    rains: tuple[tuple[int, int], ...] = ()
     # (activity id, extra minutes) the user asked for.
     extensions: tuple[tuple[str, int], ...] = ()
-    # (activity id, longest allowed duration in minutes), from tiredness.
+    # (activity id, longest allowed duration in minutes), from tiredness (tightest cap wins).
     duration_caps: tuple[tuple[str, int], ...] = ()
     # Activities that cannot stay at their original place (closed).
     closed: tuple[str, ...] = ()
+    # (activity id, queue minutes) at its own place, before the activity itself (WAIT).
+    waits: tuple[tuple[str, int], ...] = ()
+    # "실내 우선": outdoor time costs D_outdoor (soft, never a hard rule).
+    outdoor_cost: bool = False
 
     def extension(self, activity_id: str) -> int:
         return dict(self.extensions).get(activity_id, 0)
 
     def duration_cap(self, activity_id: str) -> int | None:
         return dict(self.duration_caps).get(activity_id)
+
+    def wait(self, activity_id: str) -> int:
+        return dict(self.waits).get(activity_id, 0)
+
+    def rained_on(self, start: int, end: int) -> bool:
+        return any(start < r_end and end > r_start for r_start, r_end in self.rains)
 
 
 def solver_view(inp: RecoveryInput) -> RecoveryInput:
@@ -46,7 +58,7 @@ def solver_view(inp: RecoveryInput) -> RecoveryInput:
     it reads the event itself (module docstring)."""
     ev = inp.event
     if isinstance(ev, MustVisitEvent):
-        return inp.model_copy(
+        inp = inp.model_copy(
             update={
                 "activities": (*inp.activities, added_activity(inp)),
                 "preferences": (
@@ -60,10 +72,11 @@ def solver_view(inp: RecoveryInput) -> RecoveryInput:
                 ),
             }
         )
-    if not isinstance(ev, ReservationChangeEvent):
+    moved = {e.activity_id: e.new_time for e in inp.events if isinstance(e, ReservationChangeEvent)}
+    if not moved:
         return inp
     activities = tuple(
-        a.model_copy(update={"reservation_time": ev.new_time}) if a.id == ev.activity_id else a
+        a.model_copy(update={"reservation_time": moved[a.id]}) if a.id in moved else a
         for a in inp.activities
     )
     return inp.model_copy(update={"activities": activities})
@@ -97,21 +110,41 @@ def added_activity(inp: RecoveryInput) -> Activity:
     )
 
 
+def _fatigue_caps(inp: RecoveryInput, ev: FatigueEvent) -> dict[str, int]:
+    caps: dict[str, int] = {}
+    for a in inp.activities:
+        # Reserved slots cannot shrink; the activity the user is in is already running.
+        if a.walking and a.reservation_time is None and a.id != ev.location_id:
+            planned = a.planned_end - a.planned_start
+            caps[a.id] = max(a.min_duration, ceil(planned * ev.walking_ratio / 5) * 5)
+    return caps
+
+
 def build_constraints(inp: RecoveryInput) -> Constraints:
-    ev = inp.event
-    if isinstance(ev, WeatherEvent):
-        end = ev.end_time if ev.end_time is not None else MINUTES_PER_DAY
-        return Constraints(rain=(ev.start_time, end))
-    if isinstance(ev, ClosureEvent):
-        return Constraints(closed=(ev.activity_id,))
-    if isinstance(ev, ExtendEvent):
-        return Constraints(extensions=((ev.activity_id, ev.extra_minutes),))
-    if isinstance(ev, FatigueEvent):
-        caps = []
-        for a in sorted(inp.activities, key=lambda a: a.id):
-            # Reserved slots cannot shrink; the activity the user is in is already running.
-            if a.walking and a.reservation_time is None and a.id != ev.location_id:
-                planned = a.planned_end - a.planned_start
-                caps.append((a.id, max(a.min_duration, ceil(planned * ev.walking_ratio / 5) * 5)))
-        return Constraints(duration_caps=tuple(caps))
-    return Constraints()
+    rains: list[tuple[int, int]] = []
+    closed: set[str] = set()
+    extensions: dict[str, int] = {}
+    waits: dict[str, int] = {}
+    caps: dict[str, int] = {}
+    for ev in inp.events:
+        if isinstance(ev, WeatherEvent):
+            end = ev.end_time if ev.end_time is not None else MINUTES_PER_DAY
+            rains.append((ev.start_time, end))
+        elif isinstance(ev, ClosureEvent):
+            closed.add(ev.activity_id)
+        elif isinstance(ev, ExtendEvent):
+            extensions[ev.activity_id] = ev.extra_minutes
+        elif isinstance(ev, WaitEvent):
+            waits[ev.activity_id] = ev.minutes
+        elif isinstance(ev, FatigueEvent):
+            for aid, cap in _fatigue_caps(inp, ev).items():
+                caps[aid] = min(cap, caps.get(aid, cap))
+    # Sorted everywhere: equal input gives equal constraints whatever the event order.
+    return Constraints(
+        rains=tuple(sorted(set(rains))),
+        extensions=tuple(sorted(extensions.items())),
+        duration_caps=tuple(sorted(caps.items())),
+        closed=tuple(sorted(closed)),
+        waits=tuple(sorted(waits.items())),
+        outdoor_cost=Wish.INDOOR in inp.wishes,
+    )

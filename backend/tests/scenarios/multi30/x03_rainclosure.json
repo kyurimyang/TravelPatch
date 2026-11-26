@@ -1,0 +1,498 @@
+{
+  "day": {
+    "id": "d",
+    "date": null,
+    "travel_mode": "transit",
+    "timezone": "Asia/Tokyo",
+    "start_time": 540,
+    "end_deadline": 1320,
+    "end_lat": 35.6896,
+    "end_lng": 139.7006,
+    "start_lat": null,
+    "start_lng": null,
+    "version": 1
+  },
+  "activities": [
+    {
+      "id": "a0",
+      "title": "a0",
+      "category": "meal",
+      "lat": 35.691643810152826,
+      "lng": 139.6880569591262,
+      "planned_start": 575,
+      "planned_end": 635,
+      "min_duration": 45,
+      "intent_tags": [],
+      "outdoor": null,
+      "walking": true,
+      "open_at": null,
+      "close_at": null,
+      "reservation_time": null
+    },
+    {
+      "id": "a1",
+      "title": "a1",
+      "category": "other",
+      "lat": 35.708599514764146,
+      "lng": 139.68368227437173,
+      "planned_start": 680,
+      "planned_end": 720,
+      "min_duration": 15,
+      "intent_tags": [
+        "x",
+        "y"
+      ],
+      "outdoor": true,
+      "walking": null,
+      "open_at": null,
+      "close_at": null,
+      "reservation_time": null
+    },
+    {
+      "id": "a2",
+      "title": "a2",
+      "category": "transport",
+      "lat": 35.65310202151279,
+      "lng": 139.7386484420823,
+      "planned_start": 795,
+      "planned_end": 820,
+      "min_duration": 10,
+      "intent_tags": [],
+      "outdoor": true,
+      "walking": null,
+      "open_at": null,
+      "close_at": null,
+      "reservation_time": null
+    },
+    {
+      "id": "a3",
+      "title": "a3",
+      "category": "sightseeing",
+      "lat": 35.72689659951907,
+      "lng": 139.75348362682251,
+      "planned_start": 900,
+      "planned_end": 950,
+      "min_duration": 50,
+      "intent_tags": [
+        "x",
+        "z"
+      ],
+      "outdoor": true,
+      "walking": true,
+      "open_at": null,
+      "close_at": null,
+      "reservation_time": 900
+    },
+    {
+      "id": "a4",
+      "title": "a4",
+      "category": "shopping",
+      "lat": 35.66874471015716,
+      "lng": 139.6821889800375,
+      "planned_start": 1015,
+      "planned_end": 1040,
+      "min_duration": 20,
+      "intent_tags": [
+        "z"
+      ],
+      "outdoor": false,
+      "walking": false,
+      "open_at": null,
+      "close_at": null,
+      "reservation_time": null
+    },
+    {
+      "id": "a5",
+      "title": "a5",
+      "category": "cafe",
+      "lat": 35.683995714427326,
+      "lng": 139.69981069201964,
+      "planned_start": 1070,
+      "planned_end": 1120,
+      "min_duration": 20,
+      "intent_tags": [],
+      "outdoor": false,
+      "walking": true,
+      "open_at": null,
+      "close_at": null,
+      "reservation_time": null
+    },
+    {
+      "id": "a6",
+      "title": "a6",
+      "category": "cafe",
+      "lat": 35.71852565562174,
+      "lng": 139.77105726967628,
+      "planned_start": 1195,
+      "planned_end": 1235,
+      "min_duration": 35,
+      "intent_tags": [],
+      "outdoor": null,
+      "walking": false,
+      "open_at": null,
+      "close_at": null,
+      "reservation_time": null
+    }
+  ],
+  "preferences": [
+    {
+      "activity_id": "a0",
+      "tier": "nice",
+      "substitutability": 0.49,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "a1",
+      "tier": "optional",
+      "substitutability": 0.3,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "a2",
+      "tier": "nice",
+      "substitutability": 0.31,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "a3",
+      "tier": "must",
+      "substitutability": 0.65,
+      "time_rigidity": "reserved"
+    },
+    {
+      "activity_id": "a4",
+      "tier": "nice",
+      "substitutability": 0.68,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "a5",
+      "tier": "must",
+      "substitutability": 0.89,
+      "time_rigidity": "flexible"
+    },
+    {
+      "activity_id": "a6",
+      "tier": "optional",
+      "substitutability": 0.3,
+      "time_rigidity": "flexible"
+    }
+  ],
+  "travel": [
+    {
+      "a": "a0",
+      "b": "a1",
+      "minutes": 20,
+      "source": "estimate"
+    },
+    {
+      "a": "a0",
+      "b": "a2",
+      "minutes": 40,
+      "source": "estimate"
+    },
+    {
+      "a": "a0",
+      "b": "a3",
+      "minutes": 45,
+      "source": "estimate"
+    },
+    {
+      "a": "a0",
+      "b": "a4",
+      "minutes": 20,
+      "source": "estimate"
+    },
+    {
+      "a": "a0",
+      "b": "a5",
+      "minutes": 15,
+      "source": "estimate"
+    },
+    {
+      "a": "a0",
+      "b": "a6",
+      "minutes": 50,
+      "source": "estimate"
+    },
+    {
+      "a": "a0",
+      "b": "hotel",
+      "minutes": 15,
+      "source": "estimate"
+    },
+    {
+      "a": "a1",
+      "b": "a2",
+      "minutes": 50,
+      "source": "estimate"
+    },
+    {
+      "a": "a1",
+      "b": "a3",
+      "minutes": 40,
+      "source": "estimate"
+    },
+    {
+      "a": "a1",
+      "b": "a4",
+      "minutes": 30,
+      "source": "estimate"
+    },
+    {
+      "a": "a1",
+      "b": "a5",
+      "minutes": 25,
+      "source": "estimate"
+    },
+    {
+      "a": "a1",
+      "b": "a6",
+      "minutes": 50,
+      "source": "estimate"
+    },
+    {
+      "a": "a1",
+      "b": "hotel",
+      "minutes": 20,
+      "source": "estimate"
+    },
+    {
+      "a": "a2",
+      "b": "a3",
+      "minutes": 50,
+      "source": "estimate"
+    },
+    {
+      "a": "a2",
+      "b": "a4",
+      "minutes": 35,
+      "source": "estimate"
+    },
+    {
+      "a": "a2",
+      "b": "a5",
+      "minutes": 35,
+      "source": "estimate"
+    },
+    {
+      "a": "a2",
+      "b": "a6",
+      "minutes": 50,
+      "source": "estimate"
+    },
+    {
+      "a": "a2",
+      "b": "hotel",
+      "minutes": 35,
+      "source": "estimate"
+    },
+    {
+      "a": "a3",
+      "b": "a4",
+      "minutes": 55,
+      "source": "estimate"
+    },
+    {
+      "a": "a3",
+      "b": "a5",
+      "minutes": 45,
+      "source": "estimate"
+    },
+    {
+      "a": "a3",
+      "b": "a6",
+      "minutes": 15,
+      "source": "estimate"
+    },
+    {
+      "a": "a3",
+      "b": "hotel",
+      "minutes": 40,
+      "source": "estimate"
+    },
+    {
+      "a": "a4",
+      "b": "a5",
+      "minutes": 20,
+      "source": "estimate"
+    },
+    {
+      "a": "a4",
+      "b": "a6",
+      "minutes": 60,
+      "source": "estimate"
+    },
+    {
+      "a": "a4",
+      "b": "hotel",
+      "minutes": 20,
+      "source": "estimate"
+    },
+    {
+      "a": "a5",
+      "b": "a6",
+      "minutes": 45,
+      "source": "estimate"
+    },
+    {
+      "a": "a5",
+      "b": "hotel",
+      "minutes": 10,
+      "source": "estimate"
+    },
+    {
+      "a": "a6",
+      "b": "hotel",
+      "minutes": 45,
+      "source": "estimate"
+    },
+    {
+      "a": "a0",
+      "b": "a4_alt1",
+      "minutes": 25,
+      "source": "estimate"
+    },
+    {
+      "a": "a0",
+      "b": "a4_alt2",
+      "minutes": 50,
+      "source": "estimate"
+    },
+    {
+      "a": "a1",
+      "b": "a4_alt1",
+      "minutes": 35,
+      "source": "estimate"
+    },
+    {
+      "a": "a1",
+      "b": "a4_alt2",
+      "minutes": 45,
+      "source": "estimate"
+    },
+    {
+      "a": "a2",
+      "b": "a4_alt1",
+      "minutes": 20,
+      "source": "estimate"
+    },
+    {
+      "a": "a2",
+      "b": "a4_alt2",
+      "minutes": 55,
+      "source": "estimate"
+    },
+    {
+      "a": "a3",
+      "b": "a4_alt1",
+      "minutes": 45,
+      "source": "estimate"
+    },
+    {
+      "a": "a3",
+      "b": "a4_alt2",
+      "minutes": 10,
+      "source": "estimate"
+    },
+    {
+      "a": "a4",
+      "b": "a4_alt1",
+      "minutes": 25,
+      "source": "estimate"
+    },
+    {
+      "a": "a4",
+      "b": "a4_alt2",
+      "minutes": 60,
+      "source": "estimate"
+    },
+    {
+      "a": "a4_alt1",
+      "b": "a4_alt2",
+      "minutes": 50,
+      "source": "estimate"
+    },
+    {
+      "a": "a4_alt1",
+      "b": "a5",
+      "minutes": 20,
+      "source": "estimate"
+    },
+    {
+      "a": "a4_alt1",
+      "b": "a6",
+      "minutes": 45,
+      "source": "estimate"
+    },
+    {
+      "a": "a4_alt1",
+      "b": "hotel",
+      "minutes": 20,
+      "source": "estimate"
+    },
+    {
+      "a": "a4_alt2",
+      "b": "a5",
+      "minutes": 45,
+      "source": "estimate"
+    },
+    {
+      "a": "a4_alt2",
+      "b": "a6",
+      "minutes": 15,
+      "source": "estimate"
+    },
+    {
+      "a": "a4_alt2",
+      "b": "hotel",
+      "minutes": 45,
+      "source": "estimate"
+    }
+  ],
+  "event": {
+    "occurred_at": 540,
+    "location_id": "hotel",
+    "type": "WEATHER",
+    "start_time": 730,
+    "end_time": 935
+  },
+  "substitutes": [
+    {
+      "id": "a4_alt1",
+      "replaces": "a4",
+      "title": "a4 alternative 1",
+      "lat": 35.66746,
+      "lng": 139.71633,
+      "duration": 25,
+      "min_duration": 20,
+      "penalty": 0.2,
+      "outdoor": false
+    },
+    {
+      "id": "a4_alt2",
+      "replaces": "a4",
+      "title": "a4 alternative 2",
+      "lat": 35.72991,
+      "lng": 139.76132,
+      "duration": 25,
+      "min_duration": 20,
+      "penalty": 0.2,
+      "outdoor": null
+    }
+  ],
+  "more_events": [
+    {
+      "occurred_at": 540,
+      "location_id": "hotel",
+      "type": "CLOSURE",
+      "activity_id": "a4"
+    }
+  ],
+  "wishes": [
+    "indoor"
+  ],
+  "expected": {
+    "violations": 0
+  }
+}

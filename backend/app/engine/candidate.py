@@ -37,6 +37,7 @@ SUPPORTED_EVENTS = frozenset(
         EventType.EXTEND,
         EventType.RESERVATION_CHANGE,
         EventType.MUST_VISIT,
+        EventType.WAIT,
     }
 )
 
@@ -48,18 +49,24 @@ class UnsupportedEventError(ValueError):
 def _flag_unknown_outdoor(
     inp: RecoveryInput, changes: tuple[RecoveryChange, ...]
 ) -> tuple[RecoveryChange, ...]:
-    """In rain, activities whose outdoor status is unknown are kept but marked needs_check."""
-    rain = build_constraints(inp).rain
-    if rain is None:
+    """In rain, places whose outdoor status is unknown are kept but marked needs_check. A
+    substitute is unknown when neither it nor the activity it replaces says."""
+    constraints = build_constraints(inp)
+    if not constraints.rains:
         return changes
-    unknown = {a.id for a in inp.activities if a.outdoor is None}
+    outdoor = {a.id: a.outdoor for a in inp.activities}
+    sub_outdoor = {s.id: s.outdoor for s in inp.substitutes}
+
+    def unknown(c: RecoveryChange) -> bool:
+        own = sub_outdoor.get(c.substitute_id) if c.substitute_id else None
+        return own is None and outdoor.get(c.activity_id) is None
+
     return tuple(
         (
             c.model_copy(update={"needs_check": True})
-            if c.activity_id in unknown
-            and c.after is not None
-            and c.after.start < rain[1]
-            and c.after.end > rain[0]
+            if c.after is not None
+            and unknown(c)
+            and constraints.rained_on(c.after.start, c.after.end)
             else c
         )
         for c in changes
@@ -70,7 +77,7 @@ def _flag_unknown_walking(
     inp: RecoveryInput, changes: tuple[RecoveryChange, ...]
 ) -> tuple[RecoveryChange, ...]:
     """When tired, activities whose walking load is unknown are kept but marked needs_check."""
-    if not isinstance(inp.event, FatigueEvent):
+    if not any(isinstance(ev, FatigueEvent) for ev in inp.events):
         return changes
     unknown = {a.id for a in inp.activities if a.walking is None}
     return tuple(
@@ -95,8 +102,9 @@ def solve_candidate(
     """One candidate for one strategy, or None. The single path every plan takes to the user:
     solve, then the independent validator (a violating plan is discarded, never returned).
     A rejected plan is appended to `discards` when the caller passes a list."""
-    if inp.event.type not in SUPPORTED_EVENTS:
-        raise UnsupportedEventError(f"event type not supported yet: {inp.event.type}")
+    for ev in inp.events:
+        if ev.type not in SUPPORTED_EVENTS:
+            raise UnsupportedEventError(f"event type not supported yet: {ev.type}")
     solution = solve_fixed_order(
         inp,
         order,

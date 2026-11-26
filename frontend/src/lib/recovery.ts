@@ -1,7 +1,7 @@
 // The day being recovered, shared by Recover -> DiffView -> NoPatch / Stitched through router state.
 // It is built by the server from the trip (POST /plans/build) and kept in memory only: it holds
 // Google coordinates, which the browser must not store (decision 2026-11-16).
-import type { BuiltPlan, DisruptionEvent, PlanRequest, RecoveryInput, RecoveryRequest } from '../api/types'
+import type { BuiltPlan, DisruptionEvent, PlanRequest, RecoveryInput, RecoveryRequest, Wish } from '../api/types'
 import sample from '../mocks/scenarioAInput.json'
 import type { Trip, TripFlight } from '../store/trip'
 
@@ -11,6 +11,10 @@ export type RecoveryState = {
   plan: BuiltPlan
   source: RecoverySource
   event?: DisruptionEvent
+  /** More events from the same sentence ("비 + 예약 당김 + 대기"), stacked on `event` (2026-11-26). */
+  moreEvents?: DisruptionEvent[]
+  /** "실내 우선" and the like: the engine weighs them, they are not hard rules. */
+  wishes?: Wish[]
   chips?: string[]
   /** Ticked as already visited on Recover; the server takes them out (decision 2026-11-22). */
   visited?: string[]
@@ -24,7 +28,13 @@ export function samplePlan(): BuiltPlan {
   return { day, activities, preferences, travel, warnings: [] }
 }
 
-export function inputFor(plan: BuiltPlan, event: DisruptionEvent, visited: string[] = []): RecoveryRequest & RecoveryInput {
+export function inputFor(
+  plan: BuiltPlan,
+  event: DisruptionEvent,
+  visited: string[] = [],
+  moreEvents: DisruptionEvent[] = [],
+  wishes: Wish[] = [],
+): RecoveryRequest & RecoveryInput {
   // No substitutes: for a closure the server searches them itself (POST /recoveries). The visited
   // places stay in: the server removes them (services/visited.py, one rule for app and eval).
   return {
@@ -34,6 +44,8 @@ export function inputFor(plan: BuiltPlan, event: DisruptionEvent, visited: strin
     preferences: plan.preferences,
     travel: plan.travel,
     event,
+    more_events: moreEvents,
+    wishes,
     substitutes: [],
   }
 }
@@ -73,20 +85,19 @@ export function holeEvent(now: number, locationId: string): DisruptionEvent {
   return { type: 'DELAY', occurred_at: now, start_time: now, location_id: locationId }
 }
 
-/** Activities that cannot be marked visited: the one the event is about (the event refers to it).
+/** Activities that cannot be marked visited: the ones the events are about (they refer to them).
  * Where the user is can be: the server keeps its place as the start node. */
-export function visitLocked(event: DisruptionEvent): Set<string> {
-  const target = 'activity_id' in event ? event.activity_id : null
-  return new Set(target ? [target] : [])
+export function visitLocked(event: DisruptionEvent, moreEvents: DisruptionEvent[] = []): Set<string> {
+  return new Set([event, ...moreEvents].flatMap((e) => ('activity_id' in e ? [e.activity_id] : [])))
 }
 
 /** Pre-checked as already visited (decision 2026-11-19, A1): planned to end by now. Nothing for a
  * delay, since the user has not left yet. The user unchecks what is wrong. In planned order. */
-export function defaultVisited(plan: BuiltPlan, event: DisruptionEvent): string[] {
+export function defaultVisited(plan: BuiltPlan, event: DisruptionEvent, moreEvents: DisruptionEvent[] = []): string[] {
   // Still at the day's start (overslept, late departure): nothing visited yet. A delay out on the
   // day (the hole alert) pre-checks as usual.
   if (event.type === 'DELAY' && DAY_START_IDS.has(event.location_id ?? HOTEL_ID)) return []
-  const locked = visitLocked(event)
+  const locked = visitLocked(event, moreEvents)
   return plan.activities
     .filter((a) => a.planned_end <= event.occurred_at && !locked.has(a.id))
     .map((a) => a.id)

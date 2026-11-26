@@ -1,6 +1,6 @@
 from pydantic import Field
 
-from app.schemas.enums import Category
+from app.schemas.enums import Category, Wish
 from app.schemas.models import _Frozen
 
 
@@ -15,6 +15,10 @@ class Weights(_Frozen):
     # Cost per changed activity (any op but keep). 0.2 sits in the 0.1-0.3 plateau of the
     # sweep over scenarios A, B, D, E; re-check on the 50-scenario evaluation set.
     w_changed: float = 0.2
+    # "실내 우선" wish only (decision 2026-11-26): per outdoor piece still outdoors, value x the
+    # share of its planned length spent there. Same size as w_shrink, so a full outdoor stay
+    # costs about what cutting it would, and an indoor stand-in usually costs less.
+    w_outdoor: float = 0.6
     # Extra multiplier on w_drop for some categories, e.g. ((SIGHTSEEING, 2.0),).
     category_drop_factor: tuple[tuple[Category, float], ...] = ()
 
@@ -75,3 +79,12 @@ STRATEGIES: tuple[Strategy, ...] = (
 
 # How many distinct candidates the user is shown (CLAUDE.md 6: 2-3), balanced first.
 SHOWN_CANDIDATES = 3
+
+
+def strategies_for(wishes: tuple[Wish, ...]) -> tuple[Strategy, ...]:
+    """The strategies in the order they are shown. "쉬고 싶어요" puts the relaxed one (more slack
+    between pieces) first; otherwise the default order. Same set either way."""
+    if Wish.REST not in wishes:
+        return STRATEGIES
+    first = tuple(s for s in STRATEGIES if s.name == "relaxed")
+    return (*first, *(s for s in STRATEGIES if s.name != "relaxed"))

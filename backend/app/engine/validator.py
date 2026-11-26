@@ -1,7 +1,8 @@
 """Independent hard-constraint checker.
 
-Must not import the solver (optimizer_dp, local_search): it re-simulates a candidate from
-the raw input so a solver bug cannot hide itself.
+Must not import the solver (optimizer_dp, local_search) or the rule table that feeds it
+(constraint_builder): it re-simulates a candidate from the raw input so a solver bug cannot
+hide itself. Every event of the input is checked, all at once (more_events, 2026-11-26).
 """
 
 from itertools import pairwise
@@ -19,6 +20,7 @@ from app.schemas.events import (
     FatigueEvent,
     MustVisitEvent,
     ReservationChangeEvent,
+    WaitEvent,
     WeatherEvent,
 )
 from app.schemas.models import HOTEL_ID, MINUTES_PER_DAY, Substitute
@@ -50,9 +52,10 @@ def _info(inp: RecoveryInput) -> dict[str, _Info]:
     ev = inp.event
     if isinstance(ev, MustVisitEvent):
         info[ev.activity_id] = _Info(ev.open_at, ev.close_at, ev.min_duration, None, True)
-    if isinstance(ev, ReservationChangeEvent) and ev.activity_id in info:
-        # Read from the event here, not from the solver's view of the input (invariant 3).
-        info[ev.activity_id] = info[ev.activity_id]._replace(reservation_time=ev.new_time)
+    for e in inp.events:
+        if isinstance(e, ReservationChangeEvent) and e.activity_id in info:
+            # Read from the event here, not from the solver's view of the input (invariant 3).
+            info[e.activity_id] = info[e.activity_id]._replace(reservation_time=e.new_time)
     return info
 
 
@@ -91,9 +94,9 @@ def _check_coverage(info: dict[str, _Info], changes: tuple[RecoveryChange, ...])
 
 
 def _now(inp: RecoveryInput) -> int:
-    # A delayed user can move again only at start_time; otherwise "now" is occurred_at.
-    ev = inp.event
-    return ev.start_time if isinstance(ev, DelayEvent) else ev.occurred_at
+    # A delayed user can move again only at start_time (the latest one); else occurred_at.
+    delays = [e.start_time for e in inp.events if isinstance(e, DelayEvent)]
+    return max(delays) if delays else inp.event.occurred_at
 
 
 def _check_past(inp: RecoveryInput, changes: tuple[RecoveryChange, ...]) -> list[Violation]:
@@ -170,19 +173,39 @@ def _check_substitute(inp: RecoveryInput, changes: tuple[RecoveryChange, ...]) -
 
 
 def _check_closure(inp: RecoveryInput, changes: tuple[RecoveryChange, ...]) -> list[Violation]:
-    ev = inp.event
-    if not isinstance(ev, ClosureEvent):
-        return []
-    change = next(c for c in changes if c.activity_id == ev.activity_id)
-    if change.after is not None and change.substitute_id is None:
-        return [
-            Violation(
-                kind="closure",
-                activity_id=ev.activity_id,
-                detail=f"{ev.activity_id} is closed: replace or drop it",
+    closed = sorted({e.activity_id for e in inp.events if isinstance(e, ClosureEvent)})
+    by_id = {c.activity_id: c for c in changes}
+    return [
+        Violation(
+            kind="closure",
+            activity_id=aid,
+            detail=f"{aid} is closed: replace or drop it",
+        )
+        for aid in closed
+        if by_id[aid].after is not None and by_id[aid].substitute_id is None
+    ]
+
+
+def _check_wait(
+    inp: RecoveryInput, info: dict[str, _Info], placed: list[RecoveryChange]
+) -> list[Violation]:
+    # A queue at the activity's own place comes on top of its shortest stay (WAIT). A substitute
+    # is another place, without that queue.
+    waits = {e.activity_id: e.minutes for e in inp.events if isinstance(e, WaitEvent)}
+    out: list[Violation] = []
+    for c in placed:
+        if c.activity_id not in waits or c.substitute_id is not None:
+            continue
+        need = info[c.activity_id].min_duration + waits[c.activity_id]
+        if c.after.end - c.after.start < need:
+            out.append(
+                Violation(
+                    kind="wait",
+                    activity_id=c.activity_id,
+                    detail=f"lasts {c.after.end - c.after.start} min, queue + minimum is {need}",
+                )
             )
-        ]
-    return []
+    return out
 
 
 def _check_each_activity(
@@ -275,27 +298,45 @@ def _check_origin(inp: RecoveryInput, placed: list[RecoveryChange]) -> list[Viol
     ]
 
 
+def _outdoors(inp: RecoveryInput, c: RecoveryChange) -> bool:
+    # Where the change puts the user: a substitute's own flag, else (unknown) the original's.
+    # Unknown on both (None) is not blocked; it is flagged needs_check instead.
+    original = next((a.outdoor for a in inp.activities if a.id == c.activity_id), None)
+    if c.substitute_id is not None:
+        own = _subs(inp)[c.substitute_id].outdoor
+        return (original if own is None else own) is True
+    return original is True
+
+
 def _check_weather(inp: RecoveryInput, placed: list[RecoveryChange]) -> list[Violation]:
-    ev = inp.event
-    if not isinstance(ev, WeatherEvent):
-        return []
-    rain_end = ev.end_time if ev.end_time is not None else MINUTES_PER_DAY
-    outdoor = {a.id for a in inp.activities if a.outdoor}  # unknown (None) is not blocked
-    return [
-        Violation(
-            kind="weather",
-            activity_id=c.activity_id,
-            detail=f"outdoor activity overlaps the rain ({ev.start_time}-{rain_end})",
-        )
-        for c in placed
-        if c.activity_id in outdoor and c.after.start < rain_end and c.after.end > ev.start_time
-    ]
+    out: list[Violation] = []
+    for ev in inp.events:
+        if not isinstance(ev, WeatherEvent):
+            continue
+        rain_end = ev.end_time if ev.end_time is not None else MINUTES_PER_DAY
+        out += [
+            Violation(
+                kind="weather",
+                activity_id=c.activity_id,
+                detail=f"outdoor activity overlaps the rain ({ev.start_time}-{rain_end})",
+            )
+            for c in placed
+            if _outdoors(inp, c) and c.after.start < rain_end and c.after.end > ev.start_time
+        ]
+    return out
 
 
 def _check_fatigue(inp: RecoveryInput, placed: list[RecoveryChange]) -> list[Violation]:
-    ev = inp.event
-    if not isinstance(ev, FatigueEvent):
-        return []
+    out: list[Violation] = []
+    for ev in inp.events:
+        if isinstance(ev, FatigueEvent):
+            out += _check_one_fatigue(inp, ev, placed)
+    return out
+
+
+def _check_one_fatigue(
+    inp: RecoveryInput, ev: FatigueEvent, placed: list[RecoveryChange]
+) -> list[Violation]:
     acts = {a.id: a for a in inp.activities}
     out: list[Violation] = []
     for c in placed:
@@ -318,22 +359,23 @@ def _check_fatigue(inp: RecoveryInput, placed: list[RecoveryChange]) -> list[Vio
 
 
 def _check_event(inp: RecoveryInput, changes: tuple[RecoveryChange, ...]) -> list[Violation]:
-    # Constraints that come straight from the user's event.
-    ev = inp.event
-    if not isinstance(ev, ExtendEvent):
-        return []
-    target = next(a for a in inp.activities if a.id == ev.activity_id)
-    change = next(c for c in changes if c.activity_id == ev.activity_id)
-    wanted = (target.planned_end - target.planned_start) + ev.extra_minutes
-    if change.after is None or change.after.end - change.after.start < wanted:
-        return [
-            Violation(
-                kind="event",
-                activity_id=ev.activity_id,
-                detail=f"must be extended to {wanted} min as requested",
+    # Constraints that come straight from the user's events: every asked-for extension.
+    out: list[Violation] = []
+    for ev in inp.events:
+        if not isinstance(ev, ExtendEvent):
+            continue
+        target = next(a for a in inp.activities if a.id == ev.activity_id)
+        change = next(c for c in changes if c.activity_id == ev.activity_id)
+        wanted = (target.planned_end - target.planned_start) + ev.extra_minutes
+        if change.after is None or change.after.end - change.after.start < wanted:
+            out.append(
+                Violation(
+                    kind="event",
+                    activity_id=ev.activity_id,
+                    detail=f"must be extended to {wanted} min as requested",
+                )
             )
-        ]
-    return []
+    return out
 
 
 def _check_in_progress(inp: RecoveryInput, changes: tuple[RecoveryChange, ...]) -> list[Violation]:
@@ -448,6 +490,7 @@ def validate(
         *_check_must_kept(info, changes),
         *_check_closure(inp, changes),
         *_check_each_activity(inp, info, placed),
+        *_check_wait(inp, info, placed),
         *_check_event(inp, changes),
         *_check_weather(inp, placed),
         *_check_fatigue(inp, placed),
