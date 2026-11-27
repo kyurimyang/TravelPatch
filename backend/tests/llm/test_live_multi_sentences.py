@@ -32,9 +32,31 @@ def provider():
     return OpenAIProvider()
 
 
+class _Watched:
+    """The real Google client, noting failures: the app swallows them (a failed search = no
+    stand-in), so without this an empty search and a broken one look the same."""
+
+    def __init__(self) -> None:
+        self.inner = GooglePlacesClient()
+        self.errors: list[str] = []
+
+    def _watch(self, name, *args, **kwargs):
+        try:
+            return getattr(self.inner, name)(*args, **kwargs)
+        except Exception as e:
+            self.errors.append(f"{name}: {type(e).__name__}: {str(e)[:160]}")
+            raise
+
+    def search(self, *args, **kwargs):
+        return self._watch("search", *args, **kwargs)
+
+    def details(self, *args, **kwargs):
+        return self._watch("details", *args, **kwargs)
+
+
 @pytest.fixture(scope="module")
 def places():
-    return GooglePlacesClient()
+    return _Watched()
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -72,6 +94,7 @@ def test_heard_and_answered(provider, places, case):
     record["heard"] = res.status == "ok" and sorted(record["got_types"]) == sorted(want["types"])
     problems: list[str] = []
     if res.status == "ok":
+        places.errors.clear()
         inp, out = solve(day, now, res, provider, places)
         problems = case_problems(case, inp, out)
         record["places_found"] = [
@@ -87,6 +110,7 @@ def test_heard_and_answered(provider, places, case):
             for r in out.candidates
         ]
         record["blockers"] = [b.kind for b in out.blockers]
+        record["google_errors"] = sorted(set(places.errors))
     record["problems"] = problems
     _seen[case["id"]] = record
     assert record["heard"] and not problems, record

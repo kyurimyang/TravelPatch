@@ -122,3 +122,12 @@ def test_a_closed_place_in_the_rain_is_searched_once():
     inp, out = solve(day, now, res, FakeLLM(), places)
     assert [s.id for s in inp.substitutes if s.replaces == "tower"] == ["sub_tower_1"]
     assert out.candidates
+
+
+def test_a_bare_rain_next_to_a_timed_one_is_the_same_rain():
+    """Live test: "15시까지 비" came back as WEATHER until 15:00 AND a bare WEATHER."""
+    case = next(c for c in CASES if c["id"] == "rain_walk_less")
+    both = {**case["llm"], "events": [{"type": "WEATHER", "time_to": "15:00"}, {"type": "WEATHER"}]}
+    _, _, res = read(case, _Fixed(both))
+    rains = [e for e in res.events if e.type == "WEATHER"]
+    assert len(rains) == 1 and rains[0].end_time == 900

@@ -40,6 +40,10 @@ _PROBLEM_CODE = {
 }
 
 
+def _rain_said_when(e) -> bool:
+    return bool(e.time_from or e.time_to or e.whole_day)
+
+
 def drafts_from(
     message: InterpretedMessage, text: str
 ) -> tuple[tuple[EventDraft, ...], tuple[Wish, ...]]:
@@ -49,7 +53,10 @@ def drafts_from(
     is asked what happened); a less-walking or rest wish adds one FATIGUE draft when the message
     had none."""
     wishes = tuple(dict.fromkeys(Wish(w.wish) for w in message.wishes if said(w.evidence, text)))
-    unique = {e.model_dump_json(): e for e in message.events}.values()
+    unique = list({e.model_dump_json(): e for e in message.events}.values())
+    # "15시까지 비" also heard as a bare "비": the bare one says nothing more (live test).
+    timed = any(e.type == "WEATHER" and _rain_said_when(e) for e in unique)
+    unique = [e for e in unique if not (timed and e.type == "WEATHER" and not _rain_said_when(e))]
     drafts = [EventDraft(**e.model_dump()) for e in unique]
     known = [d for d in drafts if d.type != "UNKNOWN"]
     if any(w in wishes for w in _FATIGUE_WISHES) and not any(d.type == "FATIGUE" for d in known):
