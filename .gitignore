@@ -21,3 +21,7 @@ node_modules/
 TripPatch_Design/
 llm_cache/
 Design/
+# personal notes (kept locally, not published)
+docs/decisions.md
+docs/review-*.md
+backend/tests/fixtures/*_live_last.json
