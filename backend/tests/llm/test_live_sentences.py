@@ -61,6 +61,14 @@ def test_the_model_hears_what_a_person_would(provider, case):
         "want": expected | {"wishes": want.get("wishes")},
         "got": got | {"wishes": [w.value for w in res.wishes]},
         "chips": list(res.chips),
+        # What the model wrote per event, and what is still asked: the reason behind a miss.
+        "items": [
+            {
+                **i.draft.model_dump(exclude_none=True),
+                "asked": i.question.text if i.event is None and i.question else None,
+            }
+            for i in res.items
+        ],
         "chips_match": "chips" not in want or list(res.chips) == want["chips"],
     }
     assert ok, _seen[case["id"]]

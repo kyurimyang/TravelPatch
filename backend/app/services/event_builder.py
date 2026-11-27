@@ -273,8 +273,10 @@ def _reservation(draft: EventDraft, ctx: _Ctx) -> InterpretItem:
         default=before,
     )
     new_time = _clock(draft.new_time)
-    if new_time is None and draft.new_time is None and draft.shift_minutes:
-        new_time = before + draft.shift_minutes  # "1시간 앞당겨짐": from the booked time, by rule
+    if new_time is None and draft.shift_minutes:
+        # "1시간 앞당겨짐": from the booked time, by rule. Also when the model put something that
+        # is not a clock time in new_time ("", "1시간") beside the shift (live run 2026-11-27).
+        new_time = before + draft.shift_minutes
     if new_time is None or not 0 <= new_time <= MINUTES_PER_DAY:
         return _ask(draft, time_q)
     event = ReservationChangeEvent(

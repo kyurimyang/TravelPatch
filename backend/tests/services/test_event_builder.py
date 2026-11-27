@@ -165,6 +165,14 @@ def test_reservation_chip_does_not_say_booking_twice():
     assert item.chip == "에펠탑 예약 18:00 → 17:30"
 
 
+@pytest.mark.parametrize("junk", ["", "1시간", "-1:00"])
+def test_a_shift_wins_over_a_new_time_that_is_not_a_clock_time(junk):
+    item = _item(
+        type="RESERVATION_CHANGE", activity_hint="스카이", shift_minutes=-60, new_time=junk
+    )
+    assert item.event.new_time == 1020 - 60
+
+
 def test_reservation_without_time_asks_with_the_booked_time_prefilled():
     q = _question(type="RESERVATION_CHANGE", activity_hint="스카이")
     assert (q.kind, q.default) == ("time", 1020)

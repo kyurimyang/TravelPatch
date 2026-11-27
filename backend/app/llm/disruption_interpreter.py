@@ -21,15 +21,20 @@ List EVERY separate thing that happened, in the order said, one item each:
 - WEATHER: rain or bad weather (now, from some time, or all day).
 - CLOSURE: a place in the plan is closed or unavailable.
 - FATIGUE: the traveler or a companion is tired.
-- EXTEND: the traveler wants to stay longer at one place of the plan.
+- EXTEND: the traveler wants MORE TIME at one place of the plan ("여기 20분만 더 있을래",
+  "하라주쿠 30분 더", "쇼핑 더 하고 싶어"). Staying longer is EXTEND, never the rest wish.
 - WAIT: a queue or waiting time at one place of the plan ("대기 40분", "줄이 길어서 30분").
-- RESERVATION_CHANGE: a reservation moved to another time, or earlier/later by some amount.
-- MUST_VISIT: the traveler insists on visiting a place that is not in the plan.
+- RESERVATION_CHANGE: a reservation moved ("스카이 예약이 1시간 앞당겨졌어" -> activity_hint
+  "스카이", shift_minutes -60, new_time null; "이자카야 예약을 20시로 바꿨어" -> new_time "20:00").
+- MUST_VISIT: the traveler wants to add or must visit a place that is not in the plan
+  ("도쿄타워 꼭 가고 싶어", "OO도 넣고 싶어").
 - UNKNOWN: something happened but none of the above fits.
+A cause said in passing is still its own event: "비가 와서 실내에 있고 싶어" = WEATHER plus the
+indoor wish; "피곤하고 비도 와서 쉬고 싶어" = FATIGUE and WEATHER plus the rest wish.
 Also list wishes about the rest of the day, if said:
 - indoor: wants to stay inside ("실내에서", "비 안 맞는 곳").
 - less_walking: wants to walk less.
-- rest: wants to rest or take it easy.
+- rest: wants a break or a slower day ("좀 쉬고 싶어"). Not more time at one place (that is EXTEND).
 A wish alone is fine: then events may be empty.
 
 Rules:
