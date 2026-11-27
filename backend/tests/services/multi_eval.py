@@ -20,13 +20,16 @@ from app.schemas.events import (
 )
 from app.schemas.models import MINUTES_PER_DAY
 from app.schemas.recovery import RecoveryInput, RecoveryResponse, RecoveryResult
-from app.services.recovery_service import run_recovery
+from app.services.patch_search import recover_with_search
 from app.services.visited import apply_visited
 
 
 def solve(
-    day: RecoveryInput, now: int, res: InterpretResponse
+    day: RecoveryInput, now: int, res: InterpretResponse, provider=None, places=None
 ) -> tuple[RecoveryInput, RecoveryResponse]:
+    """The day after the sentence, solved the way POST /recoveries does it: with `provider` and
+    `places` (the live test) stand-in places are searched for closures, rain and dropped pieces;
+    without them the engine alone."""
     data = day.model_dump()
     data |= {
         "event": res.events[0].model_dump(),
@@ -36,8 +39,7 @@ def solve(
     inp = RecoveryInput.model_validate(data)
     targets = {getattr(e, "activity_id", None) for e in res.events}
     visited = [a.id for a in inp.activities if a.planned_end <= now and a.id not in targets]
-    inp = apply_visited(inp, visited)
-    return inp, run_recovery(inp)
+    return recover_with_search(apply_visited(inp, visited), provider, places)
 
 
 def _outdoors(inp: RecoveryInput, activity_id: str, substitute_id: str | None) -> bool:
@@ -60,9 +62,9 @@ def problems(inp: RecoveryInput, result: RecoveryResult) -> list[str]:
                 out.append(f"{ev.activity_id}: not at its new booking time")
         elif isinstance(ev, WaitEvent):
             c = by_id[ev.activity_id]
-            if c.after is not None and c.substitute_id is None:
-                if c.after.end - c.after.start < acts[ev.activity_id].min_duration + ev.minutes:
-                    out.append(f"{ev.activity_id}: the queue is not in its time")
+            own = c.after is not None and c.substitute_id is None
+            if own and c.after.end - c.after.start < acts[ev.activity_id].min_duration + ev.minutes:
+                out.append(f"{ev.activity_id}: the queue is not in its time")
         elif isinstance(ev, ClosureEvent):
             c = by_id[ev.activity_id]
             if c.after is not None and c.substitute_id is None:
