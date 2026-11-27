@@ -30,7 +30,9 @@ List EVERY separate thing that happened, in the order said, one item each:
   ("도쿄타워 꼭 가고 싶어", "OO도 넣고 싶어").
 - UNKNOWN: something happened but none of the above fits.
 A cause said in passing is still its own event: "비가 와서 실내에 있고 싶어" = WEATHER plus the
-indoor wish; "피곤하고 비도 와서 쉬고 싶어" = FATIGUE and WEATHER plus the rest wish.
+indoor wish; "피곤하고 비도 와서 쉬고 싶어" = FATIGUE and WEATHER plus the rest wish;
+"비 와서 덜 걷고 싶어" = WEATHER (it is raining now) plus the less_walking wish. Rain is never only
+a wish: whenever the sentence says it rains or will rain, list a WEATHER event.
 Also list wishes about the rest of the day, if said:
 - indoor: wants to stay inside ("실내에서", "비 안 맞는 곳").
 - less_walking: wants to walk less.

@@ -9,6 +9,7 @@ from app.engine.constraint_builder import solver_view
 from app.engine.local_search import improve_order
 from app.engine.presets import SHOWN_CANDIDATES, STRATEGIES, Strategy
 from app.engine.reasons import explain_changes
+from app.schemas.enums import Wish
 from app.schemas.recovery import RecoveryInput, RecoveryResult
 
 __all__ = ["Discard", "original_order", "recover", "solve_candidate"]  # re-exported for callers
@@ -59,7 +60,30 @@ def recover(
             inp, result.changes, strategy.min_buffer, **strategy_rules(strategy)
         )
         results.append(result.model_copy(update={"changes": explained}))
+    if Wish.REST not in inp.wishes:
+        results = [r for r in results if not _just_later(r, results)]
     return _most_distinct(results, limit)
+
+
+def _pieces(r: RecoveryResult) -> dict[str, tuple]:
+    """What a candidate keeps, and how long, without when: (dropped, substitute, length)."""
+    return {
+        c.activity_id: (
+            c.after is None,
+            c.substitute_id,
+            None if c.after is None else c.after.end - c.after.start,
+        )
+        for c in r.changes
+    }
+
+
+def _just_later(r: RecoveryResult, results: list[RecoveryResult]) -> bool:
+    """The relaxed candidate that only spreads the same pieces out (decision 2026-11-27): with no
+    "쉬고 싶어" it reads as the day moved for no reason, so another candidate already says it."""
+    if r.strategy != "relaxed":
+        return False
+    mine = _pieces(r)
+    return any(k is not r and _pieces(k) == mine for k in results)
 
 
 def _effective(inp: RecoveryInput, strategy: Strategy) -> Strategy:

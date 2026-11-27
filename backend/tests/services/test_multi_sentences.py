@@ -46,3 +46,16 @@ def test_every_event_is_answered_by_every_candidate(case):
     assert [e.type for e in res.events] == case["expect"]["types"]
     inp, out = solve(day, now, res)
     assert case_problems(case, inp, out) == []
+
+
+def test_no_relaxed_copy_that_only_moves_the_day_later():
+    """Decision 2026-11-27: without "쉬고 싶어", a relaxed candidate with the same pieces as another
+    (only spread out later) is not shown; with the wish it stays, first."""
+    case = next(c for c in CASES if c["id"] == "closed_and_later")
+    day, now, res = read(case, _Fixed(case["llm"]))
+    _, out = solve(day, now, res)
+    assert [r.strategy for r in out.candidates] == ["balanced"]
+    rest = {**case["llm"], "wishes": ["rest"]}
+    day, now, res = read(case, _Fixed(rest))
+    _, out = solve(day, now, res)
+    assert out.candidates[0].strategy == "relaxed"
