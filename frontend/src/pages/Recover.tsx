@@ -518,9 +518,11 @@ export default function Recover() {
               </>
             ) : (
               <span className="recover__hint">
-                {editable
+                {editable && response.events.length > 0
                   ? '이해한 건 위에 두었어요. 빠진 것만 골라 주세요.'
-                  : '내용을 이해하지 못했어요. 조금 더 구체적으로 적어 주세요.'}
+                  : editable
+                    ? '어떤 일인지 위에서 골라 주세요.'
+                    : '내용을 이해하지 못했어요. 조금 더 구체적으로 적어 주세요.'}
               </span>
             )}
           </section>

@@ -283,7 +283,11 @@ def _reservation(draft: EventDraft, ctx: _Ctx) -> InterpretItem:
         activity_id=activity.id,
         new_time=new_time,
     )
-    chip = f"{activity.title} 예약 {hhmm(before)} → {hhmm(new_time)}"
+    # A title that already says "예약" ("에펠탑 예약") does not get it twice.
+    booking = (
+        activity.title if activity.title.rstrip().endswith("예약") else f"{activity.title} 예약"
+    )
+    chip = f"{booking} {hhmm(before)} → {hhmm(new_time)}"
     return InterpretItem(draft=draft, event=event, chip=chip, question=time_q)
 
 

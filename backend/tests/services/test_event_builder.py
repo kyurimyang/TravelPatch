@@ -154,6 +154,17 @@ def test_reservation_shift_is_computed_from_the_booked_time():
     assert item.chip == "시부야 스카이 예약 17:00 → 16:00"
 
 
+def test_reservation_chip_does_not_say_booking_twice():
+    acts = [*ACTS, _act("eiffel", "에펠탑 예약", start=1080, reservation_time=1080)]
+    item = build_item(
+        EventDraft(type="RESERVATION_CHANGE", activity_hint="에펠탑", shift_minutes=-30),
+        now=NOW,
+        location_id="hotel",
+        activities=acts,
+    )
+    assert item.chip == "에펠탑 예약 18:00 → 17:30"
+
+
 def test_reservation_without_time_asks_with_the_booked_time_prefilled():
     q = _question(type="RESERVATION_CHANGE", activity_hint="스카이")
     assert (q.kind, q.default) == ("time", 1020)

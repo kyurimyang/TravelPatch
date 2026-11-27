@@ -22,6 +22,11 @@ describe('patch text', () => {
     expect(tabLine(dropped)).toBe('1곳 빼고 · 1곳 근처로')
     expect(patchNote(dropped)).toEqual(['원래 계획 70% 그대로', '1곳은 오늘 빼요', '1곳은 근처 다른 곳으로'])
   })
+  it('all kept but moved: says nothing was cut, not "100% 그대로" beside "2시간 늦게"', () => {
+    const late = r([ch('move', [540, 600], [670, 730]), ch('move', [620, 680], [750, 810])], 1)
+    expect(patchNote(late)).toEqual(['빼거나 줄인 곳 없어요', '평균 2시간 10분 늦게'])
+    expect(patchNote(r([ch('keep', [540, 600], [540, 600])], 1))).toEqual(['원래 계획 100% 그대로'])
+  })
   it('never mentions violations', () => {
     expect([tabLine(delayed), ...patchNote(delayed)].join(' ')).not.toMatch(/위반|보존율/)
   })

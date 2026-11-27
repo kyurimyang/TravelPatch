@@ -16,13 +16,15 @@ interface Props {
   renderDetail?: (change: RecoveryChange) => ReactNode
   /** Optional short reason per changed row ("비 때문에"). */
   tagOf?: (change: RecoveryChange) => string | null
+  /** Optional chip text per row, instead of the op's ("대기"). */
+  labelOf?: (change: RecoveryChange) => string | undefined
   /** With both, the way between neighbouring places is shown between rows. */
   travel?: readonly TravelTime[]
   mode?: TravelMode
 }
 
 // The chosen candidate as the day's timetable. Its name and summary are shown by the tabs above.
-export function CandidateCard({ result, titleOf, iconOf, renderDetail, tagOf, travel, mode }: Props) {
+export function CandidateCard({ result, titleOf, iconOf, renderDetail, tagOf, labelOf, travel, mode }: Props) {
   const rows = timetable(result.changes)
   // Where the traveler really goes, in order: a dropped piece is not visited, and a substitute
   // is visited in place of the original.
@@ -43,6 +45,7 @@ export function CandidateCard({ result, titleOf, iconOf, renderDetail, tagOf, tr
               substituteTitle={change.substitute_id ? titleOf.get(change.substitute_id) : undefined}
               change={change}
               tag={tagOf?.(change)}
+              label={labelOf?.(change)}
               detail={renderDetail?.(change)}
             />
           </Fragment>

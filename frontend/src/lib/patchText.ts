@@ -23,7 +23,10 @@ export function tabLine(r: Pick<RecoveryResult, 'changes'>): string {
 /** The note under the tabs: the whole candidate in one sentence-like line. */
 export function patchNote(r: Pick<RecoveryResult, 'changes' | 'preservation_rate'>): string[] {
   const c = counts(r)
-  const out = [`원래 계획 ${Math.floor(r.preservation_rate * 100)}% 그대로`]
+  const rate = Math.floor(r.preservation_rate * 100)
+  // 100% kept but moved: "100% 그대로 · 2시간 늦게" read as a contradiction (user test 2026-11-27).
+  const moved = r.changes.some((ch) => ch.op !== 'keep')
+  const out = [rate >= 100 && moved ? '빼거나 줄인 곳 없어요' : `원래 계획 ${rate}% 그대로`]
   if (c.drop > 0) out.push(`${c.drop}곳은 오늘 빼요`)
   if (c.sub > 0) out.push(`${c.sub}곳은 근처 다른 곳으로`)
   if (c.add > 0) out.push(`새로 ${c.add}곳 넣어요`)

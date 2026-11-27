@@ -19,10 +19,10 @@ export function formatDate(iso: string): string {
   }).format(new Date(`${iso}T00:00:00Z`))
 }
 
-// "2026-10-07".."2026-10-09" -> "2박 3일".
+// "2026-10-07".."2026-10-09" -> "2박 3일"; one day -> "당일치기" (not "0박 1일").
 export function tripLength(startIso: string, endIso: string): string {
   const nights = Math.round((Date.parse(endIso) - Date.parse(startIso)) / 86_400_000)
-  return `${nights}박 ${nights + 1}일`
+  return nights <= 0 ? '당일치기' : `${nights}박 ${nights + 1}일`
 }
 
 // "HH:MM" (what <input type="time"> gives) -> minutes since midnight; null for empty or bad text.
