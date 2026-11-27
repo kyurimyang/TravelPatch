@@ -12,7 +12,6 @@ Google types as indoors is marked outdoor=False, so the engine may use it in the
 """
 
 from collections.abc import Iterable
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from app.llm.provider import LLMProvider
@@ -212,24 +211,13 @@ def _search(
     indoor: bool = False,
 ) -> list[Substitute]:
     """Places like `target` near it, open that day: one LLM call for what to search, one Google
-    search, details in parallel. [] when Google cannot answer. `indoor`: an inside place is
-    wanted (rain or the wish), so the search asks for one."""
+    search that brings the hours along (no details call per hit). [] when Google cannot answer.
+    `indoor`: an inside place is wanted (rain or the wish), so the search asks for one."""
     query = substitute_query(provider, target.title, target.category, indoor=indoor)
     try:
-        hits = places.search(query, near=(target.lat, target.lng))
+        details = places.search_with_hours(query, near=(target.lat, target.lng))
     except PlacesError:
         return []
-
-    def lookup(hit: PlaceCandidate) -> PlaceDetails | None:
-        try:
-            return places.details(hit.place_id)
-        except PlacesError:
-            return None  # one failed lookup only loses that candidate
-
-    # In parallel: each lookup waits on the network. map keeps Google's order.
-    with ThreadPoolExecutor(max_workers=len(hits) or 1) as pool:
-        looked_up = list(pool.map(lookup, hits))
-    details = [(hit, d) for hit, d in zip(hits, looked_up, strict=True) if d is not None]
 
     weekday = inp.day.date.weekday() if inp.day.date is not None else None
     # The day's other pieces, and where it starts and ends (the hotel is no stand-in for a sight).

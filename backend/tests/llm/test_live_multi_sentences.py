@@ -53,6 +53,9 @@ class _Watched:
     def details(self, *args, **kwargs):
         return self._watch("details", *args, **kwargs)
 
+    def search_with_hours(self, *args, **kwargs):
+        return self._watch("search_with_hours", *args, **kwargs)
+
 
 @pytest.fixture(scope="module")
 def places():

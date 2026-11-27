@@ -87,12 +87,9 @@ class _Places:
     def __init__(self):
         self.queries: list[str] = []
 
-    def search(self, query, near):
+    def search_with_hours(self, query, near):
         self.queries.append(query)
         return []
-
-    def details(self, place_id):
-        raise AssertionError("no hits, no details")
 
 
 def test_add_substitutes_searches_closed_and_outdoor_pieces():
