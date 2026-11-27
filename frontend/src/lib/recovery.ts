@@ -50,6 +50,9 @@ export function inputFor(
   }
 }
 
+/** Most extra events one patch takes (backend schemas/recovery.py MAX_MORE_EVENTS). */
+export const MAX_MORE_EVENTS = 4
+
 // Same ids as backend HOTEL_ID / START_ID (the arrival airport).
 export const HOTEL_ID = 'hotel'
 export const START_ID = 'start'
