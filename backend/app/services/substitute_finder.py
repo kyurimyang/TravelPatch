@@ -168,6 +168,8 @@ def add_substitutes(
     closed, indoor = closed_targets(inp), indoor_targets(inp)
     if not closed and not indoor:
         return inp
+    # A closed outdoor piece in the rain is in both lists: one search (an indoor one), not two
+    # with clashing ids (live test 2026-11-27, "타워 브리지 공사 + 비" -> 500).
     return add_substitutes_for(inp, [*closed, *indoor], provider, places, indoor=frozenset(indoor))
 
 
@@ -183,7 +185,7 @@ def add_substitutes_for(
     engine still decides; it takes a substitute only when that changes the day less than the drop.
     Unchanged when nothing was found."""
     found_all: list[Substitute] = []
-    for aid in ids:
+    for aid in dict.fromkeys(ids):  # each activity searched once
         target = next((a for a in inp.activities if a.id == aid), None)
         if target is None or any(s.replaces == aid for s in inp.substitutes):
             continue

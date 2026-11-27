@@ -38,6 +38,11 @@ Also list wishes about the rest of the day, if said:
 - less_walking: wants to walk less.
 - rest: wants a break or a slower day ("좀 쉬고 싶어"). Not more time at one place (that is EXTEND).
 A wish alone is fine: then events may be empty.
+For each wish, `evidence` is the traveler's own words that say that wish, copied exactly from the
+message ("쉬고 싶어", "실내에서", "덜 걷고"). No such words in the message = no wish: never add a
+wish the traveler did not say. A place being closed is not the rest wish ("거기 오늘 쉰대",
+"휴무래" = CLOSURE); wanting more time somewhere is not the rest wish ("쇼핑 더 하고 싶어" = EXTEND);
+wanting to add a place is not a wish ("도쿄타워 꼭 가고 싶어" = MUST_VISIT, no wishes).
 
 Rules:
 - Copy only what the message says. If a field is not stated, use null. Never guess a number.
@@ -84,9 +89,26 @@ class InterpretedDisruption(BaseModel):
     )
 
 
+class HeardWish(BaseModel):
+    wish: WishKind
+    evidence: str = Field(description="the traveler's words that say this wish, copied exactly")
+
+
 class InterpretedMessage(BaseModel):
     events: list[InterpretedDisruption]
-    wishes: list[WishKind]
+    wishes: list[HeardWish]
+
+
+def _squeeze(s: str) -> str:
+    return "".join(ch for ch in s if ch.isalnum()).casefold()
+
+
+def said(evidence: str, text: str) -> bool:
+    """The wish's evidence is really in the message (spaces, punctuation and case aside): a wish
+    the model made up has no words of the traveler's to point to (live test 2026-11-27,
+    "도쿄타워 꼭 가고 싶어" came back with indoor + less_walking + rest)."""
+    words = _squeeze(evidence)
+    return bool(words) and words in _squeeze(text)
 
 
 def interpret(provider: LLMProvider, text: str) -> InterpretedMessage:

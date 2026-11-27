@@ -12,6 +12,7 @@ from app.schemas.disruption import InterpretRequest
 from app.services.disruption_service import interpret_disruption
 from tests.services.multi_eval import case_problems, solve
 from tests.services.test_sentences import DAYS, _minutes
+from tests.services.test_substitute_finder import FakeLLM, FakePlaces, _details
 
 CASES = json.loads(
     (Path(__file__).parents[1] / "fixtures" / "multi_sentences.json").read_text("utf-8")
@@ -55,8 +56,8 @@ def test_no_relaxed_copy_that_only_moves_the_day_later():
     day, now, res = read(case, _Fixed(case["llm"]))
     _, out = solve(day, now, res)
     assert [r.strategy for r in out.candidates] == ["balanced"]
-    rest = {**case["llm"], "wishes": ["rest"]}
-    day, now, res = read(case, _Fixed(rest))
+    rest = {**case["llm"], "wishes": [{"wish": "rest", "evidence": "좀 쉬고 싶어"}]}
+    day, now, res = read({**case, "text": case["text"] + ", 좀 쉬고 싶어"}, _Fixed(rest))
     _, out = solve(day, now, res)
     assert out.candidates[0].strategy == "relaxed"
 
@@ -66,10 +67,12 @@ def test_searched_places_show_up_in_the_candidates():
     Bridge, and an indoor place near it found by the search, is offered instead of dropping it."""
 
     from tests.services.multi_eval import in_words
-    from tests.services.test_substitute_finder import FakeLLM, FakePlaces, _details
 
     case = next(c for c in CASES if c["id"] == "rain_walk_less")
-    rain = {"events": [{"type": "WEATHER", "time_from": None}], "wishes": ["less_walking"]}
+    rain = {
+        "events": [{"type": "WEATHER", "time_from": None}],
+        "wishes": [{"wish": "less_walking", "evidence": "덜 걷고"}],
+    }
     day, now, res = read(case, _Fixed(rain))
     tower = next(a for a in day.activities if a.id == "tower")
     museum = _details("m1", tower.lat + 0.002, tower.lng, (540, 1260))
@@ -84,3 +87,38 @@ def test_searched_places_show_up_in_the_candidates():
     words = [w for r in out.candidates for w in in_words(inp, r)]
     assert any("타워 브리지: substitute → 가게 m1" in w for w in words), words
     assert case_problems({"expect": {}}, inp, out) == []
+
+
+def test_a_wish_the_traveler_did_not_say_is_dropped():
+    """Live test 2026-11-27: "도쿄타워 꼭 가고 싶어" came back with three wishes. A wish counts only
+    when its evidence is the traveler's own words (spaces and punctuation aside)."""
+    case = next(c for c in CASES if c["id"] == "tired_rain_rest")
+    made_up = {
+        **case["llm"],
+        "wishes": [
+            {"wish": "indoor", "evidence": "실내 에서!"},  # said, spaced differently
+            {"wish": "rest", "evidence": ""},  # nothing to point to
+            {"wish": "less_walking", "evidence": "덜 걷고 싶어"},  # not in this sentence
+        ],
+    }
+    _, _, res = read(case, _Fixed(made_up))
+    assert [w.value for w in res.wishes] == ["indoor"]
+
+
+def test_the_same_event_heard_twice_is_one():
+    case = next(c for c in CASES if c["id"] == "rain_walk_less")
+    twice = {**case["llm"], "events": [{"type": "WEATHER"}, {"type": "WEATHER"}]}
+    _, _, res = read(case, _Fixed(twice))
+    assert sorted(e.type for e in res.events) == ["FATIGUE", "WEATHER"]
+
+
+def test_a_closed_place_in_the_rain_is_searched_once():
+    """Live test 2026-11-27: Tower Bridge closed AND raining was searched as closed and as
+    outdoor, two substitutes with the same id -> the input was invalid (a 500 in the app)."""
+    case = next(c for c in CASES if c["id"] == "closed_bridge_and_rain")
+    day, now, res = read(case, _Fixed(case["llm"]))
+    tower = next(a for a in day.activities if a.id == "tower")
+    places = FakePlaces({"m1": _details("m1", tower.lat + 0.002, tower.lng, (540, 1260))})
+    inp, out = solve(day, now, res, FakeLLM(), places)
+    assert [s.id for s in inp.substitutes if s.replaces == "tower"] == ["sub_tower_1"]
+    assert out.candidates
