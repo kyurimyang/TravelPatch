@@ -48,10 +48,20 @@ EAT_DRINK_SUFFIXES = ("_restaurant", "_bar", "_cafe")
 MAX_INDOOR_SEARCHES = 2
 
 
+def _eat_drink(t: str) -> bool:
+    return t in EAT_DRINK_TYPES or t.endswith(EAT_DRINK_SUFFIXES)
+
+
 def _same_kind(category: str, types: tuple[str, ...]) -> bool:
-    if category not in ("meal", "cafe") or not types:  # other kinds, or Google gave no types
+    if not types:  # Google gave no types: nothing to judge by
         return True
-    return any(t in EAT_DRINK_TYPES or t.endswith(EAT_DRINK_SUFFIXES) for t in types)
+    if "lodging" in types:  # a hotel stands in for nothing in a day plan
+        return False
+    if category in ("meal", "cafe"):
+        return any(_eat_drink(t) for t in types)
+    # A sight or a shop is not stood in for by a place whose main kind (Google's first type) is a
+    # restaurant or cafe: the Louvre was swapped for a cafe for 2.5 hours (user test 2026-11-27).
+    return not _eat_drink(types[0])
 
 
 @dataclass(frozen=True)
@@ -62,13 +72,19 @@ class Found:
 
 
 def build_substitutes(
-    target: Activity, places: Iterable[tuple[PlaceCandidate, PlaceDetails]], weekday: int | None
+    target: Activity,
+    places: Iterable[tuple[PlaceCandidate, PlaceDetails]],
+    weekday: int | None,
+    others: Iterable[tuple[float, float]] = (),
 ) -> Found:
     """Pure. `places` = (search hit, its details) in Google's order. `weekday` is Monday=0..Sunday=6,
-    or None when the date is unknown (then every candidate's hours are unknown).
+    or None when the date is unknown (then every candidate's hours are unknown). `others` = where
+    the day's other pieces are: a hit at one of them is not a stand-in (it would be the same place
+    twice in a day: 경복궁 -> 북촌 한옥마을 already at 12:30, user test 2026-11-27).
 
     Keeps Google's order for ids (sub_<activity>_<n>), so the same answers give the same input.
     """
+    taken = tuple(others)
     subs: list[Substitute] = []
     unknown: set[str] = set()
     for hit, p in places:
@@ -76,6 +92,8 @@ def build_substitutes(
             continue
         km = haversine_km((target.lat, target.lng), (p.lat, p.lng))
         if km < SAME_PLACE_KM:
+            continue
+        if any(haversine_km(o, (p.lat, p.lng)) < SAME_PLACE_KM for o in taken):
             continue
         slot = (target.planned_start, target.planned_end)  # pick the opening window around it
         hours = hours_for_weekday(p.periods, weekday, prefer=slot) if weekday is not None else None
@@ -212,7 +230,12 @@ def _search(
     details = [(hit, d) for hit, d in zip(hits, looked_up, strict=True) if d is not None]
 
     weekday = inp.day.date.weekday() if inp.day.date is not None else None
-    return list(build_substitutes(target, details, weekday).substitutes)
+    # The day's other pieces, and where it starts and ends (the hotel is no stand-in for a sight).
+    others = [(a.lat, a.lng) for a in inp.activities if a.id != target.id]
+    others.append((inp.day.end_lat, inp.day.end_lng))
+    if inp.day.start_lat is not None and inp.day.start_lng is not None:
+        others.append((inp.day.start_lat, inp.day.start_lng))
+    return list(build_substitutes(target, details, weekday, others).substitutes)
 
 
 def needs_check_ids(inp: RecoveryInput) -> frozenset[str]:

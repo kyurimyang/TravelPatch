@@ -114,3 +114,36 @@ def test_walking_from_types_and_category():
     assert place_walking(("market",), Category.SHOPPING) is True
     assert place_walking(("museum",), Category.SIGHTSEEING) is None  # not settled
     assert place_walking(("park",), Category.CAFE) is False  # a cafe in a park: sitting down
+
+
+def _hit_at(name: str, lat: float, lng: float, types: tuple[str, ...]):
+    hit = PlaceCandidate(place_id=name, name=name, address=None, lat=lat, lng=lng, types=types)
+    return hit, PlaceDetails(place_id=name, lat=lat, lng=lng, time_zone="Asia/Tokyo", periods=None)
+
+
+def test_a_place_already_in_the_day_is_not_a_stand_in():
+    day = load_scenario_a()
+    meiji = next(a for a in day.activities if a.id == "meiji")
+    harajuku = next(a for a in day.activities if a.id == "harajuku")
+    places = [
+        _hit_at("하라주쿠", harajuku.lat, harajuku.lng, ("tourist_attraction",)),  # in the day
+        _hit_at("다른 곳", meiji.lat + 0.01, meiji.lng, ("museum",)),
+    ]
+    found = build_substitutes(meiji, places, None, [(harajuku.lat, harajuku.lng)])
+    assert [s.title for s in found.substitutes] == ["다른 곳"]
+
+
+def test_a_hotel_is_never_a_stand_in():
+    meiji = next(a for a in load_scenario_a().activities if a.id == "meiji")
+    places = [_hit_at("호텔", meiji.lat + 0.01, meiji.lng, ("lodging", "tourist_attraction"))]
+    assert build_substitutes(meiji, places, None).substitutes == ()
+
+
+def test_a_sight_is_not_stood_in_for_by_a_cafe():
+    meiji = next(a for a in load_scenario_a().activities if a.id == "meiji")
+    places = [
+        _hit_at("카페", meiji.lat + 0.01, meiji.lng, ("cafe", "food")),
+        _hit_at("미술관 카페", meiji.lat + 0.02, meiji.lng, ("art_gallery", "cafe")),
+    ]
+    found = build_substitutes(meiji, places, None)
+    assert [s.title for s in found.substitutes] == ["미술관 카페"]  # its main kind is a gallery
