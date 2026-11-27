@@ -123,6 +123,15 @@ def _ask(draft: EventDraft, question: Question) -> InterpretItem:
     return InterpretItem(draft=draft, question=question)
 
 
+# Words for "where I am now" ("여기 20분만 더 있을래", live test 2026-11-27): the current place,
+# said, so not an assumption.
+_HERE_WORDS = {"여기", "여기서", "여기에", "이곳", "이곳에서", "지금여기", "지금있는곳", "here"}
+
+
+def _is_here(hint: str) -> bool:
+    return "".join(hint.split()).casefold() in _HERE_WORDS
+
+
 def _place(
     draft: EventDraft, ctx: _Ctx, text: str, *, default_here: bool = False
 ) -> tuple[Activity | None, bool, Question]:
@@ -130,6 +139,8 @@ def _place(
     place. The activity is None when it has to be asked."""
     if draft.activity_id is not None and draft.activity_id in ctx.by_id:
         found = [ctx.by_id[draft.activity_id]]
+    elif draft.activity_hint and _is_here(draft.activity_hint) and ctx.here is not None:
+        found = [ctx.here]
     elif draft.activity_hint and draft.activity_hint.strip():
         found = match_activities(draft.activity_hint, ctx.activities)
     else:

@@ -137,6 +137,13 @@ def test_extend_without_place_is_where_the_user_is():
     assert _question(type="EXTEND", extra_minutes=30).field == "activity_id"  # at the hotel
 
 
+def test_here_said_is_where_the_user_is():
+    # Live test 2026-11-27: "여기 20분만 더 있을래" came back with activity_hint "여기".
+    for hint in ("여기", "여기서", "이곳"):
+        item = _item("harajuku", type="EXTEND", activity_hint=hint, extra_minutes=20)
+        assert item.event.activity_id == "harajuku" and not item.assumed
+
+
 def test_wait_at_a_named_place():
     item = _item(type="WAIT", activity_hint="점심 식당", wait_minutes=40)
     assert (item.event.type, item.event.activity_id, item.event.minutes) == ("WAIT", "ramen", 40)
