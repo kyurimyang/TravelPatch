@@ -3,7 +3,7 @@
 import pytest
 
 from app.llm.disruption_interpreter import interpret
-from app.llm.provider import OpenAIProvider
+from app.llm.provider import interpret_provider
 from app.schemas.enums import Category
 from app.schemas.models import Activity
 from app.services.disruption_service import drafts_from, respond
@@ -48,7 +48,7 @@ CASES = [
 
 @pytest.fixture(scope="module")
 def provider():
-    return OpenAIProvider()
+    return interpret_provider()
 
 
 @pytest.mark.parametrize(("text", "expected_type", "fields"), CASES)

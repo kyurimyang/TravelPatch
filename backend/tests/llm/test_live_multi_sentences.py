@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from app.llm.provider import OpenAIProvider
+from app.llm.provider import interpret_provider
 from app.services.places_client import GooglePlacesClient
 from tests.services.multi_eval import case_problems, in_words, solve
 from tests.services.test_multi_sentences import CASES, read
@@ -29,7 +29,7 @@ _seen: dict[str, dict] = {}
 
 @pytest.fixture(scope="module")
 def provider():
-    return OpenAIProvider()
+    return interpret_provider()
 
 
 class _Watched:

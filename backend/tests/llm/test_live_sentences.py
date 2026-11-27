@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from app.llm.provider import OpenAIProvider
+from app.llm.provider import interpret_provider
 from app.schemas.disruption import InterpretRequest
 from app.services.disruption_service import interpret_disruption
 from tests.services.test_sentences import CASES, DAYS, _minutes
@@ -26,7 +26,7 @@ _seen: dict[str, dict] = {}
 
 @pytest.fixture(scope="module")
 def provider():
-    return OpenAIProvider()
+    return interpret_provider()
 
 
 @pytest.fixture(scope="module", autouse=True)

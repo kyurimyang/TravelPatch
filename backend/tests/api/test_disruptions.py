@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from app.llm.disruption_interpreter import InterpretedDisruption, InterpretedMessage
 from app.llm.provider import LLMOutputError
 from app.main import app
-from app.routers.deps import get_provider
+from app.routers.deps import get_interpret_provider
 from tests.engine.helpers import load_scenario_a
 
 
@@ -41,7 +41,7 @@ def ask():
     }
 
     def call(answer):
-        app.dependency_overrides[get_provider] = lambda: FakeProvider(answer)
+        app.dependency_overrides[get_interpret_provider] = lambda: FakeProvider(answer)
         try:
             return TestClient(app).post("/disruptions/interpret", json=body)
         finally:

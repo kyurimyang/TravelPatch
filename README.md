@@ -59,7 +59,7 @@ LLM은 번역기  — 앞: 자연어 → JSON,  뒤: 수치 → 문장
 
 ## 한 줄 입력 해석 평가
 
-여행 중 입력은 "12시부터 비가 많이 온대. 스카이 예약은 1시간 앞당겨졌고 라멘집은 대기 40분이래" 같은 한 문장입니다. 이 한 줄이 제대로 읽혔는지, 그리고 읽은 대로 **알맞은 패치**가 나오는지를 따로 쟀습니다. 모델: `gpt-4o-mini`.
+여행 중 입력은 "12시부터 비가 많이 온대. 스카이 예약은 1시간 앞당겨졌고 라멘집은 대기 40분이래" 같은 한 문장입니다. 이 한 줄이 제대로 읽혔는지, 그리고 읽은 대로 **알맞은 패치**가 나오는지를 따로 쟀습니다. 아래 숫자는 `gpt-4o-mini`로 잰 값이고, 남은 실수 때문에 한 줄 해석만 `gpt-4.1-mini`로 바꿨습니다(`OPENAI_INTERPRET_MODEL`).
 
 | 평가 | 내용 | 결과 |
 |---|---|---|
@@ -185,6 +185,8 @@ RC = w1·D_drop + w2·D_shrink + w3·D_sub + w4·D_order + w5·D_time + w6·D_mo
 
 ```
 OPENAI_KEY=
+OPENAI_MODEL=                 # 선택. 기본 gpt-4o-mini (일정 파싱 등)
+OPENAI_INTERPRET_MODEL=       # 선택. 한 줄 입력 해석, 기본 gpt-4.1-mini
 GOOGLE_PLACES_API_KEY=
 GOOGLE_ROUTES_API_KEY=        # ROUTES_TRAVEL_ENABLED=1 일 때만 사용
 SUPABASE_URL=
