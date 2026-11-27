@@ -23,7 +23,8 @@ MAX_CANDIDATES = 5
 NEAR_RADIUS_M = 1500.0  # substitutes: about a 20-minute walk around the closed place
 
 SEARCH_FIELDS = "places.id,places.displayName,places.formattedAddress,places.location,places.types"
-DETAIL_FIELDS = "id,location,timeZone,regularOpeningHours.periods"
+# types: indoor/outdoor and walking by rule (services/place_kind.py), read per request, not stored.
+DETAIL_FIELDS = "id,location,timeZone,regularOpeningHours.periods,types"
 
 
 class PlacesError(RuntimeError):
@@ -66,6 +67,7 @@ class PlaceDetails(_Frozen):
     time_zone: str | None
     # None = Google gave no hours: unknown, never "always open" (invariant 8).
     periods: tuple[OpeningPeriod, ...] | None
+    types: tuple[str, ...] = ()  # Google place types, e.g. "park", "museum"
 
 
 def _point(raw: dict[str, Any], key: str) -> tuple[int, int] | None:
@@ -158,4 +160,5 @@ class GooglePlacesClient:
             lng=data["location"]["longitude"],
             time_zone=(data.get("timeZone") or {}).get("id"),
             periods=_parse_periods(data),
+            types=tuple(data.get("types", ())),
         )

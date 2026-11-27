@@ -104,3 +104,13 @@ def test_add_substitutes_searches_closed_and_outdoor_pieces():
     assert sorted(places.queries) == sorted(
         ["카페", "실내 메이지 신궁", "실내 하라주쿠 다케시타 거리"]
     )
+
+
+def test_walking_from_types_and_category():
+    from app.schemas.enums import Category
+    from app.services.place_kind import place_walking
+
+    assert place_walking(("park",), Category.SIGHTSEEING) is True
+    assert place_walking(("market",), Category.SHOPPING) is True
+    assert place_walking(("museum",), Category.SIGHTSEEING) is None  # not settled
+    assert place_walking(("park",), Category.CAFE) is False  # a cafe in a park: sitting down

@@ -42,9 +42,11 @@ class FakePlaces:
         self,
         hours: dict[str, tuple[OpeningPeriod, ...] | None],
         fail: set[str] = frozenset(),
+        types: dict[str, tuple[str, ...]] | None = None,
     ):
         self.hours = hours
         self.fail = fail
+        self.types = types or {}
         self.asked: list[str] = []
 
     def details(self, place_id: str) -> PlaceDetails:
@@ -58,6 +60,7 @@ class FakePlaces:
             lng=lng,
             time_zone="Asia/Tokyo",
             periods=self.hours.get(place_id),
+            types=self.types.get(place_id, ()),
         )
 
 
@@ -106,8 +109,21 @@ def test_builds_activities_with_coordinates_and_hours():
     assert (meiji.lat, meiji.lng) == COORDS["meiji"]
     assert (meiji.planned_start, meiji.planned_end) == (600, 690)
     assert (meiji.open_at, meiji.close_at) == (300, 1110)
-    assert meiji.outdoor is None  # unknown, never guessed
+    assert meiji.outdoor is None  # no types from Google: unknown, never guessed
     assert plan.warnings == ()
+
+
+def test_google_types_say_outdoor_and_walking_or_nothing():
+    places = _places()
+    places.types = {
+        "meiji": ("park", "tourist_attraction"),
+        "ramen": ("ramen_restaurant", "restaurant"),
+        "sky": ("tourist_attraction", "point_of_interest"),  # does not settle it
+    }
+    acts = {a.id: a for a in build_plan(_request(), places).activities}
+    assert (acts["meiji"].outdoor, acts["meiji"].walking) == (True, True)
+    assert (acts["ramen"].outdoor, acts["ramen"].walking) == (False, False)  # a meal: sitting
+    assert (acts["sky"].outdoor, acts["sky"].walking) == (None, None)
 
 
 def test_day_starts_at_the_hotel_in_time_for_the_first_item():

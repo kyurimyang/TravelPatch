@@ -22,6 +22,7 @@ from app.schemas.events import ClosureEvent, WeatherEvent
 from app.schemas.models import HOTEL_ID, START_ID, Activity, Substitute
 from app.schemas.recovery import RecoveryInput
 from app.services.opening_hours import hours_for_weekday
+from app.services.place_kind import place_outdoor
 from app.services.places_client import (
     GooglePlacesClient,
     PlaceCandidate,
@@ -43,50 +44,8 @@ EAT_DRINK_TYPES = {"restaurant", "food", "cafe", "coffee_shop", "bar", "pub", "b
 EAT_DRINK_SUFFIXES = ("_restaurant", "_bar", "_cafe")
 
 
-# Google types that settle whether a place is inside. Anything else stays unknown (None): the
-# engine then reads it as the piece it replaces, so an unknown place is never sent into rain.
-INDOOR_TYPES = {
-    "museum",
-    "art_gallery",
-    "aquarium",
-    "shopping_mall",
-    "department_store",
-    "movie_theater",
-    "library",
-    "bowling_alley",
-    "planetarium",
-    "book_store",
-    "restaurant",
-    "cafe",
-    "coffee_shop",
-    "bar",
-    "bakery",
-    "spa",
-}
-INDOOR_SUFFIXES = ("_restaurant", "_cafe", "_bar", "_museum", "_store", "_shop")
-OUTDOOR_TYPES = {
-    "park",
-    "garden",
-    "botanical_garden",
-    "zoo",
-    "amusement_park",
-    "beach",
-    "hiking_area",
-    "national_park",
-    "campground",
-    "plaza",
-}
 # Outdoor pieces searched for an indoor stand-in per request (one LLM call + one search each).
 MAX_INDOOR_SEARCHES = 2
-
-
-def place_outdoor(types: tuple[str, ...]) -> bool | None:
-    """True / False when Google's types say so, None when they do not (or disagree)."""
-    outside = any(t in OUTDOOR_TYPES for t in types)
-    inside = any(t in INDOOR_TYPES or t.endswith(INDOOR_SUFFIXES) for t in types)
-    if outside == inside:
-        return None
-    return outside
 
 
 def _same_kind(category: str, types: tuple[str, ...]) -> bool:

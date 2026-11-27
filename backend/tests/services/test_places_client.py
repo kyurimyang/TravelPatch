@@ -78,6 +78,18 @@ def test_details_parses_location_timezone_and_periods():
     assert second.close_day is None  # around the clock
 
 
+def test_details_asks_for_and_reads_the_place_types():
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["mask"] = request.headers.get("X-Goog-FieldMask", "")
+        payload = {"id": "p1", "location": {"latitude": 1, "longitude": 2}, "types": ["park"]}
+        return httpx.Response(200, json=payload)
+
+    assert _client(handler).details("p1").types == ("park",)
+    assert "types" in seen["mask"].split(",")
+
+
 def test_details_without_hours_is_unknown_not_always_open():
     payload = {"id": "p1", "location": {"latitude": 1, "longitude": 2}}
     assert _client(lambda r: httpx.Response(200, json=payload)).details("p1").periods is None
