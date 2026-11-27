@@ -123,6 +123,15 @@ def _ask(draft: EventDraft, question: Question) -> InterpretItem:
     return InterpretItem(draft=draft, question=question)
 
 
+# Words for "where I am now" ("여기 20분만 더 있을래", live test 2026-11-27): the current place,
+# said, so not an assumption.
+_HERE_WORDS = {"여기", "여기서", "여기에", "이곳", "이곳에서", "지금여기", "지금있는곳", "here"}
+
+
+def _is_here(hint: str) -> bool:
+    return "".join(hint.split()).casefold() in _HERE_WORDS
+
+
 def _place(
     draft: EventDraft, ctx: _Ctx, text: str, *, default_here: bool = False
 ) -> tuple[Activity | None, bool, Question]:
@@ -130,6 +139,8 @@ def _place(
     place. The activity is None when it has to be asked."""
     if draft.activity_id is not None and draft.activity_id in ctx.by_id:
         found = [ctx.by_id[draft.activity_id]]
+    elif draft.activity_hint and _is_here(draft.activity_hint) and ctx.here is not None:
+        found = [ctx.here]
     elif draft.activity_hint and draft.activity_hint.strip():
         found = match_activities(draft.activity_hint, ctx.activities)
     else:
@@ -273,8 +284,10 @@ def _reservation(draft: EventDraft, ctx: _Ctx) -> InterpretItem:
         default=before,
     )
     new_time = _clock(draft.new_time)
-    if new_time is None and draft.new_time is None and draft.shift_minutes:
-        new_time = before + draft.shift_minutes  # "1시간 앞당겨짐": from the booked time, by rule
+    if new_time is None and draft.shift_minutes:
+        # "1시간 앞당겨짐": from the booked time, by rule. Also when the model put something that
+        # is not a clock time in new_time ("", "1시간") beside the shift (live run 2026-11-27).
+        new_time = before + draft.shift_minutes
     if new_time is None or not 0 <= new_time <= MINUTES_PER_DAY:
         return _ask(draft, time_q)
     event = ReservationChangeEvent(
@@ -283,7 +296,11 @@ def _reservation(draft: EventDraft, ctx: _Ctx) -> InterpretItem:
         activity_id=activity.id,
         new_time=new_time,
     )
-    chip = f"{activity.title} 예약 {hhmm(before)} → {hhmm(new_time)}"
+    # A title that already says "예약" ("에펠탑 예약") does not get it twice.
+    booking = (
+        activity.title if activity.title.rstrip().endswith("예약") else f"{activity.title} 예약"
+    )
+    chip = f"{booking} {hhmm(before)} → {hhmm(new_time)}"
     return InterpretItem(draft=draft, event=event, chip=chip, question=time_q)
 
 

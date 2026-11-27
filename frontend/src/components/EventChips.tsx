@@ -62,6 +62,9 @@ export function EventChips({ response, activities, now, busy, onChange, onAddPla
               </div>
               {asking && item.question && (
                 <Answer
+                  // A new question gets a fresh control: the time it offers is its own default,
+                  // not the last one typed (user test 2026-11-27: "18:00 → 09:00").
+                  key={`${i}-${item.question.field}-${item.question.kind}-${item.question.default ?? ''}`}
                   question={item.question}
                   showText={item.event != null}
                   now={now}

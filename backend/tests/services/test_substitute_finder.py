@@ -141,6 +141,10 @@ class FakePlaces:
     def details(self, place_id):
         return self._details[place_id]
 
+    def search_with_hours(self, query, language="ko", near=None, radius_m=1500.0):
+        # Like Google: the hits carry their details (one request, see places_client).
+        return [(hit, self._details[hit.place_id]) for hit in self.search(query, language, near)]
+
 
 def test_closure_gets_substitutes_and_the_engine_uses_one():
     inp = _closed_izakaya()

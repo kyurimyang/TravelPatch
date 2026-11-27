@@ -1,0 +1,345 @@
+[
+ {
+  "id": "rain_booking_queue",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "12시부터 비가 많이 온대. 스카이 예약은 1시간 앞당겨졌고 라멘집은 대기 40분이래",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER",
+     "time_from": "12:00"
+    },
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "스카이",
+     "shift_minutes": -60
+    },
+    {
+     "type": "WAIT",
+     "activity_hint": "라멘집",
+     "wait_minutes": 40
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "types": [
+    "WEATHER",
+    "RESERVATION_CHANGE",
+    "WAIT"
+   ]
+  }
+ },
+ {
+  "id": "london_three",
+  "day": "london",
+  "now": "11:00",
+  "at": "museum",
+  "text": "DAY 2에 비가 많이 오고 있어. 게다가 런던 아이 예약 시간이 1시간 앞당겨졌고, 점심 식당에서도 대기 시간이 40분 발생했어",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER"
+    },
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "런던 아이",
+     "shift_minutes": -60
+    },
+    {
+     "type": "WAIT",
+     "activity_hint": "점심 식당",
+     "wait_minutes": 40
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "types": [
+    "WEATHER",
+    "RESERVATION_CHANGE",
+    "WAIT"
+   ]
+  }
+ },
+ {
+  "id": "late_then_rain",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "알람을 못 들어서 40분 늦고, 오후 1시부터 비래",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 40
+    },
+    {
+     "type": "WEATHER",
+     "time_from": "13:00"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "types": [
+    "DELAY",
+    "WEATHER"
+   ]
+  }
+ },
+ {
+  "id": "closed_and_later",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "카페가 문을 닫았고 스카이 예약은 30분 늦춰졌어",
+  "llm": {
+   "events": [
+    {
+     "type": "CLOSURE",
+     "activity_hint": "카페"
+    },
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "스카이",
+     "shift_minutes": 30
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "types": [
+    "CLOSURE",
+    "RESERVATION_CHANGE"
+   ]
+  }
+ },
+ {
+  "id": "tired_rain_rest",
+  "day": "london",
+  "now": "13:00",
+  "at": "lunch",
+  "text": "피곤하고 비도 와서 실내에서 쉬고 싶어",
+  "llm": {
+   "events": [
+    {
+     "type": "FATIGUE"
+    },
+    {
+     "type": "WEATHER"
+    }
+   ],
+   "wishes": [
+    {
+     "wish": "indoor",
+     "evidence": "실내에서"
+    },
+    {
+     "wish": "rest",
+     "evidence": "쉬고 싶어"
+    }
+   ]
+  },
+  "expect": {
+   "types": [
+    "FATIGUE",
+    "WEATHER"
+   ],
+   "wishes": [
+    "indoor",
+    "rest"
+   ],
+   "first_strategy": "relaxed"
+  }
+ },
+ {
+  "id": "late_and_queue",
+  "day": "london",
+  "now": "11:00",
+  "at": "museum",
+  "text": "지하철이 30분 늦고 점심 식당은 대기 30분이래",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 30
+    },
+    {
+     "type": "WAIT",
+     "activity_hint": "점심 식당",
+     "wait_minutes": 30
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "types": [
+    "DELAY",
+    "WAIT"
+   ]
+  }
+ },
+ {
+  "id": "booking_to_16_and_rain",
+  "day": "london",
+  "now": "13:00",
+  "at": "lunch",
+  "text": "런던 아이 예약이 16시로 바뀌었고 비가 오기 시작했어",
+  "llm": {
+   "events": [
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "런던 아이",
+     "new_time": "16:00"
+    },
+    {
+     "type": "WEATHER"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "types": [
+    "RESERVATION_CHANGE",
+    "WEATHER"
+   ]
+  }
+ },
+ {
+  "id": "extend_and_queue",
+  "day": "tokyo",
+  "now": "10:40",
+  "at": "harajuku",
+  "text": "하라주쿠 30분 더 있고 싶은데 라멘집 대기도 20분이래",
+  "llm": {
+   "events": [
+    {
+     "type": "EXTEND",
+     "activity_hint": "하라주쿠",
+     "extra_minutes": 30
+    },
+    {
+     "type": "WAIT",
+     "activity_hint": "라멘집",
+     "wait_minutes": 20
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "types": [
+    "EXTEND",
+    "WAIT"
+   ]
+  }
+ },
+ {
+  "id": "closed_bridge_and_rain",
+  "day": "london",
+  "now": "13:00",
+  "at": "lunch",
+  "text": "타워 브리지 쪽이 공사로 막혔고 비도 온대",
+  "llm": {
+   "events": [
+    {
+     "type": "CLOSURE",
+     "activity_hint": "타워 브리지"
+    },
+    {
+     "type": "WEATHER"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "types": [
+    "CLOSURE",
+    "WEATHER"
+   ]
+  }
+ },
+ {
+  "id": "rain_walk_less",
+  "day": "london",
+  "now": "13:00",
+  "at": "lunch",
+  "text": "비 와서 덜 걷고 싶어",
+  "llm": {
+   "events": [
+    {
+     "type": "WEATHER"
+    }
+   ],
+   "wishes": [
+    {
+     "wish": "less_walking",
+     "evidence": "덜 걷고 싶어"
+    }
+   ]
+  },
+  "expect": {
+   "types": [
+    "WEATHER",
+    "FATIGUE"
+   ]
+  }
+ },
+ {
+  "id": "overslept_and_closed",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "늦잠 2시간에 카페는 휴무래",
+  "llm": {
+   "events": [
+    {
+     "type": "DELAY",
+     "delay_minutes": 120
+    },
+    {
+     "type": "CLOSURE",
+     "activity_hint": "카페"
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "types": [
+    "DELAY",
+    "CLOSURE"
+   ]
+  }
+ },
+ {
+  "id": "booking_clash_lunch",
+  "day": "tokyo",
+  "now": "09:00",
+  "at": "hotel",
+  "text": "스카이 예약 3시간 반 앞당겨졌고 라멘집 40분 대기래",
+  "llm": {
+   "events": [
+    {
+     "type": "RESERVATION_CHANGE",
+     "activity_hint": "스카이",
+     "shift_minutes": -210
+    },
+    {
+     "type": "WAIT",
+     "activity_hint": "라멘집",
+     "wait_minutes": 40
+    }
+   ],
+   "wishes": []
+  },
+  "expect": {
+   "types": [
+    "RESERVATION_CHANGE",
+    "WAIT"
+   ],
+   "distinct": true
+  }
+ }
+]

@@ -13,7 +13,10 @@
     }
    ],
    "wishes": [
-    "indoor"
+    {
+     "wish": "indoor",
+     "evidence": "실내에서"
+    }
    ]
   },
   "expect": {
@@ -380,7 +383,10 @@
     }
    ],
    "wishes": [
-    "less_walking"
+    {
+     "wish": "less_walking",
+     "evidence": "걷기 힘들어요"
+    }
    ]
   },
   "expect": {
@@ -408,7 +414,10 @@
     }
    ],
    "wishes": [
-    "indoor"
+    {
+     "wish": "indoor",
+     "evidence": "실내 위주로"
+    }
    ]
   },
   "expect": {
@@ -648,7 +657,10 @@
   "llm": {
    "events": [],
    "wishes": [
-    "less_walking"
+    {
+     "wish": "less_walking",
+     "evidence": "덜 걷고 싶어"
+    }
    ]
   },
   "expect": {
@@ -670,7 +682,10 @@
   "llm": {
    "events": [],
    "wishes": [
-    "rest"
+    {
+     "wish": "rest",
+     "evidence": "쉬고 싶어요"
+    }
    ]
   },
   "expect": {
@@ -701,7 +716,10 @@
     }
    ],
    "wishes": [
-    "rest"
+    {
+     "wish": "rest",
+     "evidence": "쉬어야 해"
+    }
    ]
   },
   "expect": {
@@ -724,7 +742,10 @@
   "llm": {
    "events": [],
    "wishes": [
-    "indoor"
+    {
+     "wish": "indoor",
+     "evidence": "실내에 있고 싶어요"
+    }
    ]
   },
   "expect": {
@@ -1205,8 +1226,14 @@
     }
    ],
    "wishes": [
-    "indoor",
-    "rest"
+    {
+     "wish": "indoor",
+     "evidence": "실내에서"
+    },
+    {
+     "wish": "rest",
+     "evidence": "쉬고 싶어"
+    }
    ]
   },
   "expect": {

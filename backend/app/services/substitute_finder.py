@@ -12,7 +12,6 @@ Google types as indoors is marked outdoor=False, so the engine may use it in the
 """
 
 from collections.abc import Iterable
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from app.llm.provider import LLMProvider
@@ -22,6 +21,7 @@ from app.schemas.events import ClosureEvent, WeatherEvent
 from app.schemas.models import HOTEL_ID, START_ID, Activity, Substitute
 from app.schemas.recovery import RecoveryInput
 from app.services.opening_hours import hours_for_weekday
+from app.services.place_kind import place_outdoor
 from app.services.places_client import (
     GooglePlacesClient,
     PlaceCandidate,
@@ -43,56 +43,24 @@ EAT_DRINK_TYPES = {"restaurant", "food", "cafe", "coffee_shop", "bar", "pub", "b
 EAT_DRINK_SUFFIXES = ("_restaurant", "_bar", "_cafe")
 
 
-# Google types that settle whether a place is inside. Anything else stays unknown (None): the
-# engine then reads it as the piece it replaces, so an unknown place is never sent into rain.
-INDOOR_TYPES = {
-    "museum",
-    "art_gallery",
-    "aquarium",
-    "shopping_mall",
-    "department_store",
-    "movie_theater",
-    "library",
-    "bowling_alley",
-    "planetarium",
-    "book_store",
-    "restaurant",
-    "cafe",
-    "coffee_shop",
-    "bar",
-    "bakery",
-    "spa",
-}
-INDOOR_SUFFIXES = ("_restaurant", "_cafe", "_bar", "_museum", "_store", "_shop")
-OUTDOOR_TYPES = {
-    "park",
-    "garden",
-    "botanical_garden",
-    "zoo",
-    "amusement_park",
-    "beach",
-    "hiking_area",
-    "national_park",
-    "campground",
-    "plaza",
-}
 # Outdoor pieces searched for an indoor stand-in per request (one LLM call + one search each).
 MAX_INDOOR_SEARCHES = 2
 
 
-def place_outdoor(types: tuple[str, ...]) -> bool | None:
-    """True / False when Google's types say so, None when they do not (or disagree)."""
-    outside = any(t in OUTDOOR_TYPES for t in types)
-    inside = any(t in INDOOR_TYPES or t.endswith(INDOOR_SUFFIXES) for t in types)
-    if outside == inside:
-        return None
-    return outside
+def _eat_drink(t: str) -> bool:
+    return t in EAT_DRINK_TYPES or t.endswith(EAT_DRINK_SUFFIXES)
 
 
 def _same_kind(category: str, types: tuple[str, ...]) -> bool:
-    if category not in ("meal", "cafe") or not types:  # other kinds, or Google gave no types
+    if not types:  # Google gave no types: nothing to judge by
         return True
-    return any(t in EAT_DRINK_TYPES or t.endswith(EAT_DRINK_SUFFIXES) for t in types)
+    if "lodging" in types:  # a hotel stands in for nothing in a day plan
+        return False
+    if category in ("meal", "cafe"):
+        return any(_eat_drink(t) for t in types)
+    # A sight or a shop is not stood in for by a place whose main kind (Google's first type) is a
+    # restaurant or cafe: the Louvre was swapped for a cafe for 2.5 hours (user test 2026-11-27).
+    return not _eat_drink(types[0])
 
 
 @dataclass(frozen=True)
@@ -103,13 +71,19 @@ class Found:
 
 
 def build_substitutes(
-    target: Activity, places: Iterable[tuple[PlaceCandidate, PlaceDetails]], weekday: int | None
+    target: Activity,
+    places: Iterable[tuple[PlaceCandidate, PlaceDetails]],
+    weekday: int | None,
+    others: Iterable[tuple[float, float]] = (),
 ) -> Found:
     """Pure. `places` = (search hit, its details) in Google's order. `weekday` is Monday=0..Sunday=6,
-    or None when the date is unknown (then every candidate's hours are unknown).
+    or None when the date is unknown (then every candidate's hours are unknown). `others` = where
+    the day's other pieces are: a hit at one of them is not a stand-in (it would be the same place
+    twice in a day: 경복궁 -> 북촌 한옥마을 already at 12:30, user test 2026-11-27).
 
     Keeps Google's order for ids (sub_<activity>_<n>), so the same answers give the same input.
     """
+    taken = tuple(others)
     subs: list[Substitute] = []
     unknown: set[str] = set()
     for hit, p in places:
@@ -117,6 +91,8 @@ def build_substitutes(
             continue
         km = haversine_km((target.lat, target.lng), (p.lat, p.lng))
         if km < SAME_PLACE_KM:
+            continue
+        if any(haversine_km(o, (p.lat, p.lng)) < SAME_PLACE_KM for o in taken):
             continue
         slot = (target.planned_start, target.planned_end)  # pick the opening window around it
         hours = hours_for_weekday(p.periods, weekday, prefer=slot) if weekday is not None else None
@@ -191,6 +167,8 @@ def add_substitutes(
     closed, indoor = closed_targets(inp), indoor_targets(inp)
     if not closed and not indoor:
         return inp
+    # A closed outdoor piece in the rain is in both lists: one search (an indoor one), not two
+    # with clashing ids (live test 2026-11-27, "타워 브리지 공사 + 비" -> 500).
     return add_substitutes_for(inp, [*closed, *indoor], provider, places, indoor=frozenset(indoor))
 
 
@@ -206,7 +184,7 @@ def add_substitutes_for(
     engine still decides; it takes a substitute only when that changes the day less than the drop.
     Unchanged when nothing was found."""
     found_all: list[Substitute] = []
-    for aid in ids:
+    for aid in dict.fromkeys(ids):  # each activity searched once
         target = next((a for a in inp.activities if a.id == aid), None)
         if target is None or any(s.replaces == aid for s in inp.substitutes):
             continue
@@ -233,27 +211,21 @@ def _search(
     indoor: bool = False,
 ) -> list[Substitute]:
     """Places like `target` near it, open that day: one LLM call for what to search, one Google
-    search, details in parallel. [] when Google cannot answer. `indoor`: an inside place is
-    wanted (rain or the wish), so the search asks for one."""
+    search that brings the hours along (no details call per hit). [] when Google cannot answer.
+    `indoor`: an inside place is wanted (rain or the wish), so the search asks for one."""
     query = substitute_query(provider, target.title, target.category, indoor=indoor)
     try:
-        hits = places.search(query, near=(target.lat, target.lng))
+        details = places.search_with_hours(query, near=(target.lat, target.lng))
     except PlacesError:
         return []
 
-    def lookup(hit: PlaceCandidate) -> PlaceDetails | None:
-        try:
-            return places.details(hit.place_id)
-        except PlacesError:
-            return None  # one failed lookup only loses that candidate
-
-    # In parallel: each lookup waits on the network. map keeps Google's order.
-    with ThreadPoolExecutor(max_workers=len(hits) or 1) as pool:
-        looked_up = list(pool.map(lookup, hits))
-    details = [(hit, d) for hit, d in zip(hits, looked_up, strict=True) if d is not None]
-
     weekday = inp.day.date.weekday() if inp.day.date is not None else None
-    return list(build_substitutes(target, details, weekday).substitutes)
+    # The day's other pieces, and where it starts and ends (the hotel is no stand-in for a sight).
+    others = [(a.lat, a.lng) for a in inp.activities if a.id != target.id]
+    others.append((inp.day.end_lat, inp.day.end_lng))
+    if inp.day.start_lat is not None and inp.day.start_lng is not None:
+        others.append((inp.day.start_lat, inp.day.start_lng))
+    return list(build_substitutes(target, details, weekday, others).substitutes)
 
 
 def needs_check_ids(inp: RecoveryInput) -> frozenset[str]:

@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from app.llm.disruption_interpreter import InterpretedDisruption, InterpretedMessage
 from app.llm.provider import LLMOutputError
 from app.main import app
-from app.routers.deps import get_provider
+from app.routers.deps import get_interpret_provider
 from tests.engine.helpers import load_scenario_a
 
 
@@ -24,7 +24,9 @@ def _event(**fields) -> InterpretedDisruption:
 
 
 def _msg(*events, wishes=()) -> InterpretedMessage:
-    return InterpretedMessage(events=list(events), wishes=list(wishes))
+    # A wish counts only when its evidence is in the text sent (the fixture's text says "실내에서").
+    heard = [{"wish": w, "evidence": "실내에서"} for w in wishes]
+    return InterpretedMessage(events=list(events), wishes=heard)
 
 
 @pytest.fixture
@@ -32,14 +34,14 @@ def ask():
     """POST /disruptions/interpret with the LLM answering `answer`."""
     inp = load_scenario_a()
     body = {
-        "text": "아무 문장",
+        "text": "아무 문장, 실내에서",
         "now": 540,
         "location_id": "hotel",
         "activities": [a.model_dump(mode="json") for a in inp.activities],
     }
 
     def call(answer):
-        app.dependency_overrides[get_provider] = lambda: FakeProvider(answer)
+        app.dependency_overrides[get_interpret_provider] = lambda: FakeProvider(answer)
         try:
             return TestClient(app).post("/disruptions/interpret", json=body)
         finally:

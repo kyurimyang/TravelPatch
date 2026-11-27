@@ -6,7 +6,8 @@ values decided 2026-11-17, until the LLM suggestion step exists:
   min_duration     half the planned length, rounded down to 5 minutes, at least 15
   substitutability meal/cafe 0.6 (can eat elsewhere), others 0.2
   time_rigidity    reserved if there is a reservation, else flexible
-  outdoor/walking  unknown (None): never guessed (invariant 8)
+  outdoor/walking  from Google's place types by rule (services/place_kind.py, 2026-11-27);
+                   unknown (None) when the types do not settle it: never guessed (invariant 8)
 
 Flights (decision 2026-11-18): an arrival starts the day at the airport (START_ID) once the
 buffer has passed; a departure ends it at the airport (put in the HOTEL_ID node, "where the day
@@ -22,6 +23,7 @@ from app.schemas.enums import Category, TimeRigidity
 from app.schemas.models import HOTEL_ID, START_ID, Activity, Day, Preference, TravelTime
 from app.schemas.plan import BuiltPlan, PlanRequest, PlanWarning
 from app.services.opening_hours import hours_for_weekday
+from app.services.place_kind import place_outdoor, place_walking
 from app.services.places_client import GooglePlacesClient, PlaceDetails
 from app.services.routes_client import GoogleRoutesClient, RoutesError
 from app.services.travel_estimate import fill_missing_travel
@@ -115,8 +117,8 @@ def build_plan(
                 planned_start=it.start,
                 planned_end=it.end,
                 min_duration=min_duration_for(planned),
-                outdoor=None,
-                walking=None,
+                outdoor=place_outdoor(d.types),
+                walking=place_walking(d.types, it.category),
                 open_at=hours.open_at if known else None,
                 close_at=hours.close_at if known else None,
                 reservation_time=it.reservation_time,

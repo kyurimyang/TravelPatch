@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, Request
 
-from app.llm.provider import LLMConfigError, LLMProvider, OpenAIProvider
+from app.llm.provider import LLMConfigError, LLMProvider, OpenAIProvider, interpret_provider
 from app.services.auth import AuthConfigError, AuthError, TokenVerifier, get_verifier
 from app.services.guest_quota import GuestQuota, Kind, store_from_env
 from app.services.places_client import GooglePlacesClient, PlacesConfigError
@@ -19,6 +19,19 @@ log = logging.getLogger(__name__)
 @lru_cache(maxsize=1)
 def _openai() -> OpenAIProvider:
     return OpenAIProvider()
+
+
+@lru_cache(maxsize=1)
+def _openai_interpret() -> OpenAIProvider:
+    return interpret_provider()
+
+
+def get_interpret_provider() -> LLMProvider:
+    """The model that reads the one-line input (llm/provider.INTERPRET_MODEL)."""
+    try:
+        return _openai_interpret()
+    except LLMConfigError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
 
 
 def get_provider() -> LLMProvider:
@@ -156,6 +169,17 @@ def charged_provider(
     provider: Annotated[LLMProvider, Depends(get_provider)],
 ) -> LLMProvider:
     """get_provider, after counting a guest's call. Routes that always call the LLM use this."""
+    if not allow(caller, Kind.LLM, quota):
+        raise _refuse(Kind.LLM)
+    return provider
+
+
+def charged_interpreter(
+    caller: Annotated[Caller, Depends(get_caller)],
+    quota: Annotated[GuestQuota, Depends(get_guest_quota)],
+    provider: Annotated[LLMProvider, Depends(get_interpret_provider)],
+) -> LLMProvider:
+    """charged_provider for POST /disruptions/interpret (its own model, same guest limit)."""
     if not allow(caller, Kind.LLM, quota):
         raise _refuse(Kind.LLM)
     return provider

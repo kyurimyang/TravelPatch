@@ -64,11 +64,13 @@ interface Props {
   detail?: ReactNode
   /** It changed places with a piece around it (lib/timetable). */
   reordered?: boolean
+  /** Chip text instead of the op's ("대기": longer because of a queue, not an extension). */
+  label?: string
 }
 
 // A piece of the day as a row of the timetable: time | patch | name + what changes | op label.
 // Changed pieces are stitched on (dashed edge in the op colour); kept pieces stay flat.
-export function DiffRow({ title, change, icon, substituteTitle, tag, detail, reordered }: Props) {
+export function DiffRow({ title, change, icon, substituteTitle, tag, detail, reordered, label }: Props) {
   const slot = change.after ?? change.before
   return (
     <li className="diff-row" data-op={change.op}>
@@ -84,7 +86,7 @@ export function DiffRow({ title, change, icon, substituteTitle, tag, detail, reo
               </span>
             )}
           </b>
-          <span className="diff-row__chip">{OP_LABEL[change.op]}</span>
+          <span className="diff-row__chip">{label ?? OP_LABEL[change.op]}</span>
         </div>
         <ChangeLine change={change} substituteTitle={substituteTitle} />
         {tag && change.op !== 'keep' && <span className="diff-row__tag">{tag}</span>}

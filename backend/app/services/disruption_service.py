@@ -8,7 +8,7 @@ edited drafts (`build_disruption`), without the LLM.
 
 from collections.abc import Sequence
 
-from app.llm.disruption_interpreter import InterpretedMessage, interpret
+from app.llm.disruption_interpreter import InterpretedMessage, interpret, said
 from app.llm.provider import LLMOutputError, LLMProvider
 from app.schemas.disruption import (
     MAX_ITEMS,
@@ -40,12 +40,24 @@ _PROBLEM_CODE = {
 }
 
 
-def drafts_from(message: InterpretedMessage) -> tuple[tuple[EventDraft, ...], tuple[Wish, ...]]:
-    """The LLM's reading as editable drafts. UNKNOWN items are kept only when nothing else was
-    understood (then the user is asked what happened); a less-walking or rest wish adds one
-    FATIGUE draft when the message had none."""
-    wishes = tuple(dict.fromkeys(Wish(w) for w in message.wishes))
-    drafts = [EventDraft(**e.model_dump()) for e in message.events]
+def _rain_said_when(e) -> bool:
+    return bool(e.time_from or e.time_to or e.whole_day)
+
+
+def drafts_from(
+    message: InterpretedMessage, text: str
+) -> tuple[tuple[EventDraft, ...], tuple[Wish, ...]]:
+    """The LLM's reading as editable drafts. A wish counts only when its evidence is in `text`
+    (the traveler said it). The same event heard twice is one ("비 와서" -> WEATHER twice, live
+    test 2026-11-27). UNKNOWN items are kept only when nothing else was understood (then the user
+    is asked what happened); a less-walking or rest wish adds one FATIGUE draft when the message
+    had none."""
+    wishes = tuple(dict.fromkeys(Wish(w.wish) for w in message.wishes if said(w.evidence, text)))
+    unique = list({e.model_dump_json(): e for e in message.events}.values())
+    # "15시까지 비" also heard as a bare "비": the bare one says nothing more (live test).
+    timed = any(e.type == "WEATHER" and _rain_said_when(e) for e in unique)
+    unique = [e for e in unique if not (timed and e.type == "WEATHER" and not _rain_said_when(e))]
+    drafts = [EventDraft(**e.model_dump()) for e in unique]
     known = [d for d in drafts if d.type != "UNKNOWN"]
     if any(w in wishes for w in _FATIGUE_WISHES) and not any(d.type == "FATIGUE" for d in known):
         known.append(EventDraft(type="FATIGUE"))
@@ -137,7 +149,7 @@ def interpret_disruption(req: InterpretRequest, provider: LLMProvider) -> Interp
         item = InterpretItem(draft=EventDraft(type="UNKNOWN"), question=_TYPE_QUESTION)
         problem = InterpretProblem(code="LLM_FAILED", detail=_TYPE_QUESTION.text)
         return InterpretResponse(status="needs_input", event=None, items=(item,), problem=problem)
-    drafts, wishes = drafts_from(message)
+    drafts, wishes = drafts_from(message, req.text)
     return respond(
         drafts, wishes, now=req.now, location_id=req.location_id, activities=req.activities
     )

@@ -23,7 +23,14 @@ MAX_CANDIDATES = 5
 NEAR_RADIUS_M = 1500.0  # substitutes: about a 20-minute walk around the closed place
 
 SEARCH_FIELDS = "places.id,places.displayName,places.formattedAddress,places.location,places.types"
-DETAIL_FIELDS = "id,location,timeZone,regularOpeningHours.periods"
+# types: indoor/outdoor and walking by rule (services/place_kind.py), read per request, not stored.
+DETAIL_FIELDS = "id,location,timeZone,regularOpeningHours.periods,types"
+# Substitute search (decision 2026-11-27): the hours and time zone come with the hits, so no
+# details call per hit. One "Text Search Enterprise" request ($35/1000) instead of a Text Search
+# Pro ($32/1000) plus up to MAX_CANDIDATES "Place Details Enterprise" ($20/1000 each); and the
+# daily Place Details quota is no longer spent on substitutes (live test: HTTP 429 after ~10
+# searches). The plain search (users picking a place) stays on SEARCH_FIELDS.
+SEARCH_WITH_HOURS_FIELDS = SEARCH_FIELDS + ",places.timeZone,places.regularOpeningHours.periods"
 
 
 class PlacesError(RuntimeError):
@@ -66,6 +73,7 @@ class PlaceDetails(_Frozen):
     time_zone: str | None
     # None = Google gave no hours: unknown, never "always open" (invariant 8).
     periods: tuple[OpeningPeriod, ...] | None
+    types: tuple[str, ...] = ()  # Google place types, e.g. "park", "museum"
 
 
 def _point(raw: dict[str, Any], key: str) -> tuple[int, int] | None:
@@ -118,6 +126,25 @@ class GooglePlacesClient:
             raise PlacesError(f"Places returned HTTP {response.status_code}: {detail[:200]}")
         return response.json()
 
+    def _search(
+        self,
+        query: str,
+        language: str,
+        near: tuple[float, float] | None,
+        radius_m: float,
+        fields: str,
+    ) -> list[dict[str, Any]]:
+        body: dict[str, Any] = {
+            "textQuery": query,
+            "languageCode": language,
+            "maxResultCount": MAX_CANDIDATES,
+        }
+        if near is not None:
+            center = {"latitude": near[0], "longitude": near[1]}
+            body["locationBias"] = {"circle": {"center": center, "radius": radius_m}}
+        data = self._call("POST", f"{BASE_URL}/places:searchText", fields, json=body)
+        return [p for p in data.get("places", []) if "id" in p and "location" in p]
+
     def search(
         self,
         query: str,
@@ -128,34 +155,41 @@ class GooglePlacesClient:
         """Candidates for a place name, in Google's order. The caller (the user) picks one.
 
         `near` (lat, lng) prefers results around that point (a bias, not a hard limit)."""
-        body: dict[str, Any] = {
-            "textQuery": query,
-            "languageCode": language,
-            "maxResultCount": MAX_CANDIDATES,
-        }
-        if near is not None:
-            center = {"latitude": near[0], "longitude": near[1]}
-            body["locationBias"] = {"circle": {"center": center, "radius": radius_m}}
-        data = self._call("POST", f"{BASE_URL}/places:searchText", SEARCH_FIELDS, json=body)
-        return [
-            PlaceCandidate(
-                place_id=p["id"],
-                name=(p.get("displayName") or {}).get("text", ""),
-                address=p.get("formattedAddress"),
-                lat=p["location"]["latitude"],
-                lng=p["location"]["longitude"],
-                types=tuple(p.get("types", ())),
-            )
-            for p in data.get("places", [])
-            if "id" in p and "location" in p
-        ]
+        return [_candidate(p) for p in self._search(query, language, near, radius_m, SEARCH_FIELDS)]
+
+    def search_with_hours(
+        self,
+        query: str,
+        language: str = "ko",
+        near: tuple[float, float] | None = None,
+        radius_m: float = NEAR_RADIUS_M,
+    ) -> list[tuple[PlaceCandidate, PlaceDetails]]:
+        """`search`, with each hit's details (hours, time zone) from the same request: for
+        substitutes, where every hit's hours are needed (see SEARCH_WITH_HOURS_FIELDS)."""
+        found = self._search(query, language, near, radius_m, SEARCH_WITH_HOURS_FIELDS)
+        return [(_candidate(p), _details(p)) for p in found]
 
     def details(self, place_id: str) -> PlaceDetails:
-        data = self._call("GET", f"{BASE_URL}/places/{place_id}", DETAIL_FIELDS)
-        return PlaceDetails(
-            place_id=data["id"],
-            lat=data["location"]["latitude"],
-            lng=data["location"]["longitude"],
-            time_zone=(data.get("timeZone") or {}).get("id"),
-            periods=_parse_periods(data),
-        )
+        return _details(self._call("GET", f"{BASE_URL}/places/{place_id}", DETAIL_FIELDS))
+
+
+def _candidate(p: dict[str, Any]) -> PlaceCandidate:
+    return PlaceCandidate(
+        place_id=p["id"],
+        name=(p.get("displayName") or {}).get("text", ""),
+        address=p.get("formattedAddress"),
+        lat=p["location"]["latitude"],
+        lng=p["location"]["longitude"],
+        types=tuple(p.get("types", ())),
+    )
+
+
+def _details(data: dict[str, Any]) -> PlaceDetails:
+    return PlaceDetails(
+        place_id=data["id"],
+        lat=data["location"]["latitude"],
+        lng=data["location"]["longitude"],
+        time_zone=(data.get("timeZone") or {}).get("id"),
+        periods=_parse_periods(data),
+        types=tuple(data.get("types", ())),
+    )

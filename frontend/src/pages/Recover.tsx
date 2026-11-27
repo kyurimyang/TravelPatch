@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { buildDisruption, interpretDisruption } from '../api/disruptions'
 import { accessMessage, ApiError } from '../api/http'
 import { addPlace, buildPlan } from '../api/plans'
-import type { BuiltPlan, EventDraft, InterpretResponse, PlaceOption, TravelTime, Wish } from '../api/types'
+import type { BuiltPlan, DisruptionEvent, EventDraft, InterpretResponse, PlaceOption, TravelTime, Wish } from '../api/types'
 import { EventChips } from '../components/EventChips'
 import addArt from '../assets/patches/place-sight.svg'
 import { PlaceSearch } from '../components/PlaceSearch'
@@ -18,6 +18,7 @@ import {
   HOTEL_ID,
   holeEvent,
   holeLocation,
+  MAX_MORE_EVENTS,
   whereNow,
   nextActivity,
   planRequestFor,
@@ -108,6 +109,9 @@ export default function Recover() {
   // Already visited, left out of the recovery (A1): the user's taps over the pre-checked default.
   // Cleared whenever the event changes, so the default follows the new event.
   const [visitEdits, setVisitEdits] = useState<Record<string, boolean>>({})
+  // Pieces Google says are closed that day go into the patch as closures (2026-11-27), unless the
+  // user says they go anyway (Google's hours can be wrong; the user is the one standing there).
+  const [goAnyway, setGoAnyway] = useState<Record<string, boolean>>({})
 
   // Build the trip day once on the server (coordinates + hours from Google, kept in memory only).
   useEffect(() => {
@@ -246,6 +250,14 @@ export default function Recover() {
     ? activities.filter((a) => a.planned_start < event.occurred_at && !locked.has(a.id))
     : []
   const toggleVisited = (id: string) => setVisitEdits((e) => ({ ...e, [id]: !isVisited(id) }))
+  // Closed that day, still ahead, not what an event is already about, not where the user stands.
+  const closedToday = plan.warnings.filter((w) => w.code === 'CLOSED_THAT_DAY').map((w) => w.activity_id)
+  const autoClosures: DisruptionEvent[] = event
+    ? closedToday
+        .filter((id) => !goAnyway[id] && !isVisited(id) && !locked.has(id) && id !== event.location_id)
+        .slice(0, Math.max(0, MAX_MORE_EVENTS - moreEvents.length))
+        .map((id) => ({ type: 'CLOSURE', occurred_at: event.occurred_at, location_id: event.location_id, activity_id: id }))
+    : []
 
   return (
     <div className="recover">
@@ -264,11 +276,28 @@ export default function Recover() {
 
         {plan.warnings.length > 0 && (
           <section className="recover__warn" role="note">
-            {plan.warnings.map((w) => (
-              <p key={`${w.code}-${w.activity_id}`}>
-                {titleOf(w.activity_id)}: {WARNING_TEXT[w.code] ?? '확인이 필요해요.'}
-              </p>
-            ))}
+            {plan.warnings.map((w) =>
+              w.code === 'CLOSED_THAT_DAY' ? (
+                <p key={`${w.code}-${w.activity_id}`} className="recover__warn-row">
+                  <span>
+                    {titleOf(w.activity_id)}:{' '}
+                    {goAnyway[w.activity_id]
+                      ? '쉬는 날로 나오지만 그대로 갈게요.'
+                      : '이날은 쉬는 날로 나와요. 패치에서 빼거나 근처로 바꿔요.'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setGoAnyway((g) => ({ ...g, [w.activity_id]: !g[w.activity_id] }))}
+                  >
+                    {goAnyway[w.activity_id] ? '쉬는 날로 두기' : '그래도 갈게요'}
+                  </button>
+                </p>
+              ) : (
+                <p key={`${w.code}-${w.activity_id}`}>
+                  {titleOf(w.activity_id)}: {WARNING_TEXT[w.code] ?? '확인이 필요해요.'}
+                </p>
+              ),
+            )}
           </section>
         )}
 
@@ -518,9 +547,11 @@ export default function Recover() {
               </>
             ) : (
               <span className="recover__hint">
-                {editable
+                {editable && response.events.length > 0
                   ? '이해한 건 위에 두었어요. 빠진 것만 골라 주세요.'
-                  : '내용을 이해하지 못했어요. 조금 더 구체적으로 적어 주세요.'}
+                  : editable
+                    ? '어떤 일인지 위에서 골라 주세요.'
+                    : '내용을 이해하지 못했어요. 조금 더 구체적으로 적어 주세요.'}
               </span>
             )}
           </section>
@@ -542,9 +573,12 @@ export default function Recover() {
                 source,
                 addedPlaceId: added?.placeId,
                 event: response!.event!,
-                moreEvents,
+                moreEvents: [...moreEvents, ...autoClosures],
                 wishes: response!.wishes,
-                chips: response!.chips,
+                chips: [
+                  ...response!.chips,
+                  ...autoClosures.map((c) => `${titleOf('activity_id' in c ? c.activity_id : '')} · 오늘 쉬는 날`),
+                ],
                 visited: activities.filter((a) => isVisited(a.id)).map((a) => a.id),
               }
               navigate('/recover/patch', { state })

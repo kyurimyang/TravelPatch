@@ -22,7 +22,8 @@ export function PieceStrip({ changes, titleOf }: { changes: RecoveryChange[]; ti
       <p>
         {changed > 0 ? (
           <>
-            조각 <b>{changed}개</b>를 덧대고, {changes.length - changed}개는 그대로 둬요
+            조각 <b>{changed}개</b>를 덧대
+            {changes.length > changed ? `고, ${changes.length - changed}개는 그대로 둬요` : '요'}
           </>
         ) : (
           <>조각을 그대로 두고 이어 붙여요</>

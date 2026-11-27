@@ -137,6 +137,13 @@ def test_extend_without_place_is_where_the_user_is():
     assert _question(type="EXTEND", extra_minutes=30).field == "activity_id"  # at the hotel
 
 
+def test_here_said_is_where_the_user_is():
+    # Live test 2026-11-27: "여기 20분만 더 있을래" came back with activity_hint "여기".
+    for hint in ("여기", "여기서", "이곳"):
+        item = _item("harajuku", type="EXTEND", activity_hint=hint, extra_minutes=20)
+        assert item.event.activity_id == "harajuku" and not item.assumed
+
+
 def test_wait_at_a_named_place():
     item = _item(type="WAIT", activity_hint="점심 식당", wait_minutes=40)
     assert (item.event.type, item.event.activity_id, item.event.minutes) == ("WAIT", "ramen", 40)
@@ -152,6 +159,25 @@ def test_reservation_shift_is_computed_from_the_booked_time():
     item = _item(type="RESERVATION_CHANGE", activity_hint="시부야 스카이", shift_minutes=-60)
     assert item.event.new_time == 1020 - 60
     assert item.chip == "시부야 스카이 예약 17:00 → 16:00"
+
+
+def test_reservation_chip_does_not_say_booking_twice():
+    acts = [*ACTS, _act("eiffel", "에펠탑 예약", start=1080, reservation_time=1080)]
+    item = build_item(
+        EventDraft(type="RESERVATION_CHANGE", activity_hint="에펠탑", shift_minutes=-30),
+        now=NOW,
+        location_id="hotel",
+        activities=acts,
+    )
+    assert item.chip == "에펠탑 예약 18:00 → 17:30"
+
+
+@pytest.mark.parametrize("junk", ["", "1시간", "-1:00"])
+def test_a_shift_wins_over_a_new_time_that_is_not_a_clock_time(junk):
+    item = _item(
+        type="RESERVATION_CHANGE", activity_hint="스카이", shift_minutes=-60, new_time=junk
+    )
+    assert item.event.new_time == 1020 - 60
 
 
 def test_reservation_without_time_asks_with_the_booked_time_prefilled():

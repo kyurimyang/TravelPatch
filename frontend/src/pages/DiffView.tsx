@@ -71,6 +71,9 @@ function DiffViewScreen({ nav }: { nav: RecoveryState }) {
   const event = nav?.event ?? (sample as unknown as RecoveryInput).event
   const chips = nav?.chips ?? []
   const baseInput = inputFor(plan, event, nav?.visited ?? [], nav?.moreEvents ?? [], nav?.wishes ?? [])
+  const waitIds = new Set(
+    [event, ...(nav?.moreEvents ?? [])].flatMap((e) => (e.type === 'WAIT' ? [e.activity_id] : [])),
+  )
 
   const [state, setState] = useState<State>({ status: 'loading' })
   const [picked, setPicked] = useState(0)
@@ -247,6 +250,10 @@ function DiffViewScreen({ nav }: { nav: RecoveryState }) {
             travel={SHOW_LEG_CHIPS ? currentInput.travel : undefined}
             mode={SHOW_LEG_CHIPS ? currentInput.day.travel_mode : undefined}
             tagOf={(change) => reasonTag(change, event, nav?.moreEvents ?? [])}
+            // A piece made longer by a queue says "대기", not "연장": the user asked for no more time.
+            labelOf={(change) =>
+              change.op !== 'drop' && change.op !== 'substitute' && waitIds.has(change.activity_id) ? '대기' : undefined
+            }
             renderDetail={(change) => (
               <WhyPanel
                 change={change}

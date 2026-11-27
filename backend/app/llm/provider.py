@@ -18,6 +18,18 @@ T = TypeVar("T", bound=BaseModel)
 # .env sits at the repo root, three levels above backend/app/llm.
 _ENV_PATH = Path(__file__).resolve().parents[3] / ".env"
 DEFAULT_MODEL = "gpt-4o-mini"
+# Reading the one-line input ("피곤하고 비도 와서 실내에서 쉬고 싶어") is the one call where a
+# smaller model kept missing events even with the example in the prompt (live tests 2026-11-27:
+# rain said next to a wish, "쇼핑 더 하고 싶어" as fatigue). The answer is short, so a stronger
+# model costs little there. OPENAI_INTERPRET_MODEL overrides it.
+INTERPRET_MODEL = "gpt-4.1-mini"
+
+
+def interpret_provider() -> "OpenAIProvider":
+    """The provider for reading the one-line input (see INTERPRET_MODEL)."""
+    return OpenAIProvider(model=os.environ.get("OPENAI_INTERPRET_MODEL") or INTERPRET_MODEL)
+
+
 MAX_ATTEMPTS = 2  # first try + one retry (invariant 4)
 # Per request to OpenAI. The SDK's default is 10 minutes with 2 hidden retries of its own: one
 # slow answer could hold a worker of the single server for half an hour. Our own MAX_ATTEMPTS
