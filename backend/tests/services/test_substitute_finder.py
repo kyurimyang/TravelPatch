@@ -1,4 +1,5 @@
 import json
+import threading
 from datetime import date
 from pathlib import Path
 
@@ -7,7 +8,12 @@ from app.llm.substitute_query import SubstituteQuery
 from app.schemas.enums import Op
 from app.schemas.recovery import RecoveryInput
 from app.services.places_client import OpeningPeriod, PlaceCandidate, PlaceDetails, PlacesError
-from app.services.substitute_finder import add_substitutes, build_substitutes, needs_check_ids
+from app.services.substitute_finder import (
+    add_substitutes,
+    add_substitutes_for,
+    build_substitutes,
+    needs_check_ids,
+)
 
 SCENARIOS = Path(__file__).parents[1] / "scenarios"
 TUESDAY = date(2026, 10, 6)  # weekday() == 1; Google counts it as day 2
@@ -183,6 +189,28 @@ def test_substitute_with_unknown_hours_needs_check():
     target = _izakaya(inp)
     places = FakePlaces({"p1": _details("p1", target.lat + 0.003, target.lng, None)})
     assert needs_check_ids(add_substitutes(inp, FakeLLM(), places)) == frozenset({"sub_izakaya_1"})
+
+
+def test_searches_run_side_by_side_and_keep_the_order_asked():
+    inp = _closed_izakaya()
+    first, second = (a for a in inp.activities if a.id in ("izakaya", "harajuku"))
+    second_done = threading.Event()
+
+    class SlowFirst(FakePlaces):
+        def search_with_hours(self, query, language="ko", near=None, radius_m=1500.0):
+            if near == (first.lat, first.lng):
+                # Passes only if the second search runs while this one is still waiting.
+                assert second_done.wait(timeout=5), "searches ran one after another"
+            else:
+                second_done.set()
+            # Far from every piece of the day: a hit on top of one is not a stand-in.
+            place = _details(f"p{near[0]}", near[0] + 0.02, near[1], (600, 1380))
+            # Mainly a museum (a stand-in for a sight) that also serves food (for a meal).
+            return [(_hit(f"곳 {place.place_id}", ("museum", "restaurant")), place)]
+
+    out = add_substitutes_for(inp, [first.id, second.id], FakeLLM(), SlowFirst({}))
+
+    assert [s.replaces for s in out.substitutes] == [first.id, second.id]
 
 
 def test_a_shop_is_not_a_substitute_for_a_meal():

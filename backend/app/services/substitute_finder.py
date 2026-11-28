@@ -12,6 +12,7 @@ Google types as indoors is marked outdoor=False, so the engine may use it in the
 """
 
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from app.llm.provider import LLMProvider
@@ -183,12 +184,19 @@ def add_substitutes_for(
     not only for a closure): "instead of dropping it, a similar place nearby that fits". The
     engine still decides; it takes a substitute only when that changes the day less than the drop.
     Unchanged when nothing was found."""
-    found_all: list[Substitute] = []
+    targets: list[Activity] = []
     for aid in dict.fromkeys(ids):  # each activity searched once
         target = next((a for a in inp.activities if a.id == aid), None)
         if target is None or any(s.replaces == aid for s in inp.substitutes):
             continue
-        found_all += _search(inp, target, provider, places, target.id in indoor)
+        targets.append(target)
+    # Each search waits on the network (LLM, then Google), so run them side by side. `map` keeps
+    # the order of `targets`, so the same input still gives the same substitutes and ids.
+    found_all: list[Substitute] = []
+    if targets:  # a pool needs at least one worker
+        with ThreadPoolExecutor(max_workers=len(targets)) as pool:
+            results = pool.map(lambda t: _search(inp, t, provider, places, t.id in indoor), targets)
+            found_all = [sub for found in results for sub in found]
     if not found_all:
         return inp
     points = {a.id: (a.lat, a.lng) for a in inp.activities}
