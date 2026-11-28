@@ -17,9 +17,10 @@ export default defineConfig(({ mode }) => {
     server: {
       // Dev only: the browser calls /api/..., Vite forwards it to the FastAPI server
       // (uvicorn app.main:app) without the /api prefix. Deployed, frontend/vercel.json does the same.
+      // API_PROXY_TARGET overrides the backend address when port 8000 is taken.
       proxy: {
         '/api': {
-          target: 'http://localhost:8000',
+          target: env.API_PROXY_TARGET || 'http://localhost:8000',
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
       },
