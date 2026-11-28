@@ -56,61 +56,99 @@ def written_ranges(text: str) -> list[tuple[str, str]]:
     ]
 
 
-def written_times(text: str) -> list[tuple[str, str | None]]:
-    """Every time range in the text, plus every line that is a single time ("16:20"), in order.
-    A single time has no end: "16:20 도착" must not take the "16:20~17:20" written under it."""
-    out: list[tuple[str, str | None]] = []
+TimeLine = tuple[str, str | None, str, str]  # (start, end or None, squashed line, line as written)
+
+
+def written_time_lines(text: str) -> list[TimeLine]:
+    """`written_times`, each with the line it is written on (squashed, and as written), so an
+    item the model returned without a time can be found by its title, and a line no item
+    covers can be shown to the user."""
+    out: list[TimeLine] = []
     for line in text.splitlines():
         ranges = written_ranges(line)
         if ranges:
-            out.extend(ranges)
+            out.extend((start, end, _squash(line), line.strip()) for start, end in ranges)
         else:
             point = _POINT_LINE_RE.match(line)
             if point is not None:
-                out.append((f"{int(point.group(1)):02d}:{point.group(2)}", None))
+                start = f"{int(point.group(1)):02d}:{point.group(2)}"
+                out.append((start, None, _squash(line), line.strip()))
     return out
 
 
-# Below this share of the text's time lines, the answer stopped early (a whole answer reads
-# ~100%: 51/51 and 45/45 on the recorded pastes; the early stops read 10/51).
-MIN_READ_SHARE = 0.8
+def written_times(text: str) -> list[tuple[str, str | None]]:
+    """Every time range in the text, plus every line that is a single time ("16:20"), in order.
+    A single time has no end: "16:20 도착" must not take the "16:20~17:20" written under it."""
+    return [(start, end) for start, end, _, _ in written_time_lines(text)]
+
+
+def unread_lines(parsed: ParsedItinerary, text: str) -> list[str]:
+    """The text's time lines that no item covers, as written, in order, after the times the model
+    left out are taken back (`_align`). Language-free: it matches times, not words. Exact, not a
+    share: a single dropped line counts, and it is the same answer every time (2026-11-28: the
+    Busan paste lost a different line on each live run, each under the old 80% bar)."""
+    lines = written_time_lines(text)
+    _, used = _align([list(d.items) for d in parsed.days], lines)
+    return [lines[i][3] for i in range(len(lines)) if i not in used]
 
 
 def read_count(parsed: ParsedItinerary, text: str) -> tuple[int, int]:
-    """(timed items the parser gave, time lines written in the text). Language-free: it counts
-    times, not day headings."""
-    read = sum(1 for day in parsed.days for item in day.items if (item.start or "").strip())
-    return read, len(written_times(text))
+    """(time lines some item covers, time lines written in the text)."""
+    written = len(written_time_lines(text))
+    return written - len(unread_lines(parsed, text)), written
 
 
 def reads_short(parsed: ParsedItinerary, text: str) -> bool:
-    read, written = read_count(parsed, text)
-    return written > 0 and read < MIN_READ_SHARE * written
+    """Some time line in the text came back as no item: ask again (the router does)."""
+    return bool(unread_lines(parsed, text))
 
 
-def _with_written_ends(
-    days: list[list[ParsedItem]], ranges: list[tuple[str, str | None]]
+def _with_written_times(
+    days: list[list[ParsedItem]], ranges: list[TimeLine]
 ) -> list[list[ParsedItem]]:
-    """Restore ends the model left out. Blocks come in the order written, so each start is
+    return _align(days, ranges)[0]
+
+
+def _align(
+    days: list[list[ParsedItem]], ranges: list[TimeLine]
+) -> tuple[list[list[ParsedItem]], set[int]]:
+    """Restore times the model left out. Blocks come in the order written, so each start is
     matched with the next time line in the text that starts there (a cursor that only moves
     on): "13:00" on day 2 never takes day 1's "13:00~14:00", and a block written as a single
-    time keeps no end."""
+    time keeps no end.
+
+    A block that came back with no time at all takes the time of the next unread time line, but
+    only when its title is written on that very line: "20:00~ · 숙소 이동 및 휴식" read without
+    its 20:00 (live test 2026-11-28, Busan) left day 1 with no end at the hotel. Only the next
+    line, so a short untimed "쇼핑" never takes a later "14:00-16:00 아키하바라 쇼핑". The time
+    is the one written (invariant 8); any other untimed block stays untimed."""
     cursor = 0
+    used: set[int] = set()  # indexes into `ranges` some item took
     out: list[list[ParsedItem]] = []
     for day in days:
         fixed: list[ParsedItem] = []
         for item in day:
+            title = _squash(item.title)
+            if not (item.start or "").strip() and not (item.end or "").strip() and title:
+                if cursor < len(ranges) and title in ranges[cursor][2]:
+                    start, end = ranges[cursor][0], ranges[cursor][1]
+                    used.add(cursor)
+                    cursor += 1
+                    item = item.model_copy(update={"start": start, "end": end})
+                fixed.append(item)
+                continue
             match = _TIME_RE.match((item.start or "").strip())
             if match is not None:
                 start = f"{int(match.group(1)):02d}:{match.group(2)}"
                 at = next((i for i in range(cursor, len(ranges)) if ranges[i][0] == start), None)
                 if at is not None:
+                    used.add(at)
                     cursor = at + 1
                     if not item.end and ranges[at][1] is not None:
                         item = item.model_copy(update={"end": ranges[at][1]})
             fixed.append(item)
         out.append(fixed)
-    return out
+    return out, used
 
 
 def _title(raw: str) -> str:
@@ -155,6 +193,11 @@ def _convert_item(
             issues.append(DraftIssue(code="RESERVED_NO_TIME", item=index, detail=item.title))
         else:
             reservation = start
+    elif item.patch == "venue" and start is not None:
+        # A show starts when it starts, booked or not: the engine moved a Broadway musical from
+        # 19:30 to 19:15 (user test 2026-11-28). Held like a reservation (invariant 7); the
+        # start is the one written, so nothing is guessed.
+        reservation = start
     draft = DraftItem(
         title=_title(item.title),
         category=item.category,
@@ -238,7 +281,7 @@ def build_draft(parsed: ParsedItinerary, text: str | None = None) -> DraftItiner
     """`text` is the pasted text the parser read; with it, times are checked against it."""
     days = [_fold_remarks(list(d.items)) for d in parsed.days]
     if text:
-        days = _with_written_ends(days, written_times(text))
+        days = _with_written_times(days, written_time_lines(text))
     hotel = find_hotel_query(days)
     if hotel is not None and text is not None and _squash(hotel) not in _squash(text):
         hotel = None  # not written: a guess (invariant 8)

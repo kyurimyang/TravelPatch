@@ -117,6 +117,8 @@ class PartialRead(_Frozen):
 
     read: int = Field(ge=0)
     written: int = Field(ge=1)
+    # The time lines no item covers, as written, so the screen can name them (2026-11-28).
+    missing: tuple[str, ...] = ()
 
 
 class ParseResponse(_Frozen):

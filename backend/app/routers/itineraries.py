@@ -7,7 +7,7 @@ from app.llm.parser import ParsedItinerary, parse_itinerary
 from app.llm.provider import LLMOutputError, LLMProvider
 from app.routers.deps import charged_provider
 from app.schemas.itinerary import ParseProblem, ParseRequest, ParseResponse, PartialRead
-from app.services.itinerary_draft import build_draft, read_count, reads_short
+from app.services.itinerary_draft import build_draft, read_count, reads_short, unread_lines
 from app.services.itinerary_split import split_days
 
 router = APIRouter(prefix="/itineraries", tags=["itineraries"])
@@ -19,8 +19,9 @@ MAX_PARALLEL_DAYS = 4
 def _parse_text(provider: LLMProvider, text: str) -> ParsedItinerary | None:
     """One text (a day, or the whole paste) -> its parse, or None when the model failed.
 
-    The model sometimes closes its answer early (a "※" remark read as the end): a well-formed
-    but partial answer. It is asked once more, and the answer that read more is kept."""
+    The model sometimes closes its answer early (a "※" remark read as the end) or drops a line:
+    a well-formed but partial answer. When any time line is left uncovered, it is asked once
+    more, and the answer that covers more lines is kept."""
     try:
         parsed = parse_itinerary(provider, text)
     except LLMOutputError:
@@ -67,5 +68,6 @@ def parse(
             problem=ParseProblem(code="NOTHING_FOUND", detail="no item in the text"),
         )
     read, written = read_count(parsed, req.text)
-    partial = PartialRead(read=read, written=written) if reads_short(parsed, req.text) else None
+    missing = tuple(unread_lines(parsed, req.text))
+    partial = PartialRead(read=read, written=written, missing=missing) if missing else None
     return ParseResponse(status="ok", draft=build_draft(parsed, req.text), partial=partial)

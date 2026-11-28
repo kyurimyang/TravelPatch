@@ -62,9 +62,11 @@ For every item give:
 - role: what the block is in the day, judged by what it ends with:
   activity (a place to spend time at: sight, meal, cafe, shop, show),
   transport (moving between places, a route; "이동", "복귀" to somewhere),
-  lodging (at the traveler's own hotel: check-in, check-out, bags, back at the hotel to rest),
+  lodging (at the traveler's own hotel or 숙소: check-in, check-out, bags left at the hotel,
+  back at the hotel to rest; never a station, terminal or locker, even for bags),
   airport (at an airport: arrival, immigration, check-in for a flight, security, boarding).
-  "호텔까지 이동 및 짐 보관" is lodging, "산책 및 식당으로 이동" is transport,
+  "호텔까지 이동 및 짐 보관" is lodging, "부산역 도착 및 짐 보관 — 부산역" is an activity
+  (bags at the station, not the hotel), "산책 및 식당으로 이동" is transport,
   "호텔 조식" is an activity.
 - category: meal, sightseeing, shopping, cafe, transport or other. Use other when unclear.
   A café (café, coffee house, kavárna, 카페) is cafe even when it serves meals, and never has

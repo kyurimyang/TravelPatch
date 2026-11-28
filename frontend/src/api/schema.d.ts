@@ -808,6 +808,11 @@ export interface components {
             read: number;
             /** Written */
             written: number;
+            /**
+             * Missing
+             * @default []
+             */
+            missing: string[];
         };
         /**
          * PlaceOption
