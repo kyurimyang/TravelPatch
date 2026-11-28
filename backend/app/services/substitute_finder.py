@@ -11,6 +11,8 @@ Rain or a "실내 우선" wish also searches indoor places for outdoor pieces (2
 Google types as indoors is marked outdoor=False, so the engine may use it in the rain.
 """
 
+import logging
+from collections import Counter
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -30,6 +32,8 @@ from app.services.places_client import (
     PlacesError,
 )
 from app.services.travel_estimate import fill_missing_travel, haversine_km
+
+log = logging.getLogger(__name__)
 
 SAME_PLACE_KM = 0.05  # a hit this close to the closed place is that place itself
 # New-place penalty added to D_sub: a base for "not the place you chose" plus distance.
@@ -69,6 +73,9 @@ class Found:
     substitutes: tuple[Substitute, ...]
     # Substitutes whose hours that day are unknown: if the plan uses one, it gets needs_check.
     unknown_hours: frozenset[str]
+    # Hits left out and why, sorted by reason: ("closed", 2), ("other_kind", 1), ... So a drop
+    # can say "found 3, all closed then" instead of nothing (user test 2026-11-28).
+    skipped: tuple[tuple[str, int], ...] = ()
 
 
 def build_substitutes(
@@ -87,17 +94,22 @@ def build_substitutes(
     taken = tuple(others)
     subs: list[Substitute] = []
     unknown: set[str] = set()
+    skipped: Counter[str] = Counter()
     for hit, p in places:
         if not _same_kind(target.category, hit.types):
+            skipped["other_kind"] += 1
             continue
         km = haversine_km((target.lat, target.lng), (p.lat, p.lng))
         if km < SAME_PLACE_KM:
+            skipped["same_place"] += 1
             continue
         if any(haversine_km(o, (p.lat, p.lng)) < SAME_PLACE_KM for o in taken):
+            skipped["already_in_day"] += 1
             continue
         slot = (target.planned_start, target.planned_end)  # pick the opening window around it
         hours = hours_for_weekday(p.periods, weekday, prefer=slot) if weekday is not None else None
         if hours is not None and hours.status == "closed":
+            skipped["closed"] += 1
             continue
         sub_id = f"sub_{target.id}_{len(subs) + 1}"
         known = hours is not None and hours.status == "known"
@@ -118,7 +130,7 @@ def build_substitutes(
                 outdoor=place_outdoor(hit.types),
             )
         )
-    return Found(tuple(subs), frozenset(unknown))
+    return Found(tuple(subs), frozenset(unknown), tuple(sorted(skipped.items())))
 
 
 def _without_substitutes(inp: RecoveryInput, ids: Iterable[str]) -> list[str]:
@@ -224,7 +236,8 @@ def _search(
     query = substitute_query(provider, target.title, target.category, indoor=indoor)
     try:
         details = places.search_with_hours(query, near=(target.lat, target.lng))
-    except PlacesError:
+    except PlacesError as exc:  # the message never holds the key (see PlacesError)
+        log.warning("substitute search failed for %s (%r): %s", target.id, query, exc)
         return []
 
     weekday = inp.day.date.weekday() if inp.day.date is not None else None
@@ -233,7 +246,19 @@ def _search(
     others.append((inp.day.end_lat, inp.day.end_lng))
     if inp.day.start_lat is not None and inp.day.start_lng is not None:
         others.append((inp.day.start_lat, inp.day.start_lng))
-    return list(build_substitutes(target, details, weekday, others).substitutes)
+    found = build_substitutes(target, details, weekday, others)
+    # Nothing usable is what turns a closure into a plain drop: loud enough to show by default.
+    level = logging.INFO if found.substitutes else logging.WARNING
+    log.log(
+        level,
+        "substitute search for %s (%r): %d hits, %d kept, skipped %s",
+        target.id,
+        query,
+        len(details),
+        len(found.substitutes),
+        dict(found.skipped) or "none",
+    )
+    return list(found.substitutes)
 
 
 def needs_check_ids(inp: RecoveryInput) -> frozenset[str]:

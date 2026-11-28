@@ -9,6 +9,7 @@ tests so they test exactly what the user gets.
 that is not needed costs nothing. I/O stays out of the engine.
 """
 
+import logging
 from collections.abc import Callable
 
 from app.llm.provider import LLMProvider
@@ -22,6 +23,8 @@ from app.services.substitute_finder import add_substitutes, add_substitutes_for,
 # that drops something.
 MAX_DROP_SEARCHES = 2
 
+log = logging.getLogger(__name__)
+
 
 def dropped_worth_a_search(inp: RecoveryInput, response: RecoveryResponse) -> list[str]:
     """Activities some candidate drops and that have no substitute yet, highest tier first."""
@@ -34,6 +37,19 @@ def dropped_worth_a_search(inp: RecoveryInput, response: RecoveryResponse) -> li
         if c.op == "drop" and c.activity_id not in has_sub and c.activity_id in weight
     }
     return sorted(dropped, key=lambda a: (-weight[a], a))[:MAX_DROP_SEARCHES]
+
+
+def log_unused_substitutes(inp: RecoveryInput, response: RecoveryResponse) -> None:
+    """Pieces that had stand-ins found but that every candidate still drops: the stand-ins did not
+    fit (time, hours, the next booking). Logged so "found but none fit" is told apart from "none
+    found" (user test 2026-11-28: a closed dinner came back as a plain drop)."""
+    has_sub: dict[str, int] = {}
+    for s in inp.substitutes:
+        has_sub[s.replaces] = has_sub.get(s.replaces, 0) + 1
+    for aid, n in sorted(has_sub.items()):
+        ops = {c.op for r in response.candidates for c in r.changes if c.activity_id == aid}
+        if ops == {"drop"}:
+            log.warning("%s: %d substitutes found, every candidate still drops it", aid, n)
 
 
 def recover_with_search(
@@ -52,5 +68,6 @@ def recover_with_search(
     if targets and can and may_search():
         richer = add_substitutes_for(inp, targets, provider, places)
         if richer is not inp:
-            return richer, run_recovery(richer)
+            inp, response = richer, run_recovery(richer)
+    log_unused_substitutes(inp, response)
     return inp, response
