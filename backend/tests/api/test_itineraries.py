@@ -70,7 +70,9 @@ def test_parse_returns_draft_in_minutes():
 
 
 def test_issues_come_through_for_the_confirm_screen():
-    parsed = ParsedItinerary(days=[ParsedDay(day_label=None, theme=None, items=[_item("메이지 신궁", None)])])
+    parsed = ParsedItinerary(
+        days=[ParsedDay(day_label=None, theme=None, items=[_item("메이지 신궁", None)])]
+    )
     res, _ = _post("메이지 신궁", parsed)
     body = res.json()
     assert body["status"] == "ok"
@@ -165,14 +167,18 @@ def test_short_twice_keeps_the_longer_answer_and_says_how_much_was_read():
     body = res.json()
     assert fake.calls == 2 and body["status"] == "ok"
     assert len(body["draft"]["days"]) == 2
-    assert body["partial"] == {"read": 4, "written": 8}
+    partial = body["partial"]
+    assert (partial["read"], partial["written"]) == (4, 8)
+    assert len(partial["missing"]) == 8 - 4  # each unread time line, by name
 
 
 def test_a_failed_second_try_keeps_the_first_answer():
     res, _ = _post_seq(FOUR_DAYS, _days(1), LLMOutputError("x"))
     body = res.json()
     assert body["status"] == "ok" and len(body["draft"]["days"]) == 1
-    assert body["partial"] == {"read": 2, "written": 8}
+    partial = body["partial"]
+    assert (partial["read"], partial["written"]) == (2, 8)
+    assert len(partial["missing"]) == 8 - 2  # each unread time line, by name
 
 
 # --- a text with day headings is read one day per call (2026-11-23) -------------------------
@@ -226,7 +232,9 @@ def test_a_day_that_cannot_be_read_leaves_the_others_and_says_so():
     body = _post_days(DayProvider(broken={3}))
     assert body["status"] == "ok"
     assert [d["day_label"] for d in body["draft"]["days"]] == ["DAY 1", "DAY 2", "DAY 4"]
-    assert body["partial"] == {"read": 6, "written": 8}
+    partial = body["partial"]
+    assert (partial["read"], partial["written"]) == (6, 8)
+    assert len(partial["missing"]) == 8 - 6  # each unread time line, by name
 
 
 def test_every_day_failing_asks_for_manual_entry():

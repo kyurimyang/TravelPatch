@@ -97,6 +97,27 @@ def test_the_closed_place_itself_and_places_closed_that_day_are_left_out():
         TUESDAY.weekday(),
     )
     assert [s.title for s in found.substitutes] == ["열린 곳"]
+    assert found.skipped == (("closed", 1), ("same_place", 1))
+
+
+def test_skipped_counts_every_reason_so_a_drop_can_say_why():
+    """All hits left out: each reason counted once, nothing kept (user test 2026-11-28)."""
+    target = _izakaya(_closed_izakaya())
+    found = build_substitutes(
+        target,
+        [
+            (
+                _hit("모자 가게", ("clothing_store",)),
+                _details("p1", target.lat + 0.002, target.lng, None),
+            ),
+            (_hit("화요일 휴무"), _closed_on_tuesday("p2", target.lat + 0.003, target.lng)),
+            (_hit("오늘 일정에 있는 곳"), _details("p3", 35.0, 139.0, (1020, 1380))),
+        ],
+        TUESDAY.weekday(),
+        others=[(35.0, 139.0)],
+    )
+    assert found.substitutes == ()
+    assert found.skipped == (("already_in_day", 1), ("closed", 1), ("other_kind", 1))
 
 
 def test_unknown_hours_are_kept_but_flagged():

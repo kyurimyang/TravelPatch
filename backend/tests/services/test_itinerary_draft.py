@@ -1,5 +1,5 @@
 from app.llm.parser import ParsedDay, ParsedItem, ParsedItinerary
-from app.services.itinerary_draft import DEFAULT_MINUTES, build_draft
+from app.services.itinerary_draft import DEFAULT_MINUTES, build_draft, unread_lines
 
 
 def _item(title="x", **fields) -> ParsedItem:
@@ -129,3 +129,77 @@ def test_same_input_gives_the_same_draft():
         days=[ParsedDay(day_label=None, theme=None, items=[_item(start="08:00")])]
     )
     assert build_draft(parsed) == build_draft(parsed)
+
+
+# ---- a time the model left out is taken back from the text ----
+
+
+def _draft_with(text: str, *items: ParsedItem):
+    parsed = ParsedItinerary(days=[ParsedDay(day_label="DAY 1", theme=None, items=list(items))])
+    return build_draft(parsed, text).days[0]
+
+
+def test_untimed_block_takes_the_time_written_on_its_own_line():
+    """Busan live test 2026-11-28: "20:00~ · 숙소 이동 및 휴식" came back with no time, so day 1
+    had no end at the hotel. The 20:00 is written on that line: it is restored."""
+    text = "DAY 1\n* 19:00~20:00 · 야경 감상 — 부산타워\n* 20:00~ · 숙소 이동 및 휴식\n"
+    day = _draft_with(
+        text,
+        _item("야경 감상 — 부산타워", start="19:00", end="20:00"),
+        _item("숙소 이동 및 휴식", role="lodging", category="other"),
+    )
+    assert day.end_time == 20 * 60
+
+
+def test_untimed_block_never_takes_a_later_line_that_only_mentions_it():
+    """Only the next unread time line counts: "쇼핑" with no time stays untimed even though a
+    later line says "아키하바라 쇼핑" (invariant 8: no time is moved from another block)."""
+    text = "09:00 센소지\n쇼핑\n12:00 점심\n14:00-16:00 아키하바라 쇼핑\n"
+    day = _draft_with(
+        text,
+        _item("센소지", start="09:00"),
+        _item("쇼핑"),
+        _item("점심", start="12:00", category="meal"),
+        _item("아키하바라 쇼핑", start="14:00", end="16:00", category="shopping"),
+    )
+    assert [(i.title, i.start) for i in day.items] == [
+        ("센소지", 540),
+        ("쇼핑", None),
+        ("점심", 720),
+        ("아키하바라 쇼핑", 840),
+    ]
+
+
+def test_unread_lines_names_exactly_the_dropped_time_line():
+    """One dropped line out of many is found (the old 80% bar let it through silently), named as
+    written; a line whose time was only left out of the answer is not unread."""
+    text = (
+        "* 09:00~10:00 · 아침\n* 10:00~11:00 · 산책\n* 11:00~12:00 · 점심\n* 12:00~ · 숙소 휴식\n"
+    )
+    parsed = ParsedItinerary(
+        days=[
+            ParsedDay(
+                day_label=None,
+                theme=None,
+                items=[
+                    _item("아침", start="09:00", end="10:00"),
+                    _item("점심", start="11:00", end="12:00"),
+                    _item("숙소 휴식", role="lodging"),
+                ],
+            )
+        ]
+    )
+    assert unread_lines(parsed, text) == ["* 10:00~11:00 · 산책"]
+
+
+def test_a_show_holds_its_start_time_even_without_the_word_reserved():
+    """User test 2026-11-28: a Broadway musical at 19:30 was moved to 19:15. A venue (theater,
+    concert, stadium, show) with a start time is held like a reservation."""
+    show = _day(_item("브로드웨이 뮤지컬 관람", start="19:30", end="22:00", patch="venue")).items[0]
+    assert show.reservation_time == 19 * 60 + 30
+
+
+def test_a_venue_without_a_time_is_not_held_and_not_flagged_as_reserved():
+    day = _day(_item("공연장 구경", patch="venue"))
+    assert day.items[0].reservation_time is None
+    assert "RESERVED_NO_TIME" not in _codes(day)

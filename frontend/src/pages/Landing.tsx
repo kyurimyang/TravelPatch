@@ -34,14 +34,17 @@ export function shortfall(
   got: number,
   start: string,
   end: string,
-  partial: { read: number; written: number } | null,
+  partial: { read: number; written: number; missing?: readonly string[] } | null,
 ): string[] {
   const lines: string[] = [];
   const wanted = daysBetween(start, end);
-  if (partial)
+  if (partial) {
     lines.push(
       `일정에 적힌 시각 ${partial.written}개 중 ${partial.read}개만 읽었어요. 다시 읽으면 나머지도 읽을 수 있어요.`,
     );
+    // Name the lines, so a missing one can be added by hand on the next screen.
+    for (const line of partial.missing ?? []) lines.push(`못 읽은 줄: ${line}`);
+  }
   if (got < wanted)
     lines.push(
       `가는 날부터 오는 날까지 ${wanted}일인데, 일정은 ${got}일치만 읽었어요.`,

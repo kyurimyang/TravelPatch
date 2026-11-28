@@ -1,9 +1,14 @@
 """Real OpenAI calls. Run with: pytest -m live tests/llm/test_live_parser.py"""
 
+from pathlib import Path
+
 import pytest
 
-from app.llm.parser import parse_itinerary
+from app.llm.parser import ParsedItinerary, parse_itinerary
 from app.llm.provider import OpenAIProvider
+from app.routers.itineraries import _parse_text
+from app.services.itinerary_draft import build_draft, unread_lines
+from app.services.itinerary_split import split_days
 
 pytestmark = pytest.mark.live
 
@@ -42,3 +47,37 @@ def test_reserved_only_when_the_text_says_so(parsed):
     day1 = parsed.days[0]
     assert day1.items[2].reserved is True
     assert not any(i.reserved for i in day1.items[:2])
+
+
+# ---- 부산 2박 3일 (user paste 2026-11-28): no hotel is written anywhere ----
+# Checked on what the user gets (the router's per-day parse with its second try, then the rule
+# step), not on one raw model answer: the raw answer drops a different line on each run.
+
+BUSAN = (Path(__file__).parents[1] / "fixtures" / "paste" / "busan_3days.txt").read_text(
+    encoding="utf-8"
+)
+
+
+@pytest.fixture(scope="module")
+def busan():
+    provider = OpenAIProvider()
+    parts = [_parse_text(provider, chunk) for chunk in split_days(BUSAN)]
+    assert all(p is not None for p in parts)
+    parsed = ParsedItinerary(days=[day for p in parts for day in p.days])
+    return parsed, build_draft(parsed, BUSAN)
+
+
+def test_bags_at_a_station_are_not_the_hotel(busan):
+    """ "부산역 도착 및 짐 보관" is a stop at the station, not the traveler's lodging: read as
+    lodging, the station became the hotel for all three days (invariant 8: no hotel is written)."""
+    parsed, draft = busan
+    assert parsed.days[0].items[0].role == "activity", parsed.days[0].items[0]
+    assert draft.hotel_query is None
+
+
+def test_busan_loses_no_time_line(busan):
+    parsed, draft = busan
+    assert len(draft.days) == 3
+    assert unread_lines(parsed, BUSAN) == []
+    # Each day ends where it is written to: 20:00, 19:30, 20:00.
+    assert [d.end_time for d in draft.days] == [20 * 60, 19 * 60 + 30, 20 * 60]
